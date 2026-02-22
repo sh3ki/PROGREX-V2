@@ -5,7 +5,8 @@ import { motion } from 'framer-motion'
 import { Search } from 'lucide-react'
 import Hero from '@/components/Hero'
 import BlogCard from '@/components/BlogCard'
-import CTASection from '@/components/CTASeimport import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
+import CTASection from '@/components/CTASection'
+import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
 import { blogs, blogCategories } from '@/lib/mockData'
 
 export default function BlogsClient() {
