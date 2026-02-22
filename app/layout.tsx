@@ -7,7 +7,7 @@ import Chatbot from '@/components/Chatbot'
 
 export const metadata: Metadata = {
   title: {
-    default: 'PROGREX — Technology Solutions That Drives Success',
+    default: 'PROGREX â€” Technology Solutions That Drives Success',
     template: '%s | PROGREX',
   },
   description:
@@ -27,13 +27,13 @@ export const metadata: Metadata = {
     locale: 'en_US',
     url: 'https://progrex.com',
     siteName: 'PROGREX',
-    title: 'PROGREX — Technology Solutions That Drives Success',
+    title: 'PROGREX â€” Technology Solutions That Drives Success',
     description:
-      'Build faster. Scale smarter. Win with PROGREX — your technology partner for custom software, web, mobile, and enterprise solutions.',
+      'Build faster. Scale smarter. Win with PROGREX â€” your technology partner for custom software, web, mobile, and enterprise solutions.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'PROGREX — Technology Solutions That Drives Success',
+    title: 'PROGREX â€” Technology Solutions That Drives Success',
     description: 'Build faster. Scale smarter. Win with PROGREX.',
   },
   robots: {
@@ -50,12 +50,14 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="bg-[#050510] text-slate-100 antialiased cursor-none-desktop">
+      <body className="bg-[#0D0F12] text-[#EEF0F3] antialiased cursor-none-desktop">
         <CustomCursor />
         <Navbar />
         <main>{children}</main>
