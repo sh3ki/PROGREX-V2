@@ -10,7 +10,7 @@ import { services } from '@/lib/mockData'
 export const metadata: Metadata = {
   title: 'Services',
   description:
-    'Explore PROGREX\'s comprehensive technology services — custom software development, web & mobile apps, system integration, academic systems, and IT consulting.',
+    'Explore PROGREX\'s comprehensive technology services â€” custom software development, web & mobile apps, system integration, academic systems, and IT consulting.',
 }
 
 export default function ServicesPage() {
@@ -29,7 +29,7 @@ export default function ServicesPage() {
           badge="Our Capabilities"
           title="Six Core Service"
           highlight="Areas"
-          subtitle="Specialized expertise across the full technology stack — designed to deliver measurable results."
+          subtitle="Specialized expertise across the full technology stack â€” designed to deliver measurable results."
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {services.map((service, i) => (
@@ -55,7 +55,7 @@ export default function ServicesPage() {
               Our Approach
             </div>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-5 leading-tight">
-              We Don&apos;t Just Write Code — <span className="text-gradient">We Solve Problems</span>
+              We Don&apos;t Just Write Code â€” <span className="text-gradient">We Solve Problems</span>
             </h2>
             <p className="text-slate-400 leading-relaxed mb-6">
               Every engagement starts with understanding your business goals, not your technical requirements. We then map the right technology to the right problem, ensuring maximum ROI and minimal technical debt.
@@ -67,10 +67,10 @@ export default function ServicesPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             {[
-              { icon: '🎯', title: 'Goal-Oriented', desc: 'We align every technical decision with your business objectives.' },
-              { icon: '⚡', title: 'Agile Delivery', desc: 'Weekly sprints with demos, feedback, and iteration.' },
-              { icon: '🔒', title: 'Secure by Design', desc: 'Security best practices baked into every layer.' },
-              { icon: '📈', title: 'Scalable First', desc: 'Built to handle your growth — today and tomorrow.' },
+              { icon: 'ðŸŽ¯', title: 'Goal-Oriented', desc: 'We align every technical decision with your business objectives.' },
+              { icon: 'âš¡', title: 'Agile Delivery', desc: 'Weekly sprints with demos, feedback, and iteration.' },
+              { icon: 'ðŸ”’', title: 'Secure by Design', desc: 'Security best practices baked into every layer.' },
+              { icon: 'ðŸ“ˆ', title: 'Scalable First', desc: 'Built to handle your growth â€” today and tomorrow.' },
             ].map((item, i) => (
               <div key={i} className="glass-card rounded-xl p-4 border border-[#560BAD]/15 hover:border-[#560BAD]/40 transition-colors">
                 <div className="text-2xl mb-2">{item.icon}</div>
