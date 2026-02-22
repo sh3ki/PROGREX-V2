@@ -120,10 +120,6 @@ export default function BlogsClient() {
                         tags={blog.tags}
                         index={i}
                       />
-blog.slug}
-                        tags={blog.tags}
-                        index={i}
-                      />
                     </motion.div>
                   ))}
                 </div>
