@@ -24,7 +24,7 @@ const WELCOME_MESSAGE: Message = {
   id: 'welcome',
   role: 'assistant',
   content:
-    "Hi there! 👋 I'm **PROGREX AI**, your intelligent assistant. Ask me anything about our services, tech stack, pricing, or how we can help build your next big idea!",
+    "Hi there! ðŸ‘‹ I'm **PROGREX AI**, your intelligent assistant. Ask me anything about our services, tech stack, pricing, or how we can help build your next big idea!",
   timestamp: new Date(),
 }
 
@@ -132,7 +132,7 @@ export default function Chatbot() {
   return (
     <>
       {/* Floating Toggle Button */}
-      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3">
+      <div className="fixed bottom-6 right-6 z-9999 flex flex-col items-end gap-3">
         <AnimatePresence>
           {!isOpen && hasNewMessage && (
             <motion.div
@@ -151,7 +151,7 @@ export default function Chatbot() {
           whileTap={{ scale: 0.9 }}
           whileHover={{ scale: 1.08 }}
           aria-label={isOpen ? 'Close chat' : 'Open chat'}
-          className="relative w-14 h-14 rounded-full bg-gradient-to-br from-[#560BAD] to-[#4361EE] text-white shadow-[0_0_25px_rgba(86,11,173,0.6)] hover:shadow-[0_0_40px_rgba(131,29,198,0.8)] transition-shadow duration-300 flex items-center justify-center"
+          className="relative w-14 h-14 rounded-full bg-linear-to-br from-[#560BAD] to-[#4361EE] text-white shadow-[0_0_25px_rgba(86,11,173,0.6)] hover:shadow-[0_0_40px_rgba(131,29,198,0.8)] transition-shadow duration-300 flex items-center justify-center"
         >
           <AnimatePresence mode="wait">
             {isOpen ? (
@@ -201,7 +201,7 @@ export default function Chatbot() {
             style={{ height: 'min(560px, calc(100vh - 140px))' }}
           >
             {/* Header */}
-            <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-[#3A0CA3] to-[#560BAD] border-b border-[#560BAD]/40 shrink-0">
+            <div className="flex items-center gap-3 px-4 py-3 bg-linear-to-r from-[#3A0CA3] to-[#560BAD] border-b border-[#560BAD]/40 shrink-0">
               <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center shadow-inner">
                 <Zap size={18} className="text-[#CFA3EA]" />
               </div>
@@ -209,7 +209,7 @@ export default function Chatbot() {
                 <p className="text-sm font-bold text-white leading-tight">PROGREX AI</p>
                 <p className="text-[11px] text-[#CFA3EA]/80 font-medium flex items-center gap-1">
                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Online · Powered by Groq
+                  Online Â· Powered by Groq
                 </p>
               </div>
               <button
@@ -242,8 +242,8 @@ export default function Chatbot() {
                   <div
                     className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
                       msg.role === 'assistant'
-                        ? 'bg-gradient-to-br from-[#560BAD] to-[#4361EE]'
-                        : 'bg-gradient-to-br from-[#831DC6] to-[#CFA3EA]'
+                        ? 'bg-linear-to-br from-[#560BAD] to-[#4361EE]'
+                        : 'bg-linear-to-br from-[#831DC6] to-[#CFA3EA]'
                     }`}
                   >
                     {msg.role === 'assistant' ? (
@@ -259,7 +259,7 @@ export default function Chatbot() {
                       className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
                         msg.role === 'assistant'
                           ? 'bg-[#13132a] border border-[#560BAD]/20 text-slate-200 rounded-tl-sm'
-                          : 'bg-gradient-to-br from-[#560BAD] to-[#4361EE] text-white rounded-tr-sm'
+                          : 'bg-linear-to-br from-[#560BAD] to-[#4361EE] text-white rounded-tr-sm'
                       }`}
                     >
                       {renderContent(msg.content)}
@@ -276,7 +276,7 @@ export default function Chatbot() {
                   animate={{ opacity: 1, y: 0 }}
                   className="flex gap-2.5 flex-row"
                 >
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#560BAD] to-[#4361EE] flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="w-7 h-7 rounded-full bg-linear-to-br from-[#560BAD] to-[#4361EE] flex items-center justify-center shrink-0 mt-0.5">
                     <Bot size={14} className="text-white" />
                   </div>
                   <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-[#13132a] border border-[#560BAD]/20 flex items-center gap-1.5">
@@ -294,7 +294,7 @@ export default function Chatbot() {
                   animate={{ opacity: 1, y: 0 }}
                   className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2 flex items-start gap-2"
                 >
-                  <span className="shrink-0 mt-0.5">⚠️</span>
+                  <span className="shrink-0 mt-0.5">âš ï¸</span>
                   <span>{error}</span>
                 </motion.div>
               )}
@@ -314,7 +314,7 @@ export default function Chatbot() {
                     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
                   }}
                   onKeyDown={handleKeyDown}
-                  placeholder="Ask me anything…"
+                  placeholder="Ask me anythingâ€¦"
                   rows={1}
                   disabled={isLoading}
                   className="flex-1 bg-transparent text-sm text-slate-200 placeholder-slate-600 resize-none outline-none leading-relaxed min-h-[24px] max-h-[120px] disabled:opacity-50"
@@ -322,7 +322,7 @@ export default function Chatbot() {
                 <button
                   onClick={sendMessage}
                   disabled={!input.trim() || isLoading}
-                  className="shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-[#560BAD] to-[#4361EE] text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_0_12px_rgba(86,11,173,0.6)] transition-all duration-200 active:scale-95"
+                  className="shrink-0 w-8 h-8 rounded-lg bg-linear-to-br from-[#560BAD] to-[#4361EE] text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_0_12px_rgba(86,11,173,0.6)] transition-all duration-200 active:scale-95"
                 >
                   {isLoading ? (
                     <Loader2 size={14} className="animate-spin" />
@@ -332,7 +332,7 @@ export default function Chatbot() {
                 </button>
               </div>
               <p className="text-center text-[10px] text-slate-700 mt-2">
-                Powered by <span className="text-[#831DC6] font-medium">Groq × LLaMA 3.3</span>
+                Powered by <span className="text-[#831DC6] font-medium">Groq Ã— LLaMA 3.3</span>
               </p>
             </div>
           </motion.div>
