@@ -57,7 +57,7 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
             <div className="flex flex-wrap items-center gap-5 text-sm text-slate-400 mb-6">
               <span className="flex items-center gap-1.5">
                 <User size={14} />
-                {blog.author.name} — {blog.author.role}
+                {blog.author.name} â€” {blog.author.role}
               </span>
               <span>{blog.date}</span>
               <span className="flex items-center gap-1.5">
@@ -94,7 +94,7 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
       {/* Hero image placeholder */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 -mt-4 mb-8">
         <div className="h-64 rounded-2xl bg-gradient-to-br from-[#3A0CA3]/30 to-[#4361EE]/20 border border-[#560BAD]/20 flex items-center justify-center">
-          <div className="text-slate-600 text-sm">Hero Image — {blog.title}</div>
+          <div className="text-slate-600 text-sm">Hero Image â€” {blog.title}</div>
         </div>
       </div>
 
@@ -152,7 +152,7 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
 
       <CTASection
         title="Enjoyed the Article?"
-        subtitle="See how PROGREX puts these ideas into practice — for your business."
+        subtitle="See how PROGREX puts these ideas into practice â€” for your business."
         primaryBtn={{ label: 'Work With Us', href: '/contact' }}
         secondaryBtn={{ label: 'More Articles', href: '/blogs' }}
       />
