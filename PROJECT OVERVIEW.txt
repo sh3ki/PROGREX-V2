@@ -1,0 +1,336 @@
+🚀 COMPLETE MULTI-PAGE WEBSITE PROMPT
+PROGREX
+Tagline:
+TECHNOLOGY SOLUTIONS THAT DRIVES SUCCESS.
+BUILD FASTER. SCALE SMARTER. WIN WITH PROGREX.
+________________________________________
+1️⃣ PROJECT OVERVIEW
+Create a modern, high-performance, multi-page website for PROGREX, a technology solutions company.
+This is NOT a simple landing page.
+This is a full multi-page conversion-focused corporate website built with:
+•	Next.js (latest stable version, App Router)
+•	TypeScript
+•	Tailwind CSS
+•	Framer Motion (animations)
+•	Optimized for SEO
+•	Optimized for Core Web Vitals
+•	Fully responsive (mobile-first)
+•	Accessible (WCAG 2.1 AA)
+The website must look:
+•	Technology-focused
+•	Software-driven
+•	Futuristic but professional
+•	Clean but bold
+•	Premium
+•	Interactive
+•	Modern
+•	High-converting
+•	With subtle sound effects (optional toggle)
+The design must have a WOW factor.
+________________________________________
+2️⃣ COLOR PALETTE (MANDATORY)
+Use ONLY this palette consistently:
+Primary Gradient Range:
+•	#CFA3EA
+•	#831DC6
+•	#560BAD
+•	#3A0CA3
+•	#4361EE
+Style direction:
+•	Dark base backgrounds
+•	Neon gradient accents
+•	Glowing hover effects
+•	Soft purple-blue gradients
+•	Glass morphism panels
+•	Subtle animated gradient backgrounds
+Background aesthetic:
+•	Abstract tech grid lines
+•	Animated particles
+•	Subtle moving gradients
+•	Code-like overlays
+•	Floating geometric elements
+•	Digital wave patterns
+•	Soft radial glow spots
+________________________________________
+3️⃣ GLOBAL DESIGN SYSTEM
+Typography
+Headlines:
+•	Bold, futuristic
+•	Large scaling typography
+•	Gradient text accents
+Body:
+•	Clean, readable
+•	Light gray on dark background
+UI Style
+•	Glass morphism cards
+•	Neon gradient borders
+•	Glow hover effects
+•	Smooth scaling transitions
+•	Micro-interactions everywhere
+•	Button ripple effect
+•	Smooth page transitions
+•	Soft shadow depth layers
+Animations
+Use Framer Motion:
+•	Fade-in on scroll
+•	Staggered card animations
+•	Slide-up entrances
+•	Parallax scroll effects
+•	Hover lift effects
+•	Button glow pulse
+•	Page fade transitions
+•	Cursor interaction effects
+Optional:
+•	Subtle click sound
+•	Toggle to enable/disable UI sounds
+________________________________________
+4️⃣ SITE STRUCTURE (MULTI-PAGE)
+Use Next.js App Router with proper folder structure.
+Pages Required:
+/ (Home)
+ /about
+ /services
+ /services/[service]
+ /projects
+ /projects/[slug]
+ /ready-made-systems
+ /blogs
+ /blogs/[slug]
+ /contact
+________________________________________
+5️⃣ TOP NAVIGATION (GLOBAL HEADER)
+Fixed top navigation with blur background.
+Menu Items:
+🏠 HOME
+🏢 ABOUT US
+🛠 SERVICES
+💼 PROJECTS
+💻 READY-MADE SYSTEMS
+📝 BLOGS
+📞 CONTACT US
+Right side CTA:
+Get a Quote (Primary glowing button)
+Animations:
+•	Smooth underline hover slide
+•	Button glow pulse
+•	Sticky shrink on scroll
+•	Mobile hamburger with animated dropdown
+________________________________________
+6️⃣ 🏠 HOME PAGE (CONVERSION PAGE)
+This is the most important page.
+Hero Section
+Full viewport height.
+Content:
+Headline:
+TECHNOLOGY SOLUTIONS THAT DRIVES SUCCESS.
+Sub-headline:
+BUILD FASTER. SCALE SMARTER. WIN WITH PROGREX.
+Short description:
+Clear 2–3 line explanation of what PROGREX does.
+CTA Buttons:
+•	Get a Quote
+•	View Projects
+Hero Background:
+•	Animated tech particles
+•	Floating 3D shapes
+•	Code-like overlay animation
+•	Subtle animated gradient
+________________________________________
+Services Preview Section
+Grid preview of 6 services.
+Each card:
+•	Icon
+•	Short description
+•	Hover glow
+•	Link to full service page
+________________________________________
+Featured Projects
+3–4 highlighted projects (placeholders for now)
+•	Image
+•	Short description
+•	Industry tag
+•	View Case Study button
+________________________________________
+Featured Ready-Made Systems
+Show 3 systems:
+•	System name
+•	Short features list
+•	CTA: Learn More
+________________________________________
+Technologies Logos Section
+Grid of logos (placeholders):
+React, Node, AWS, Docker, PostgreSQL, etc.
+Animated grayscale → color on hover.
+________________________________________
+Testimonials
+Carousel:
+•	Client name
+•	Company
+•	Quote
+•	5-star animation
+________________________________________
+Final CTA Section
+Large glowing section:
+“Ready to build something powerful?”
+Button:
+Start Your Project
+________________________________________
+7️⃣ 🏢 ABOUT US PAGE
+Purpose: Build trust.
+Sections:
+1.	Company Story
+2.	Mission & Vision
+3.	Core Values (Icon cards)
+4.	Team Members (Profile cards)
+5.	Why Choose Us (Bullet section)
+6.	Process (Step-by-step timeline)
+7.	Certifications / Tools / Partnerships (optional logos)
+8.	CTA: Work With Us
+Animations:
+•	Timeline scroll animation
+•	Counter stats
+•	Hover team card lift
+________________________________________
+8️⃣ 🛠 SERVICES PAGE
+Organized clearly into 6 categories:
+1.	Custom Software Development
+2.	Web Development
+3.	Mobile App Development
+4.	System Integration
+5.	Academic / Capstone System Development
+6.	IT Consulting / Infrastructure
+Each service links to dynamic route:
+/services/[service]
+________________________________________
+Individual Service Page Must Include:
+•	Hero banner
+•	Detailed description
+•	Our Process
+•	Technologies used (logo grid)
+•	Industries served
+•	FAQs
+•	CTA: Request Proposal
+________________________________________
+9️⃣ 💼 PROJECTS PAGE (Portfolio)
+Must include:
+Filter system:
+•	Web
+•	Mobile
+•	Enterprise
+•	Academic
+•	SaaS
+•	E-commerce
+Project Card:
+•	Thumbnail
+•	Industry
+•	Short description
+•	View Case Study button
+Use filtering animation.
+________________________________________
+🔟 📊 CASE STUDY PAGE (Dynamic Route)
+Very important for credibility.
+Each page includes:
+•	Project screenshots (carousel)
+•	Project Overview
+•	Client Industry
+•	Problem
+•	Solution
+•	Features
+•	Technologies Used
+•	Results / Impact (stats)
+•	Client Testimonial
+•	CTA: Start Your Project
+Use placeholders for now.
+________________________________________
+1️⃣1️⃣ 💻 READY-MADE SYSTEMS PAGE
+Product-focused revenue page.
+Each system includes:
+•	System Name
+•	Feature list
+•	Screenshots
+•	Pricing (One-time / Subscription)
+•	Demo availability
+•	FAQs
+•	Buy / Subscribe CTA
+Must look like SaaS landing layout.
+________________________________________
+1️⃣2️⃣ 📝 BLOGS PAGE
+SEO-focused.
+Include:
+•	Categories filter (Tech | Business | Academic | Case Studies)
+•	Search bar
+•	Featured post
+•	Blog cards
+•	Author info
+•	Related posts
+Dynamic route for each blog:
+/blogs/[slug]
+Blog page:
+•	Hero image
+•	Title
+•	Author
+•	Date
+•	Content placeholder
+•	Share buttons
+•	Related articles
+________________________________________
+1️⃣3️⃣ 📞 CONTACT US PAGE
+Must include:
+•	Contact form (validated)
+•	Email
+•	Phone
+•	Office address
+•	Embedded Google Map
+•	Social media icons
+•	Optional Book Consultation button
+Form features:
+•	Animated focus states
+•	Glow borders
+•	Success message animation
+________________________________________
+1️⃣4️⃣ GLOBAL FEATURES
+✅ Smooth page transitions
+✅ Loading skeletons
+✅ Image lazy loading
+✅ Code splitting
+✅ SEO meta tags per page
+✅ Structured data
+✅ Accessibility compliant
+✅ Scroll progress indicator
+✅ Back-to-top button
+✅ Dark futuristic theme
+✅ Sound effects toggle
+✅ Modern cursor interaction
+________________________________________
+1️⃣5️⃣ PERFORMANCE TARGETS
+•	LCP < 2.5s
+•	CLS < 0.1
+•	Fully responsive 320px–2560px
+•	Optimized images (WebP)
+•	Static generation where possible
+•	Dynamic routes for content
+________________________________________
+1️⃣6️⃣ PLACEHOLDERS
+Use mock data for:
+•	Projects
+•	Case studies
+•	Blog posts
+•	Testimonials
+•	Systems
+•	Team members
+Structure them so they can easily connect to CMS later.
+________________________________________
+FINAL DESIGN GOAL
+This website must:
+•	Feel like a high-end tech company
+•	Look modern and powerful
+•	Convert visitors into clients
+•	Establish credibility
+•	Showcase expertise
+•	Be scalable
+•	Be visually stunning
+•	Have smooth animations
+•	Have depth and motion
+•	Be memorable
+This is NOT a template website.
+This is a premium technology brand website with strong identity and conversion strategy.
