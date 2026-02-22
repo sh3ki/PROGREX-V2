@@ -37,7 +37,7 @@ export default function CustomCursor() {
     const particles: Particle[] = []
     const ripples:   Ripple[]   = []
 
-    /* ── canvas resize ── */
+    /* â”€â”€ canvas resize â”€â”€ */
     const resize = () => {
       canvas.width  = window.innerWidth
       canvas.height = window.innerHeight
@@ -45,12 +45,12 @@ export default function CustomCursor() {
     resize()
     window.addEventListener('resize', resize)
 
-    /* ── cursor visibility ── */
+    /* â”€â”€ cursor visibility â”€â”€ */
     const showCursor = (v: boolean) => {
       if (cursorRef.current) cursorRef.current.style.opacity = v ? '1' : '0'
     }
 
-    /* ── hover state ── */
+    /* â”€â”€ hover state â”€â”€ */
     const setHover = (on: boolean) => {
       if (isHovering === on) return
       isHovering  = on
@@ -62,7 +62,7 @@ export default function CustomCursor() {
       }
     }
 
-    /* ── mouse move: spawn tail particles ── */
+    /* â”€â”€ mouse move: spawn tail particles â”€â”€ */
     const onMove = (e: MouseEvent) => {
       mouseX = e.clientX
       mouseY = e.clientY
@@ -94,7 +94,7 @@ export default function CustomCursor() {
       prevY = mouseY
     }
 
-    /* ── click: spawn ripple rings ── */
+    /* â”€â”€ click: spawn ripple rings â”€â”€ */
     const onClick = (e: MouseEvent) => {
       const baseR = [28, 50, 72]
       baseR.forEach((maxR, i) => {
@@ -110,7 +110,7 @@ export default function CustomCursor() {
     const onLeave = () => showCursor(false)
     const onEnter = () => showCursor(true)
 
-    /* ── animation loop ── */
+    /* â”€â”€ animation loop â”€â”€ */
     const loop = () => {
       /* smooth scale lerp */
       currentScale += (targetScale - currentScale) * 0.14
@@ -188,14 +188,14 @@ export default function CustomCursor() {
 
   return (
     <>
-      {/* ── Canvas: particles + ripples ── */}
+      {/* â”€â”€ Canvas: particles + ripples â”€â”€ */}
       <canvas
         ref={canvasRef}
         className="fixed inset-0 pointer-events-none z-[9997]"
         style={{ willChange: 'transform' }}
       />
 
-      {/* ── Main cursor: smooth rounded arrow pointer ── */}
+      {/* â”€â”€ Main cursor: smooth rounded arrow pointer â”€â”€ */}
       <svg
         ref={cursorRef}
         width="32"
@@ -212,7 +212,7 @@ export default function CustomCursor() {
         }}
       >
         <defs>
-          {/* Main body gradient – light lavender top-left → deep violet bottom-right */}
+          {/* Main body gradient â€“ light lavender top-left â†’ deep violet bottom-right */}
           <linearGradient id="ptr-fill" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%"   stopColor="#E9D5FF" />
             <stop offset="38%"  stopColor="#C084FC" />
@@ -220,7 +220,7 @@ export default function CustomCursor() {
             <stop offset="100%" stopColor="#6D28D9" />
           </linearGradient>
 
-          {/* Gloss highlight – top-left edge shimmer */}
+          {/* Gloss highlight â€“ top-left edge shimmer */}
           <linearGradient id="ptr-gloss" x1="0" y1="0" x2="0.6" y2="1">
             <stop offset="0%"   stopColor="rgba(255,255,255,0.45)" />
             <stop offset="60%"  stopColor="rgba(255,255,255,0.08)" />
@@ -239,7 +239,7 @@ export default function CustomCursor() {
         </defs>
 
         {/*
-          Classic pointer arrow shape — tip at (2,2), smooth rounded feel:
+          Classic pointer arrow shape â€” tip at (2,2), smooth rounded feel:
           - Left edge goes straight down
           - Bottom-left notch cut for the "elbow"
           - Right side has the tapered tail with the inner notch
@@ -270,7 +270,7 @@ export default function CustomCursor() {
           strokeLinecap="round"
         />
 
-        {/* Gloss overlay — top-left triangular highlight for 3-D depth */}
+        {/* Gloss overlay â€” top-left triangular highlight for 3-D depth */}
         <path
           d="
             M2.5 2
