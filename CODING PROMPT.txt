@@ -1,0 +1,281 @@
+🔥 MASTER AI CODING PROMPT
+Build Full Multi-Page Website for PROGREX
+(Target Model: Claude Sonnet 4.6)
+________________________________________
+ROLE
+You are a senior full-stack engineer and UI/UX architect.
+Your task is to build a production-ready, scalable, multi-page corporate website using Next.js (latest stable version, App Router).
+This is NOT a landing page.
+This is a complete multi-page company website with dynamic routes and reusable architecture.
+You must:
+•	Write clean, modular, production-quality code
+•	Use TypeScript
+•	Use Tailwind CSS
+•	Use Framer Motion for animations
+•	Use proper folder structure
+•	Use reusable components
+•	Optimize for SEO and performance
+•	Follow best practices
+•	Avoid generic boilerplate UI
+________________________________________
+PROJECT NAME
+PROGREX
+________________________________________
+BRAND TAGLINE (HOME PAGE HERO)
+TECHNOLOGY SOLUTIONS THAT DRIVES SUCCESS.
+BUILD FASTER. SCALE SMARTER. WIN WITH PROGREX.
+________________________________________
+COLOR SYSTEM (STRICTLY FOLLOW)
+Primary Palette:
+•	#CFA3EA
+•	#831DC6
+•	#560BAD
+•	#3A0CA3
+•	#4361EE
+Design Rules:
+•	Dark base backgrounds
+•	Gradient purple/blue highlights
+•	Neon glow accents
+•	Glass morphism components
+•	Futuristic software/tech aesthetic
+•	Animated gradients
+•	High contrast
+•	Premium look
+________________________________________
+TECH STACK (MANDATORY)
+•	Next.js (latest App Router)
+•	TypeScript
+•	Tailwind CSS
+•	Framer Motion
+•	Dynamic routes
+•	Static generation where possible
+•	Responsive (mobile-first)
+•	SEO metadata per page
+Optional:
+•	Simple mock JSON data source
+•	Structured for future CMS integration
+________________________________________
+REQUIRED FILE STRUCTURE
+Implement this structure:
+app/
+layout.tsx
+page.tsx (Home)
+about/page.tsx
+services/page.tsx
+services/[service]/page.tsx
+projects/page.tsx
+projects/[slug]/page.tsx
+ready-made-systems/page.tsx
+blogs/page.tsx
+blogs/[slug]/page.tsx
+contact/page.tsx
+components/
+Navbar.tsx
+Footer.tsx
+Hero.tsx
+ServiceCard.tsx
+ProjectCard.tsx
+BlogCard.tsx
+CTASection.tsx
+SectionWrapper.tsx
+AnimatedContainer.tsx
+lib/
+mockData.ts
+styles/
+globals.css
+________________________________________
+GLOBAL REQUIREMENTS
+•	Sticky top navigation
+•	Smooth scroll animations
+•	Staggered card animations
+•	Hover glow effects
+•	Button ripple animation
+•	Smooth page transitions
+•	Responsive layout
+•	Accessibility compliance
+•	SEO metadata exports
+•	Optimized images (placeholder for now)
+________________________________________
+NAVIGATION MENU (GLOBAL HEADER)
+HOME
+ABOUT US
+SERVICES
+PROJECTS
+READY-MADE SYSTEMS
+BLOGS
+CONTACT US
+Right-side CTA:
+Get a Quote (Primary glowing button)
+Must include:
+•	Blur background on scroll
+•	Hover underline animation
+•	Mobile animated hamburger menu
+________________________________________
+PAGE REQUIREMENTS
+________________________________________
+1️⃣ HOME PAGE (Conversion Focused)
+Sections in order:
+1.	Hero Section
+o	Large headline (tagline)
+o	Short company description
+o	Buttons:
+	Get a Quote
+	View Projects
+o	Animated gradient background
+o	Floating tech-style visuals
+2.	Services Preview
+o	6 service cards
+o	Hover glow
+o	Link to individual service page
+3.	Featured Projects
+o	3–4 project cards
+o	View Case Study button
+4.	Featured Ready-Made Systems
+o	3 systems preview
+5.	Technology Logos Section
+o	Grid of tech logos (placeholders)
+6.	Testimonials Carousel
+7.	Final CTA Section
+o	“Start Your Project”
+________________________________________
+2️⃣ ABOUT PAGE
+Include:
+•	Company Story
+•	Mission & Vision
+•	Core Values
+•	Team Members Grid
+•	Why Choose Us
+•	Process Timeline
+•	CTA Section
+________________________________________
+3️⃣ SERVICES PAGE
+Display 6 categories:
+1.	Custom Software Development
+2.	Web Development
+3.	Mobile App Development
+4.	System Integration
+5.	Academic / Capstone System Development
+6.	IT Consulting / Infrastructure
+Each links to:
+services/[service]
+________________________________________
+4️⃣ INDIVIDUAL SERVICE PAGE
+Must include:
+•	Hero banner
+•	Description
+•	Process steps
+•	Technologies grid
+•	FAQ section
+•	CTA: Request Proposal
+________________________________________
+5️⃣ PROJECTS PAGE
+Include:
+•	Filter system
+o	Web
+o	Mobile
+o	Enterprise
+o	Academic
+o	SaaS
+o	E-commerce
+•	Animated project grid
+•	View Case Study button
+________________________________________
+6️⃣ CASE STUDY PAGE (Dynamic)
+Include:
+•	Image carousel
+•	Project overview
+•	Problem
+•	Solution
+•	Features
+•	Technologies
+•	Results (metrics)
+•	Testimonial
+•	CTA: Start Your Project
+________________________________________
+7️⃣ READY-MADE SYSTEMS PAGE
+For each system:
+•	System name
+•	Features list
+•	Screenshots
+•	Pricing
+•	FAQs
+•	Buy / Subscribe CTA
+Must look like SaaS product page.
+________________________________________
+8️⃣ BLOGS PAGE
+Include:
+•	Categories filter
+•	Search input
+•	Featured blog
+•	Blog grid
+•	Author info
+Dynamic route:
+blogs/[slug]
+Each blog page includes:
+•	Hero image
+•	Title
+•	Metadata
+•	Content placeholder
+•	Related posts
+________________________________________
+9️⃣ CONTACT PAGE
+Include:
+•	Contact form (validated)
+•	Email
+•	Phone
+•	Address
+•	Embedded map placeholder
+•	Social links
+•	Success animation
+________________________________________
+ANIMATION REQUIREMENTS
+Use Framer Motion for:
+•	Fade-in on scroll
+•	Stagger children
+•	Hover lift
+•	Page transitions
+•	Button glow pulse
+Animations must be smooth and professional — not exaggerated.
+________________________________________
+DATA HANDLING
+Use mock data arrays in /lib/mockData.ts for:
+•	Services
+•	Projects
+•	Blogs
+•	Testimonials
+•	Systems
+•	Team members
+Dynamic routes must pull from this data.
+________________________________________
+PERFORMANCE TARGETS
+•	Lazy load images
+•	Avoid unnecessary client components
+•	Use server components where possible
+•	Keep bundle clean
+•	SEO-friendly structure
+________________________________________
+DESIGN GOAL
+The final UI must:
+•	Feel like a high-end tech brand
+•	Look modern and futuristic
+•	Have depth and motion
+•	Be conversion-focused
+•	Avoid generic template design
+•	Have a strong visual hierarchy
+•	Be visually impressive
+________________________________________
+OUTPUT REQUIREMENT
+Respond with:
+1.	Project setup instructions
+2.	Folder structure
+3.	Global layout code
+4.	Core reusable components
+5.	Example page implementations
+6.	Mock data structure
+7.	Styling system
+8.	Explanation of architecture decisions
+Do NOT skip structure.
+Do NOT simplify.
+Do NOT produce pseudo-code.
+Write real production-ready code.
+
