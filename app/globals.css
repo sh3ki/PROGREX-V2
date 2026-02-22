@@ -2,11 +2,27 @@
 
 @layer base {
   :root {
+    /* ── PRECISION-TECH COLOR SYSTEM ───────────────────────────────── */
+    --c-base:         #0D0F12;
+    --c-surface:      #111417;
+    --c-surface-2:    #161A1F;
+    --c-surface-3:    #1D2229;
+    --c-border:       #1F2530;
+    --c-border-2:     #293040;
+    --c-accent:       #1B6FFF;
+    --c-accent-dim:   #0D44C9;
+    --c-accent-muted: rgba(27,111,255,0.08);
+    --c-text-1:       #EEF0F3;
+    --c-text-2:       #8892A4;
+    --c-text-3:       #4E5A6E;
+    --c-blue-bright:  #4D9AFF;
+    --c-steel:        #2A3548;
+    /* ── LEGACY COMPAT (kept for transition) ───────────────────────── */
     --brand-lavender: #CFA3EA;
-    --brand-violet: #831DC6;
-    --brand-purple: #560BAD;
-    --brand-indigo: #3A0CA3;
-    --brand-blue: #4361EE;
+    --brand-violet:   #831DC6;
+    --brand-purple:   #560BAD;
+    --brand-indigo:   #3A0CA3;
+    --brand-blue:     #4361EE;
   }
 
   * {
@@ -17,40 +33,43 @@
   }
 
   html {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-feature-settings: 'kern' 1, 'liga' 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
-    background-color: #050510;
-    color: #e2e8f0;
+    background-color: var(--c-base);
+    color: var(--c-text-1);
     overflow-x: hidden;
+    letter-spacing: -0.01em;
   }
 
   ::selection {
-    background-color: rgba(131, 29, 198, 0.5);
+    background-color: rgba(27, 111, 255, 0.35);
     color: #fff;
   }
 
   ::-webkit-scrollbar {
-    width: 6px;
+    width: 3px;
   }
 
   ::-webkit-scrollbar-track {
-    background: #0a0a1a;
+    background: var(--c-base);
   }
 
   ::-webkit-scrollbar-thumb {
-    background: linear-gradient(to bottom, #560BAD, #4361EE);
-    border-radius: 3px;
+    background: var(--c-accent);
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(to bottom, #831DC6, #4361EE);
+    background: var(--c-blue-bright);
   }
 }
 
 @layer utilities {
-  /* ── Custom cursor: hide native cursor on pointer devices only ── */
+  /* ── Cursor ────────────────────────────────────────────────────── */
   @media (hover: hover) and (pointer: fine) {
     .cursor-none-desktop,
     .cursor-none-desktop * {
@@ -58,6 +77,7 @@
     }
   }
 
+  /* ── Text utilities ─────────────────────────────────────────────── */
   .text-gradient {
     background: linear-gradient(135deg, #CFA3EA 0%, #831DC6 40%, #4361EE 100%);
     -webkit-background-clip: text;
@@ -65,96 +85,106 @@
     background-clip: text;
   }
 
-  .text-gradient-blue {
-    background: linear-gradient(135deg, #4361EE 0%, #CFA3EA 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  .text-accent {
+    color: var(--c-accent);
   }
 
+  .text-blue {
+    color: var(--c-blue-bright);
+  }
+
+  /* ── Legacy glass (kept for compat) ─────────────────────────────── */
   .glass {
-    background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(17, 20, 23, 0.85);
+    border: 1px solid var(--c-border);
   }
 
   .glass-card {
-    background: rgba(10, 10, 30, 0.6);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(131, 29, 198, 0.2);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
   }
 
+  /* ── Architectural card system ───────────────────────────────────── */
+  .card {
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 4px;
+  }
+
+  .card-accent {
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-left: 2px solid var(--c-accent);
+    border-radius: 0;
+  }
+
+  /* ── Grid backgrounds ────────────────────────────────────────────── */
   .bg-grid {
-    background-image: linear-gradient(rgba(67, 97, 238, 0.08) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(67, 97, 238, 0.08) 1px, transparent 1px);
-    background-size: 64px 64px;
+    background-image:
+      linear-gradient(rgba(27, 111, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(27, 111, 255, 0.04) 1px, transparent 1px);
+    background-size: 80px 80px;
   }
 
-  .bg-dots {
-    background-image: radial-gradient(rgba(131, 29, 198, 0.3) 1px, transparent 1px);
+  .bg-grid-fine {
+    background-image:
+      linear-gradient(rgba(27, 111, 255, 0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(27, 111, 255, 0.025) 1px, transparent 1px);
     background-size: 24px 24px;
   }
 
-  .hover-glow-card {
-    transition: all 0.3s ease;
+  .bg-dots {
+    background-image: radial-gradient(rgba(27, 111, 255, 0.12) 1px, transparent 1px);
+    background-size: 28px 28px;
   }
 
-  .hover-glow-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 0 30px rgba(131, 29, 198, 0.35), 0 0 60px rgba(67, 97, 238, 0.15);
-    border-color: rgba(131, 29, 198, 0.5);
+  /* ── Section label (mono uppercase) ─────────────────────────────── */
+  .label {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--c-accent);
   }
 
-  .btn-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.75rem;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    font-size: 0.9375rem;
-    color: #fff;
-    background: linear-gradient(135deg, #560BAD, #4361EE);
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    box-shadow: 0 0 20px rgba(86, 11, 173, 0.4);
+  /* ── Divider line ────────────────────────────────────────────────── */
+  .line-h {
+    height: 1px;
+    background: var(--c-border);
+    width: 100%;
   }
 
-  .btn-primary:hover {
-    box-shadow: 0 0 35px rgba(131, 29, 198, 0.7);
-    transform: translateY(-2px);
-    background: linear-gradient(135deg, #831DC6, #4361EE);
+  .line-accent {
+    height: 1px;
+    width: 48px;
+    background: var(--c-accent);
   }
 
-  .btn-outline {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.75rem;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    font-size: 0.9375rem;
-    color: #CFA3EA;
-    background: transparent;
-    border: 1px solid rgba(131, 29, 198, 0.5);
-    transition: all 0.3s ease;
+  /* ── Arc section decorators ──────────────────────────────────────── */
+  .corner-mark::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 16px;
+    height: 16px;
+    border-top: 1px solid var(--c-accent);
+    border-left: 1px solid var(--c-accent);
   }
 
-  .btn-outline:hover {
-    border-color: #831DC6;
-    background: rgba(131, 29, 198, 0.1);
-    box-shadow: 0 0 20px rgba(131, 29, 198, 0.3);
-    color: #fff;
-    transform: translateY(-2px);
+  .corner-mark::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 16px;
+    height: 16px;
+    border-bottom: 1px solid var(--c-border-2);
+    border-right: 1px solid var(--c-border-2);
   }
 
-  .neon-text {
-    text-shadow: 0 0 20px rgba(207, 163, 234, 0.8), 0 0 40px rgba(131, 29, 198, 0.4);
-  }
-
+  /* ── Section padding ─────────────────────────────────────────────── */
   .section-padding {
     padding-top: 5rem;
     padding-bottom: 5rem;
@@ -165,6 +195,77 @@
       padding-top: 7rem;
       padding-bottom: 7rem;
     }
+  }
+
+  /* ── Hover utilities ─────────────────────────────────────────────── */
+  .hover-glow-card {
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .hover-glow-card:hover {
+    border-color: var(--c-border-2);
+    background: var(--c-surface-2);
+  }
+
+  /* ── Precision button system ─────────────────────────────────────── */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1.6rem;
+    border-radius: 0;
+    font-weight: 600;
+    font-size: 0.875rem;
+    letter-spacing: 0.015em;
+    color: #fff;
+    background: var(--c-accent);
+    border: 1px solid var(--c-accent);
+    position: relative;
+    overflow: hidden;
+    transition: background 0.18s ease, border-color 0.18s ease;
+  }
+
+  .btn-primary:hover {
+    background: var(--c-blue-bright);
+    border-color: var(--c-blue-bright);
+  }
+
+  .btn-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1.6rem;
+    border-radius: 0;
+    font-weight: 600;
+    font-size: 0.875rem;
+    letter-spacing: 0.015em;
+    color: var(--c-text-1);
+    background: transparent;
+    border: 1px solid var(--c-border-2);
+    transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+  }
+
+  .btn-outline:hover {
+    border-color: var(--c-accent);
+    color: var(--c-accent);
+    background: var(--c-accent-muted);
+  }
+
+  .neon-text {
+    color: var(--c-blue-bright);
+  }
+
+  /* ── List row ────────────────────────────────────────────────────── */
+  .list-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    padding: 1.5rem 0;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .list-row:last-child {
+    border-bottom: none;
   }
 }
 
