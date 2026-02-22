@@ -12,7 +12,7 @@ interface SectionWrapperProps {
 export default function SectionWrapper({ children, className = '', id }: SectionWrapperProps) {
   return (
     <section id={id} className={`section-padding relative ${className}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
         {children}
       </div>
     </section>
@@ -30,27 +30,39 @@ interface SectionHeaderProps {
 export function SectionHeader({ badge, title, highlight, subtitle, center = true }: SectionHeaderProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.6 }}
-      className={`mb-12 lg:mb-16 ${center ? 'text-center' : ''}`}
+      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+      className={`mb-12 lg:mb-16 ${center ? 'text-left lg:text-center' : ''}`}
     >
       {badge && (
-        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass border border-[#560BAD]/30 text-[#CFA3EA] text-xs font-semibold uppercase tracking-widest mb-4 ${center ? 'mx-auto' : ''}`}>
-          <span className="w-1.5 h-1.5 rounded-full bg-[#831DC6] animate-pulse" />
-          {badge}
-        </div>
+        <p className={`label mb-4 ${center ? 'lg:text-center' : ''}`}>
+          <span className="inline-flex items-center gap-2">
+            <span className="w-3 h-px bg-[#1B6FFF]" />
+            {badge}
+          </span>
+        </p>
       )}
-      <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight ${center ? 'mx-auto max-w-3xl' : ''}`}>
-        {title}{' '}
-        {highlight && <span className="text-gradient">{highlight}</span>}
+      <h2
+        className={`text-3xl sm:text-4xl lg:text-[2.75rem] font-bold text-[#EEF0F3] leading-[1.1] tracking-[-0.035em] ${
+          center ? 'lg:mx-auto lg:max-w-3xl' : ''
+        }`}
+      >
+        {title}{highlight && (
+          <span className="text-[#1B6FFF]"> {highlight}</span>
+        )}
       </h2>
       {subtitle && (
-        <p className={`mt-4 text-base sm:text-lg text-slate-400 leading-relaxed ${center ? 'mx-auto max-w-2xl' : 'max-w-2xl'}`}>
+        <p
+          className={`mt-4 text-base text-[#8892A4] leading-relaxed ${
+            center ? 'lg:mx-auto lg:max-w-2xl' : 'max-w-2xl'
+          }`}
+        >
           {subtitle}
         </p>
       )}
     </motion.div>
   )
 }
+
