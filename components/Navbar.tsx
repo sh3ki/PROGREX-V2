@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Zap } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 
 const navLinks = [
   { label: 'Home', href: '/' },
@@ -22,7 +22,7 @@ export default function Navbar() {
   const pathname = usePathname()
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20)
+    const handleScroll = () => setScrolled(window.scrollY > 10)
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
@@ -34,43 +34,46 @@ export default function Navbar() {
   return (
     <>
       <motion.header
-        initial={{ y: -100, opacity: 0 }}
+        initial={{ y: -80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-200 ${
           scrolled
-            ? 'bg-[#050510]/90 backdrop-blur-xl border-b border-[#560BAD]/20 shadow-[0_4px_30px_rgba(86,11,173,0.15)]'
-            : 'bg-transparent'
+            ? 'bg-[#0D0F12]/96 border-b border-[#1F2530]'
+            : 'bg-transparent border-b border-transparent'
         }`}
+        style={{ backdropFilter: scrolled ? 'blur(8px)' : 'none' }}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 lg:h-20">
+        <div className="max-w-350 mx-auto px-6 lg:px-10">
+          <div className="flex items-center justify-between h-[60px]">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#560BAD] to-[#4361EE] flex items-center justify-center shadow-[0_0_15px_rgba(86,11,173,0.5)] group-hover:shadow-[0_0_25px_rgba(131,29,198,0.7)] transition-all duration-300">
-                <Zap size={16} className="text-white" />
+            <Link href="/" className="flex items-center gap-3 group shrink-0">
+              <div className="flex items-center gap-0.5">
+                <div className="w-4 h-4 bg-[#1B6FFF]" />
+                <div className="w-2 h-4 bg-[#1B6FFF]/40" />
               </div>
-              <span className="text-xl font-extrabold tracking-tight text-gradient">
+              <span className="text-[15px] font-bold tracking-[0.08em] text-white uppercase">
                 PROGREX
               </span>
             </Link>
 
             {/* Desktop Nav */}
-            <nav className="hidden lg:flex items-center gap-1">
+            <nav className="hidden lg:flex items-center gap-0">
               {navLinks.map((link) => {
                 const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href))
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`relative px-3 py-2 text-sm font-medium transition-colors duration-200 group ${
-                      isActive ? 'text-[#CFA3EA]' : 'text-slate-300 hover:text-white'
+                    className={`relative px-4 py-5 text-[13px] font-medium tracking-[0.01em] transition-colors duration-150 group ${
+                      isActive ? 'text-[#1B6FFF]' : 'text-[#8892A4] hover:text-white'
                     }`}
                   >
                     {link.label}
+                    {/* active/hover line */}
                     <span
-                      className={`absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-[#560BAD] to-[#4361EE] transition-all duration-300 ${
-                        isActive ? 'w-full' : 'w-0 group-hover:w-full'
+                      className={`absolute bottom-0 left-4 right-4 h-px bg-[#1B6FFF] transition-all duration-200 ${
+                        isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-40'
                       }`}
                     />
                   </Link>
@@ -78,28 +81,28 @@ export default function Navbar() {
               })}
             </nav>
 
-            {/* CTA + Hamburger */}
+            {/* CTA */}
             <div className="flex items-center gap-3">
               <Link
                 href="/contact"
-                className="hidden sm:inline-flex btn-primary text-sm"
+                className="hidden sm:inline-flex btn-primary text-[13px] px-5 py-2.5"
               >
-                <span>Get a Quote</span>
+                Get a Quote
               </Link>
 
               <button
                 onClick={() => setMobileOpen(!mobileOpen)}
-                className="lg:hidden p-2 rounded-lg glass border border-[#560BAD]/30 text-slate-300 hover:text-white transition-colors"
+                className="lg:hidden w-9 h-9 flex items-center justify-center border border-[#1F2530] text-[#8892A4] hover:text-white hover:border-[#293040] transition-all"
                 aria-label="Toggle menu"
               >
-                <AnimatePresence mode="wait">
+                <AnimatePresence mode="wait" initial={false}>
                   {mobileOpen ? (
-                    <motion.div key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }}>
-                      <X size={20} />
+                    <motion.div key="c" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
+                      <X size={18} />
                     </motion.div>
                   ) : (
-                    <motion.div key="open" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.2 }}>
-                      <Menu size={20} />
+                    <motion.div key="o" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}>
+                      <Menu size={18} />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -113,38 +116,41 @@ export default function Navbar() {
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="fixed top-16 left-0 right-0 z-40 bg-[#070714]/95 backdrop-blur-xl border-b border-[#560BAD]/20 lg:hidden"
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="fixed top-[60px] left-0 right-0 z-40 bg-[#0D0F12] border-b border-[#1F2530] lg:hidden"
           >
-            <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col gap-1">
+            <div className="max-w-350 mx-auto px-6 py-4 flex flex-col">
               {navLinks.map((link, i) => {
                 const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href))
                 return (
                   <motion.div
                     key={link.href}
-                    initial={{ opacity: 0, x: -20 }}
+                    initial={{ opacity: 0, x: -16 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.05 }}
+                    transition={{ delay: i * 0.04 }}
                   >
                     <Link
                       href={link.href}
-                      className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      className={`flex items-center py-3.5 text-sm font-medium border-b border-[#1F2530] transition-colors ${
                         isActive
-                          ? 'bg-gradient-to-r from-[#560BAD]/30 to-[#4361EE]/20 text-[#CFA3EA] border border-[#560BAD]/40'
-                          : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                          ? 'text-[#1B6FFF]'
+                          : 'text-[#8892A4] hover:text-white'
                       }`}
                     >
+                      {isActive && (
+                        <span className="w-1 h-1 bg-[#1B6FFF] mr-3 shrink-0" />
+                      )}
                       {link.label}
                     </Link>
                   </motion.div>
                 )
               })}
-              <div className="pt-2 pb-1">
+              <div className="pt-4 pb-1">
                 <Link href="/contact" className="btn-primary w-full justify-center text-sm">
-                  <span>Get a Quote</span>
+                  Get a Quote
                 </Link>
               </div>
             </div>
@@ -154,3 +160,4 @@ export default function Navbar() {
     </>
   )
 }
+
