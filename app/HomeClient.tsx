@@ -1,15 +1,13 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Star, Quote, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight, Star } from 'lucide-react'
 import Hero from '@/components/Hero'
 import ServiceCard from '@/components/ServiceCard'
 import ProjectCard from '@/components/ProjectCard'
 import CTASection from '@/components/CTASection'
-import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
-import { StaggerContainer, StaggerItem } from '@/components/AnimatedContainer'
 import { services, projects, systems, testimonials, technologies } from '@/lib/mockData'
 
 export default function HomeClient() {
@@ -20,9 +18,9 @@ export default function HomeClient() {
 
   return (
     <>
-      {/* ── HERO ─────────────────────────────────────────────────────────── */}
+      {/* -- HERO ----------------------------------------------------------- */}
       <Hero
-        badge="🚀 Next-Gen Technology Solutions"
+        badge="Next-Gen Technology Solutions"
         title="TECHNOLOGY SOLUTIONS THAT"
         highlight="DRIVES SUCCESS."
         subtitle="BUILD FASTER. SCALE SMARTER. WIN WITH PROGREX. — We engineer custom software, web apps, mobile platforms, and enterprise systems that transform your business."
@@ -31,214 +29,279 @@ export default function HomeClient() {
         showStats
       />
 
-      {/* ── SERVICES PREVIEW ─────────────────────────────────────────────── */}
-      <SectionWrapper className="bg-[#050510]">
-        <SectionHeader
-          badge="What We Build"
-          title="Comprehensive Technology"
-          highlight="Services"
-          subtitle="From custom software to enterprise systems — we deliver solutions that scale with your ambitions."
-        />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {services.map((service, i) => (
-            <ServiceCard
-              key={service.id}
-              title={service.title}
-              shortDesc={service.shortDesc}
-              icon={service.icon}
-              slug={service.slug}
-              color={service.color}
-              index={i}
-            />
-          ))}
-        </div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.6 }}
-          className="text-center mt-10"
-        >
-          <Link href="/services" className="btn-outline inline-flex">
-            Explore All Services <ArrowRight size={16} />
-          </Link>
-        </motion.div>
-      </SectionWrapper>
-
-      {/* ── FEATURED PROJECTS ────────────────────────────────────────────── */}
-      <SectionWrapper className="bg-[#030308]">
-        <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
-        <SectionHeader
-          badge="Our Work"
-          title="Featured"
-          highlight="Projects"
-          subtitle="Real-world solutions with measurable impact. See what we've built for our clients."
-        />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {projects.slice(0, 3).map((project, i) => (
-            <ProjectCard
-              key={project.id}
-              title={project.title}
-              category={project.category}
-              industry={project.industry}
-              shortDesc={project.shortDesc}
-              slug={project.slug}
-              tags={project.tags}
-              index={i}
-            />
-          ))}
-        </div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.4 }}
-          className="text-center mt-10"
-        >
-          <Link href="/projects" className="btn-outline inline-flex">
-            View All Projects <ArrowRight size={16} />
-          </Link>
-        </motion.div>
-      </SectionWrapper>
-
-      {/* ── READY-MADE SYSTEMS ───────────────────────────────────────────── */}
-      <SectionWrapper className="bg-[#050510]">
-        <SectionHeader
-          badge="Ready-Made Systems"
-          title="Launch-Ready"
-          highlight="Business Systems"
-          subtitle="Pre-built, production-ready software systems. Customizable, deployable in days — not months."
-        />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {systems.map((sys, i) => (
-            <motion.div
-              key={sys.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="glass-card rounded-2xl p-6 hover-glow-card group"
-            >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#560BAD] to-[#4361EE] flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">
-                💻
-              </div>
-              <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#CFA3EA] transition-colors">{sys.name}</h3>
-              <p className="text-slate-400 text-sm mb-4 line-clamp-2">{sys.shortDesc}</p>
-              <ul className="space-y-1.5 mb-5">
-                {sys.features.slice(0, 4).map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-xs text-slate-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#831DC6] shrink-0" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Link href="/ready-made-systems" className="btn-outline text-xs px-4 py-2 inline-flex">
-                Learn More <ArrowRight size={12} />
-              </Link>
-            </motion.div>
-          ))}
-        </div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mt-10"
-        >
-          <Link href="/ready-made-systems" className="btn-primary inline-flex text-sm px-6 py-3">
-            <span>Browse All Systems</span> <ArrowRight size={16} />
-          </Link>
-        </motion.div>
-      </SectionWrapper>
-
-      {/* ── TECHNOLOGIES ─────────────────────────────────────────────────── */}
-      <SectionWrapper className="bg-[#030308]">
-        <SectionHeader
-          badge="Our Stack"
-          title="Technologies We"
-          highlight="Master"
-          subtitle="A world-class technology stack for building scalable, reliable, and high-performance solutions."
-        />
-        <StaggerContainer className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
-          {technologies.map((tech) => (
-            <StaggerItem key={tech.name}>
-              <motion.div
-                whileHover={{ scale: 1.1, y: -4 }}
-                className="glass-card rounded-xl p-3 text-center hover:border-[#560BAD]/50 hover:shadow-[0_0_15px_rgba(86,11,173,0.3)] transition-all duration-300 cursor-default"
-              >
-                <div className="text-2xl mb-1">⚡</div>
-                <div className="text-[10px] text-slate-400 font-medium">{tech.name}</div>
-              </motion.div>
-            </StaggerItem>
-          ))}
-        </StaggerContainer>
-      </SectionWrapper>
-
-      {/* ── TESTIMONIALS ─────────────────────────────────────────────────── */}
-      <SectionWrapper className="bg-[#050510]">
-        <SectionHeader
-          badge="Client Stories"
-          title="What Our Clients"
-          highlight="Say"
-          subtitle="Don't take our word for it — hear from the businesses we've transformed."
-        />
-        <div className="max-w-3xl mx-auto">
-          <motion.div
-            key={activeTestimonial}
-            initial={{ opacity: 0, x: 40 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -40 }}
-            transition={{ duration: 0.4 }}
-            className="glass-card rounded-2xl p-8 sm:p-10 relative"
-          >
-            <Quote className="text-[#560BAD]/40 absolute top-6 right-8" size={40} />
-            {/* Stars */}
-            <div className="flex gap-1 mb-5">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Star key={i} size={16} className="text-yellow-400 fill-yellow-400" />
-              ))}
+      {/* -- SERVICES ------------------------------------------------------- */}
+      <section className="bg-[#0D0F12] border-t border-[#1F2530]">
+        <div className="max-w-350 mx-auto px-6 lg:px-10 py-24">
+          {/* Header row */}
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-16">
+            <div>
+              <span className="label text-[#1B6FFF] mb-3 block">WHAT WE BUILD</span>
+              <h2 className="text-4xl lg:text-5xl font-bold text-[#EEF0F3] tracking-[-0.035em] leading-[1.1]">
+                Comprehensive Technology<br />Services
+              </h2>
             </div>
-            <p className="text-slate-200 text-lg leading-relaxed mb-6 italic">
-              &ldquo;{testimonials[activeTestimonial].quote}&rdquo;
+            <p className="text-[#8892A4] text-base max-w-sm lg:text-right leading-relaxed">
+              From custom software to enterprise systems — we deliver solutions that scale with your ambitions.
             </p>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#560BAD] to-[#4361EE] flex items-center justify-center text-white font-bold text-sm">
-                {testimonials[activeTestimonial].name.charAt(0)}
-              </div>
-              <div>
-                <div className="font-semibold text-white text-sm">{testimonials[activeTestimonial].name}</div>
-                <div className="text-slate-400 text-xs">{testimonials[activeTestimonial].role}</div>
-              </div>
-            </div>
-          </motion.div>
+          </div>
 
-          {/* Controls */}
-          <div className="flex items-center justify-center gap-4 mt-6">
-            <button
-              onClick={prevTestimonial}
-              className="w-10 h-10 rounded-full glass border border-[#560BAD]/30 flex items-center justify-center text-slate-300 hover:text-white hover:border-[#831DC6]/60 transition-all"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <div className="flex gap-2">
-              {testimonials.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setActiveTestimonial(i)}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${i === activeTestimonial ? 'w-8 bg-[#831DC6]' : 'w-2 bg-slate-600 hover:bg-slate-400'}`}
+          {/* Services grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-[#1F2530]">
+            {services.map((service, i) => (
+              <div key={service.id} className="bg-[#0D0F12]">
+                <ServiceCard
+                  title={service.title}
+                  shortDesc={service.shortDesc}
+                  icon={service.icon}
+                  slug={service.slug}
+                  color={service.color}
+                  index={i}
                 />
-              ))}
-            </div>
-            <button
-              onClick={nextTestimonial}
-              className="w-10 h-10 rounded-full glass border border-[#560BAD]/30 flex items-center justify-center text-slate-300 hover:text-white hover:border-[#831DC6]/60 transition-all"
-            >
-              <ChevronRight size={18} />
-            </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-10 pt-10 border-t border-[#1F2530]">
+            <Link href="/services" className="btn-outline inline-flex text-sm px-6 py-3">
+              Explore All Services <ArrowRight size={15} />
+            </Link>
           </div>
         </div>
-      </SectionWrapper>
+      </section>
 
-      {/* ── FINAL CTA ────────────────────────────────────────────────────── */}
+      {/* -- FEATURED PROJECTS ---------------------------------------------- */}
+      <section className="bg-[#111417] border-t border-[#1F2530]">
+        <div className="max-w-350 mx-auto px-6 lg:px-10 py-24">
+          {/* Header */}
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-16">
+            <div>
+              <span className="label text-[#1B6FFF] mb-3 block">OUR WORK</span>
+              <h2 className="text-4xl lg:text-5xl font-bold text-[#EEF0F3] tracking-[-0.035em] leading-[1.1]">
+                Featured Projects
+              </h2>
+            </div>
+            <p className="text-[#8892A4] text-base max-w-sm lg:text-right leading-relaxed">
+              Real-world solutions with measurable impact. See what we&apos;ve built for our clients.
+            </p>
+          </div>
+
+          {/* Projects */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {projects.slice(0, 3).map((project, i) => (
+              <motion.div
+                key={project.id}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
+              >
+                <ProjectCard
+                  title={project.title}
+                  category={project.category}
+                  industry={project.industry}
+                  shortDesc={project.shortDesc}
+                  slug={project.slug}
+                  tags={project.tags}
+                  index={i}
+                />
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="mt-10 pt-10 border-t border-[#1F2530]">
+            <Link href="/projects" className="btn-outline inline-flex text-sm px-6 py-3">
+              View All Projects <ArrowRight size={15} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* -- READY-MADE SYSTEMS --------------------------------------------- */}
+      <section className="bg-[#0D0F12] border-t border-[#1F2530]">
+        <div className="max-w-350 mx-auto px-6 lg:px-10 py-24">
+          {/* Header */}
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-16">
+            <div>
+              <span className="label text-[#1B6FFF] mb-3 block">READY-MADE SYSTEMS</span>
+              <h2 className="text-4xl lg:text-5xl font-bold text-[#EEF0F3] tracking-[-0.035em] leading-[1.1]">
+                Launch-Ready<br />Business Systems
+              </h2>
+            </div>
+            <p className="text-[#8892A4] text-base max-w-sm lg:text-right leading-relaxed">
+              Pre-built, production-ready software systems. Customizable, deployable in days — not months.
+            </p>
+          </div>
+
+          {/* Systems grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {systems.map((sys, i) => (
+              <motion.div
+                key={sys.id}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
+                className="group bg-[#111417] border border-[#1F2530] hover:border-[#1B6FFF]/40 transition-colors duration-300 relative"
+              >
+                {/* Top accent bar */}
+                <div className="h-0.5 w-0 group-hover:w-full bg-[#1B6FFF] transition-all duration-500" />
+
+                <div className="p-6">
+                  {/* Index */}
+                  <span className="font-mono text-[11px] text-[#4E5A6E] tracking-[0.12em] mb-4 block">
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+
+                  <h3 className="text-lg font-semibold text-[#EEF0F3] mb-2 group-hover:text-white transition-colors">
+                    {sys.name}
+                  </h3>
+                  <p className="text-[#8892A4] text-sm mb-5 line-clamp-2 leading-relaxed">{sys.shortDesc}</p>
+
+                  {/* Features */}
+                  <ul className="space-y-2 mb-6">
+                    {sys.features.slice(0, 4).map((f) => (
+                      <li key={f} className="flex items-center gap-2.5 text-xs text-[#8892A4]">
+                        <span className="w-3 h-px bg-[#1B6FFF]" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Link
+                    href="/ready-made-systems"
+                    className="inline-flex items-center gap-1.5 text-xs font-mono text-[#1B6FFF] tracking-[0.08em] uppercase hover:gap-2.5 transition-all"
+                  >
+                    Learn More <ArrowUpRight size={12} />
+                  </Link>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="mt-10 pt-10 border-t border-[#1F2530]">
+            <Link href="/ready-made-systems" className="btn-primary inline-flex text-sm px-6 py-3">
+              <span>Browse All Systems</span> <ArrowRight size={15} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* -- TECHNOLOGIES --------------------------------------------------- */}
+      <section className="bg-[#111417] border-t border-[#1F2530]">
+        <div className="max-w-350 mx-auto px-6 lg:px-10 py-24">
+          {/* Header */}
+          <div className="mb-16">
+            <span className="label text-[#1B6FFF] mb-3 block">OUR STACK</span>
+            <h2 className="text-4xl lg:text-5xl font-bold text-[#EEF0F3] tracking-[-0.035em] leading-[1.1]">
+              Technologies We Master
+            </h2>
+          </div>
+
+          {/* Tech grid — monospace compact */}
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-px bg-[#1F2530]">
+            {technologies.map((tech) => (
+              <motion.div
+                key={tech.name}
+                whileHover={{ backgroundColor: 'rgba(27,111,255,0.06)' }}
+                className="bg-[#111417] p-4 flex items-center justify-center cursor-default transition-colors"
+              >
+                <span className="font-mono text-[10px] text-[#8892A4] tracking-[0.06em] text-center leading-tight hover:text-[#EEF0F3] transition-colors">
+                  {tech.name}
+                </span>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* -- TESTIMONIALS --------------------------------------------------- */}
+      <section className="bg-[#0D0F12] border-t border-[#1F2530]">
+        <div className="max-w-350 mx-auto px-6 lg:px-10 py-24">
+          <div className="grid lg:grid-cols-12 gap-16 items-start">
+            {/* Left col — header + controls */}
+            <div className="lg:col-span-4">
+              <span className="label text-[#1B6FFF] mb-3 block">CLIENT STORIES</span>
+              <h2 className="text-4xl lg:text-5xl font-bold text-[#EEF0F3] tracking-[-0.035em] leading-[1.1] mb-10">
+                What Our Clients Say
+              </h2>
+
+              {/* Navigation */}
+              <div className="flex items-center gap-3 mb-8">
+                <button
+                  onClick={prevTestimonial}
+                  className="w-10 h-10 border border-[#1F2530] flex items-center justify-center text-[#8892A4] hover:border-[#1B6FFF] hover:text-[#1B6FFF] transition-colors"
+                  aria-label="Previous"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="font-mono text-[11px] text-[#4E5A6E] tracking-widest">
+                  {String(activeTestimonial + 1).padStart(2, '0')} / {String(testimonials.length).padStart(2, '0')}
+                </span>
+                <button
+                  onClick={nextTestimonial}
+                  className="w-10 h-10 border border-[#1F2530] flex items-center justify-center text-[#8892A4] hover:border-[#1B6FFF] hover:text-[#1B6FFF] transition-colors"
+                  aria-label="Next"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+
+              {/* Indicators */}
+              <div className="flex flex-col gap-1.5">
+                {testimonials.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActiveTestimonial(i)}
+                    className={`h-px transition-all duration-300 ${
+                      i === activeTestimonial ? 'bg-[#1B6FFF] w-12' : 'bg-[#1F2530] w-5 hover:bg-[#293040]'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Right col — testimonial content */}
+            <div className="lg:col-span-8">
+              <motion.div
+                key={activeTestimonial}
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4 }}
+                className="bg-[#111417] border border-[#1F2530] p-8 sm:p-10 relative"
+              >
+                {/* Blue left border accent */}
+                <div className="absolute left-0 top-8 bottom-8 w-0.75 bg-[#1B6FFF]" />
+
+                {/* Stars */}
+                <div className="flex gap-1 mb-6">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} size={13} className="text-[#1B6FFF] fill-[#1B6FFF]" />
+                  ))}
+                </div>
+
+                <blockquote className="text-xl sm:text-2xl text-[#EEF0F3] font-medium leading-normal mb-8 tracking-[-0.01em]">
+                  &ldquo;{testimonials[activeTestimonial].quote}&rdquo;
+                </blockquote>
+
+                <div className="flex items-center gap-4 pt-6 border-t border-[#1F2530]">
+                  {/* Avatar initial */}
+                  <div className="w-10 h-10 bg-[#1B6FFF] flex items-center justify-center text-white font-bold text-sm font-mono shrink-0">
+                    {testimonials[activeTestimonial].name.charAt(0)}
+                  </div>
+                  <div>
+                    <div className="text-[#EEF0F3] font-semibold text-sm">{testimonials[activeTestimonial].name}</div>
+                    <div className="font-mono text-[11px] text-[#4E5A6E] tracking-[0.08em] uppercase mt-0.5">
+                      {testimonials[activeTestimonial].role}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* -- FINAL CTA ------------------------------------------------------ */}
       <CTASection
         title="Ready to Build Something Powerful?"
         subtitle="Partner with PROGREX and transform your ideas into cutting-edge software solutions that drive real business results."
