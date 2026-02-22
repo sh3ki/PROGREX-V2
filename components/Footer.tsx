@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Zap, Mail, Phone, MapPin, Github, Twitter, Linkedin, Facebook } from 'lucide-react'
+import { Mail, Phone, MapPin, Github, Twitter, Linkedin, Facebook } from 'lucide-react'
 
 const footerLinks = {
   Company: [
@@ -30,78 +30,90 @@ const footerLinks = {
 
 export default function Footer() {
   return (
-    <footer className="bg-[#030308] border-t border-[#560BAD]/15 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#3A0CA3]/5 to-transparent pointer-events-none" />
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[200px] bg-[#560BAD]/5 rounded-full blur-[80px] pointer-events-none" />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-        {/* Top Section */}
-        <div className="py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-10">
-          {/* Brand */}
-          <div className="lg:col-span-2">
-            <Link href="/" className="flex items-center gap-2 mb-4 group">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#560BAD] to-[#4361EE] flex items-center justify-center shadow-[0_0_15px_rgba(86,11,173,0.5)]">
-                <Zap size={16} className="text-white" />
+    <footer className="bg-[#0A0C0F] border-t border-[#1F2530]">
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
+        {/* Top grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 border-b border-[#1F2530]">
+          {/* Brand column */}
+          <div className="lg:col-span-4 py-12 pr-0 lg:pr-16 border-b lg:border-b-0 lg:border-r border-[#1F2530]">
+            <Link href="/" className="flex items-center gap-3 mb-6 group w-fit">
+              <div className="flex items-center gap-0.5">
+                <div className="w-4 h-4 bg-[#1B6FFF]" />
+                <div className="w-2 h-4 bg-[#1B6FFF]/40" />
               </div>
-              <span className="text-xl font-extrabold text-gradient">PROGREX</span>
+              <span className="text-[15px] font-bold tracking-[0.08em] text-white uppercase">PROGREX</span>
             </Link>
-            <p className="text-slate-400 text-sm leading-relaxed mb-6 max-w-xs">
+
+            <p className="text-[#8892A4] text-sm leading-relaxed mb-8 max-w-xs">
               Technology solutions that drive success. We build custom software, web apps, mobile platforms, and enterprise systems that scale.
             </p>
-            <div className="space-y-2 text-sm text-slate-400">
-              <a href="mailto:hello@progrex.com" className="flex items-center gap-2 hover:text-[#CFA3EA] transition-colors">
-                <Mail size={14} className="text-[#831DC6]" />
+
+            <div className="space-y-3">
+              <a href="mailto:hello@progrex.com" className="flex items-center gap-3 text-sm text-[#8892A4] hover:text-white transition-colors group">
+                <div className="w-6 h-6 border border-[#1F2530] flex items-center justify-center shrink-0 group-hover:border-[#1B6FFF] transition-colors">
+                  <Mail size={12} className="text-[#1B6FFF]" />
+                </div>
                 hello@progrex.com
               </a>
-              <a href="tel:+639123456789" className="flex items-center gap-2 hover:text-[#CFA3EA] transition-colors">
-                <Phone size={14} className="text-[#831DC6]" />
+              <a href="tel:+639123456789" className="flex items-center gap-3 text-sm text-[#8892A4] hover:text-white transition-colors group">
+                <div className="w-6 h-6 border border-[#1F2530] flex items-center justify-center shrink-0 group-hover:border-[#1B6FFF] transition-colors">
+                  <Phone size={12} className="text-[#1B6FFF]" />
+                </div>
                 +63 912 345 6789
               </a>
-              <div className="flex items-center gap-2">
-                <MapPin size={14} className="text-[#831DC6] shrink-0" />
-                <span>Manila, Philippines</span>
+              <div className="flex items-center gap-3 text-sm text-[#8892A4]">
+                <div className="w-6 h-6 border border-[#1F2530] flex items-center justify-center shrink-0">
+                  <MapPin size={12} className="text-[#1B6FFF]" />
+                </div>
+                Manila, Philippines
               </div>
             </div>
           </div>
 
-          {/* Links */}
-          {Object.entries(footerLinks).map(([category, links]) => (
-            <div key={category}>
-              <h4 className="text-white font-semibold text-sm mb-4 uppercase tracking-wider">{category}</h4>
-              <ul className="space-y-2">
-                {links.map((link) => (
-                  <li key={link.label}>
-                    <Link
-                      href={link.href}
-                      className="text-slate-400 text-sm hover:text-[#CFA3EA] transition-colors duration-200"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          {/* Links columns */}
+          <div className="lg:col-span-8 grid grid-cols-2 md:grid-cols-4">
+            {Object.entries(footerLinks).map(([category, links], ci) => (
+              <div
+                key={category}
+                className={`py-12 px-6 lg:px-8 ${ci < 3 ? 'border-r border-[#1F2530]' : ''}`}
+              >
+                <h4 className="font-mono text-[10px] font-medium tracking-[0.14em] text-[#4E5A6E] uppercase mb-5">
+                  {category}
+                </h4>
+                <ul className="space-y-3">
+                  {links.map((link) => (
+                    <li key={link.label}>
+                      <Link
+                        href={link.href}
+                        className="text-sm text-[#8892A4] hover:text-white transition-colors duration-150"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="py-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-slate-500 text-sm">
-            © {new Date().getFullYear()} PROGREX. All rights reserved.
+        {/* Bottom bar */}
+        <div className="py-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="font-mono text-[11px] text-[#4E5A6E] tracking-wider">
+            Â© {new Date().getFullYear()} PROGREX. ALL RIGHTS RESERVED.
           </p>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             {[
-              { icon: <Github size={16} />, href: '#', label: 'GitHub' },
-              { icon: <Twitter size={16} />, href: '#', label: 'Twitter' },
-              { icon: <Linkedin size={16} />, href: '#', label: 'LinkedIn' },
-              { icon: <Facebook size={16} />, href: '#', label: 'Facebook' },
+              { icon: <Github size={14} />, href: '#', label: 'GitHub' },
+              { icon: <Twitter size={14} />, href: '#', label: 'Twitter' },
+              { icon: <Linkedin size={14} />, href: '#', label: 'LinkedIn' },
+              { icon: <Facebook size={14} />, href: '#', label: 'Facebook' },
             ].map((social) => (
               <a
                 key={social.label}
                 href={social.href}
                 aria-label={social.label}
-                className="w-8 h-8 rounded-lg glass border border-[#560BAD]/20 flex items-center justify-center text-slate-400 hover:text-[#CFA3EA] hover:border-[#831DC6]/50 hover:shadow-[0_0_10px_rgba(131,29,198,0.3)] transition-all duration-200"
+                className="w-8 h-8 border border-[#1F2530] flex items-center justify-center text-[#4E5A6E] hover:text-white hover:border-[#293040] transition-all duration-150"
               >
                 {social.icon}
               </a>
