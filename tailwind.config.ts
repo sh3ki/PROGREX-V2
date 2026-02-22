@@ -9,6 +9,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        base: '#0D0F12',
+        surface: '#111417',
+        'surface-2': '#161A1F',
+        'surface-3': '#1D2229',
+        border: '#1F2530',
+        'border-2': '#293040',
+        accent: '#1B6FFF',
+        'accent-dim': '#0D44C9',
+        'blue-bright': '#4D9AFF',
+        'text-1': '#EEF0F3',
+        'text-2': '#8892A4',
+        'text-3': '#4E5A6E',
+        steel: '#2A3548',
         brand: {
           lavender: '#CFA3EA',
           violet: '#831DC6',
@@ -18,8 +31,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        sans: ['Space Grotesk', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
       },
       backgroundImage: {
         'gradient-brand': 'linear-gradient(135deg, #3A0CA3 0%, #560BAD 30%, #831DC6 60%, #CFA3EA 100%)',
