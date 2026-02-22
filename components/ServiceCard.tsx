@@ -13,49 +13,43 @@ interface ServiceCardProps {
   index?: number
 }
 
-export default function ServiceCard({ title, shortDesc, icon, slug, color, index = 0 }: ServiceCardProps) {
+export default function ServiceCard({ title, shortDesc, slug, index = 0 }: ServiceCardProps) {
+  const num = String(index + 1).padStart(2, '0')
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
-      whileHover={{ y: -6 }}
-      className="group glass-card rounded-2xl p-6 hover-glow-card cursor-pointer relative overflow-hidden"
+      transition={{ duration: 0.45, delay: index * 0.07, ease: [0.22, 1, 0.36, 1] }}
+      className="group relative bg-[#111417] border border-[#1F2530] hover:border-[#1B6FFF]/40 hover:bg-[#131820] transition-all duration-200 p-6 cursor-pointer overflow-hidden"
     >
-      {/* Background gradient on hover */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-0 group-hover:opacity-5 transition-opacity duration-500 rounded-2xl`} />
+      {/* Blue left accent on hover */}
+      <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-[#1B6FFF] scale-y-0 group-hover:scale-y-100 transition-transform duration-200 origin-bottom" />
 
-      {/* Icon */}
-      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center text-2xl mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-        {icon}
-      </div>
+      {/* Number */}
+      <p className="font-mono text-[10px] font-medium tracking-[0.14em] text-[#4E5A6E] mb-5">{num}</p>
 
-      {/* Content */}
-      <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#CFA3EA] transition-colors duration-300">
+      {/* Title */}
+      <h3 className="text-[17px] font-semibold text-[#EEF0F3] mb-3 leading-tight tracking-[-0.02em] group-hover:text-white transition-colors">
         {title}
       </h3>
-      <p className="text-slate-400 text-sm leading-relaxed mb-4">
+
+      {/* Description */}
+      <p className="text-[#8892A4] text-sm leading-relaxed mb-6 line-clamp-3">
         {shortDesc}
       </p>
 
       {/* Link */}
       <Link
         href={`/services/${slug}`}
-        className="inline-flex items-center gap-1 text-sm font-medium text-[#831DC6] group-hover:text-[#CFA3EA] transition-colors duration-300"
+        className="inline-flex items-center gap-2 text-[13px] font-medium text-[#8892A4] group-hover:text-[#1B6FFF] transition-colors duration-200"
+        onClick={e => e.stopPropagation()}
       >
         Learn More
-        <motion.span
-          className="inline-block"
-          animate={{ x: 0 }}
-          whileHover={{ x: 4 }}
-        >
-          <ArrowRight size={14} />
-        </motion.span>
+        <ArrowRight size={13} className="translate-x-0 group-hover:translate-x-1 transition-transform duration-200" />
       </Link>
-
-      {/* Glow border animation */}
-      <div className="absolute inset-0 rounded-2xl border border-transparent group-hover:border-[#560BAD]/40 transition-all duration-300 pointer-events-none" />
     </motion.div>
   )
 }
+
