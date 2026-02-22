@@ -1,9 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import Link from 'next/link'
-import { ArrowRight, Star, CheckCircle, TrendingUp } from 'lucide-react'
-import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
+import { Star } from 'lucide-react'
 import CTASection from '@/components/CTASection'
 
 interface Project {
@@ -24,161 +22,186 @@ export default function CaseStudyClient({ project }: { project: Project }) {
   return (
     <>
       {/* Hero */}
-      <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden bg-[#050510] pt-20">
-        <div className="absolute inset-0 bg-grid opacity-20" />
-        <div className="absolute inset-0 bg-gradient-to-br from-[#3A0CA3]/20 to-[#4361EE]/10" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-[#560BAD]/15 rounded-full blur-[100px]" />
-
-        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <span className="px-3 py-1 rounded-full bg-[#560BAD]/80 text-[#CFA3EA] text-xs font-semibold">{project.category}</span>
-              <span className="px-3 py-1 rounded-full bg-black/60 text-slate-300 text-xs">{project.industry}</span>
+      <section className="relative bg-[#0D0F12] border-b border-[#1F2530] pt-32 pb-20">
+        <div className="absolute inset-0 bg-grid-fine opacity-[0.04]" />
+        <div className="relative max-w-7xl mx-auto px-6 lg:px-10">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+            <div className="flex items-center gap-3 mb-6">
+              <span className="font-mono text-[10px] tracking-[0.14em] uppercase text-[#1B6FFF] border border-[#1B6FFF]/30 px-2 py-1">
+                {project.category}
+              </span>
+              <span className="font-mono text-[10px] tracking-[0.14em] uppercase text-[#4E5A6E] border border-[#1F2530] px-2 py-1">
+                {project.industry}
+              </span>
             </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-4 leading-tight">
+            <h1 className="text-4xl lg:text-6xl font-bold tracking-[-0.04em] text-[#EEF0F3] mb-6 max-w-3xl leading-tight">
               {project.title}
             </h1>
-            <p className="text-slate-300 text-lg leading-relaxed max-w-2xl mx-auto">{project.shortDesc}</p>
+            <p className="text-[#8892A4] text-lg leading-relaxed max-w-2xl">{project.shortDesc}</p>
           </motion.div>
         </div>
-
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#050510] to-transparent" />
       </section>
 
-      {/* Image placeholder carousel */}
-      <SectionWrapper className="bg-[#050510]">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[1, 2, 3].map((n) => (
-            <motion.div
-              key={n}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: n * 0.1 }}
-              className="relative h-48 bg-gradient-to-br from-[#3A0CA3]/30 to-[#4361EE]/20 rounded-xl overflow-hidden border border-[#560BAD]/20"
-            >
-              <div className="absolute inset-0 bg-dots opacity-20" />
-              <div className="absolute inset-0 flex items-center justify-center text-slate-600 text-sm">
-                Screenshot {n}
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </SectionWrapper>
-
-      {/* Overview + Problem + Solution */}
-      <SectionWrapper className="bg-[#030308]">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {[
-            { label: 'Project Overview', content: project.overview, icon: '📋' },
-            { label: 'The Challenge', content: project.problem, icon: '⚠️' },
-            { label: 'Our Solution', content: project.solution, icon: '💡' },
-          ].map((item, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.15 }}
-              className="glass-card rounded-2xl p-6 border border-[#560BAD]/20"
-            >
-              <div className="text-2xl mb-3">{item.icon}</div>
-              <h3 className="text-base font-bold text-white mb-3">{item.label}</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">{item.content}</p>
-            </motion.div>
-          ))}
-        </div>
-      </SectionWrapper>
-
-      {/* Features */}
-      <SectionWrapper className="bg-[#050510]">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div>
-            <SectionHeader badge="What We Built" title="Key" highlight="Features" center={false} />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {project.features.map((feature, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.06 }}
-                  className="flex items-center gap-3 text-sm text-slate-300"
-                >
-                  <CheckCircle size={15} className="text-[#831DC6] shrink-0" />
-                  {feature}
-                </motion.div>
-              ))}
-            </div>
-          </div>
-          <div>
-            <SectionHeader badge="Stack" title="Technologies" highlight="Used" center={false} />
-            <div className="flex flex-wrap gap-2">
-              {project.technologies.map((tech, i) => (
-                <motion.span
-                  key={tech}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.05 }}
-                  className="px-3 py-1.5 rounded-lg glass-card text-xs font-semibold text-[#CFA3EA] border border-[#560BAD]/20"
-                >
-                  {tech}
-                </motion.span>
-              ))}
-            </div>
-          </div>
-        </div>
-      </SectionWrapper>
-
-      {/* Results */}
-      <SectionWrapper className="bg-[#030308]">
-        <SectionHeader badge="Measurable Impact" title="Results &" highlight="Metrics" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {project.results.map((result, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="glass-card rounded-2xl p-6 text-center border border-[#560BAD]/20 hover:border-[#560BAD]/50 hover:shadow-[0_0_20px_rgba(86,11,173,0.2)] transition-all"
-            >
-              <TrendingUp size={20} className="text-[#831DC6] mx-auto mb-3" />
-              <div className="text-2xl sm:text-3xl font-extrabold text-gradient mb-2">{result.value}</div>
-              <div className="text-slate-400 text-xs sm:text-sm">{result.metric}</div>
-            </motion.div>
-          ))}
-        </div>
-      </SectionWrapper>
-
-      {/* Testimonial */}
-      <SectionWrapper className="bg-[#050510]">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="max-w-2xl mx-auto glass-card rounded-2xl p-8 sm:p-10 text-center border border-[#560BAD]/20"
-        >
-          <div className="flex justify-center gap-1 mb-5">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Star key={i} size={16} className="text-yellow-400 fill-yellow-400" />
+      {/* Screenshot placeholders */}
+      <section className="bg-[#111417] border-b border-[#1F2530]">
+        <div className="max-w-7xl mx-auto px-6 lg:px-10 py-12">
+          <div className="grid grid-cols-3 gap-px bg-[#1F2530]">
+            {[1, 2, 3].map((n) => (
+              <motion.div
+                key={n}
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: n * 0.08 }}
+                className="relative h-52 bg-[#0D0F12]"
+              >
+                <div className="absolute inset-0 bg-grid-fine opacity-[0.06]" />
+                <span className="absolute top-2 left-2 w-3 h-3 border-t border-l border-[#1B6FFF]/30" />
+                <span className="absolute top-2 right-2 w-3 h-3 border-t border-r border-[#1B6FFF]/30" />
+                <span className="absolute bottom-2 left-2 w-3 h-3 border-b border-l border-[#1B6FFF]/30" />
+                <span className="absolute bottom-2 right-2 w-3 h-3 border-b border-r border-[#1B6FFF]/30" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="font-mono text-[10px] tracking-widest uppercase text-[#4E5A6E]">
+                    Screenshot {n}
+                  </span>
+                </div>
+              </motion.div>
             ))}
           </div>
-          <p className="text-slate-200 text-lg leading-relaxed italic mb-6">
-            &ldquo;{project.testimonial.quote}&rdquo;
-          </p>
-          <div className="flex items-center justify-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#560BAD] to-[#4361EE] flex items-center justify-center text-white font-bold text-sm">
-              {project.testimonial.author.charAt(0)}
+        </div>
+      </section>
+
+      {/* Overview / Problem / Solution */}
+      <section className="bg-[#0D0F12] border-b border-[#1F2530]">
+        <div className="max-w-7xl mx-auto px-6 lg:px-10 py-20">
+          <p className="font-mono text-[11px] tracking-[0.14em] uppercase text-[#1B6FFF] mb-8">Project Brief</p>
+          <div className="divide-y divide-[#1F2530]">
+            {[
+              { label: 'Overview', content: project.overview },
+              { label: 'The Challenge', content: project.problem },
+              { label: 'Our Solution', content: project.solution },
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="grid grid-cols-12 gap-0 py-8"
+              >
+                <div className="col-span-3">
+                  <span className="font-mono text-[11px] tracking-widest uppercase text-[#4E5A6E]">{item.label}</span>
+                </div>
+                <div className="col-span-9">
+                  <p className="text-[#8892A4] leading-relaxed">{item.content}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features + Technologies */}
+      <section className="bg-[#111417] border-b border-[#1F2530]">
+        <div className="max-w-7xl mx-auto px-6 lg:px-10 py-20">
+          <div className="grid lg:grid-cols-12 gap-px bg-[#1F2530]">
+            {/* Features */}
+            <div className="lg:col-span-7 bg-[#111417] pr-0 lg:pr-12 p-8">
+              <p className="font-mono text-[11px] tracking-[0.14em] uppercase text-[#1B6FFF] mb-6">What We Built</p>
+              <h2 className="text-2xl font-bold tracking-[-0.02em] text-[#EEF0F3] mb-8">Key Features</h2>
+              <div className="divide-y divide-[#1F2530]">
+                {project.features.map((feature, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -12 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.05 }}
+                    className="flex items-center gap-4 py-3"
+                  >
+                    <span className="w-4 h-px bg-[#1B6FFF] shrink-0" />
+                    <span className="text-[#EEF0F3] text-sm">{feature}</span>
+                  </motion.div>
+                ))}
+              </div>
             </div>
-            <div className="text-left">
-              <div className="font-semibold text-white text-sm">{project.testimonial.author}</div>
-              <div className="text-slate-400 text-xs">{project.testimonial.role}</div>
+            {/* Technologies */}
+            <div className="lg:col-span-5 bg-[#111417] p-8">
+              <p className="font-mono text-[11px] tracking-[0.14em] uppercase text-[#1B6FFF] mb-6">Stack</p>
+              <h2 className="text-2xl font-bold tracking-[-0.02em] text-[#EEF0F3] mb-8">Technologies Used</h2>
+              <div className="grid grid-cols-2 gap-px bg-[#1F2530]">
+                {project.technologies.map((tech, i) => (
+                  <motion.div
+                    key={tech}
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.05 }}
+                    className="bg-[#0D0F12] px-4 py-3"
+                  >
+                    <span className="font-mono text-[12px] text-[#EEF0F3] tracking-[0.04em]">{tech}</span>
+                  </motion.div>
+                ))}
+              </div>
             </div>
           </div>
-        </motion.div>
-      </SectionWrapper>
+        </div>
+      </section>
+
+      {/* Results */}
+      <section className="bg-[#0D0F12] border-b border-[#1F2530]">
+        <div className="max-w-7xl mx-auto px-6 lg:px-10 py-20">
+          <p className="font-mono text-[11px] tracking-[0.14em] uppercase text-[#1B6FFF] mb-2">Measurable Impact</p>
+          <h2 className="text-3xl font-bold tracking-[-0.03em] text-[#EEF0F3] mb-10">Results &amp; Metrics</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[#1F2530]">
+            {project.results.map((result, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.08 }}
+                className="bg-[#0D0F12] p-8"
+              >
+                <p className="font-mono text-3xl font-bold text-[#1B6FFF] mb-2">{result.value}</p>
+                <p className="font-mono text-[11px] tracking-[0.08em] uppercase text-[#4E5A6E]">{result.metric}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonial */}
+      <section className="bg-[#111417] border-b border-[#1F2530]">
+        <div className="max-w-7xl mx-auto px-6 lg:px-10 py-20">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="max-w-3xl border-l-2 border-[#1B6FFF] pl-10 py-2"
+          >
+            <div className="flex gap-1 mb-6">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star key={i} size={14} className="text-[#1B6FFF] fill-[#1B6FFF]" />
+              ))}
+            </div>
+            <p className="text-[#EEF0F3] text-xl leading-relaxed mb-8 font-light">
+              &ldquo;{project.testimonial.quote}&rdquo;
+            </p>
+            <div className="flex items-center gap-4">
+              <div className="w-9 h-9 bg-[#1B6FFF] flex items-center justify-center shrink-0">
+                <span className="font-mono text-white text-sm font-bold">
+                  {project.testimonial.author.charAt(0)}
+                </span>
+              </div>
+              <div>
+                <p className="text-[#EEF0F3] text-sm font-semibold">{project.testimonial.author}</p>
+                <p className="font-mono text-[11px] tracking-[0.06em] text-[#4E5A6E]">{project.testimonial.role}</p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
 
       <CTASection
         title="Ready to Build Your Success Story?"
