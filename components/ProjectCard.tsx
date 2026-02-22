@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Tag } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 
 interface ProjectCardProps {
   title: string
@@ -17,49 +17,46 @@ interface ProjectCardProps {
 export default function ProjectCard({ title, category, industry, shortDesc, slug, tags, index = 0 }: ProjectCardProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
-      whileHover={{ y: -6 }}
-      className="group glass-card rounded-2xl overflow-hidden hover-glow-card"
+      transition={{ duration: 0.45, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
+      className="group bg-[#111417] border border-[#1F2530] hover:border-[#1B6FFF]/30 transition-all duration-200 overflow-hidden relative"
     >
-      {/* Image Placeholder */}
-      <div className="relative h-48 bg-gradient-to-br from-[#3A0CA3]/40 to-[#4361EE]/20 overflow-hidden">
-        <div className="absolute inset-0 bg-grid opacity-40" />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#560BAD] to-[#4361EE] flex items-center justify-center opacity-60 group-hover:opacity-80 transition-opacity">
-            <Tag size={24} className="text-white" />
-          </div>
-        </div>
-        {/* Category badge */}
-        <div className="absolute top-3 left-3">
-          <span className="px-2.5 py-1 rounded-full bg-[#560BAD]/80 backdrop-blur-sm text-[#CFA3EA] text-xs font-semibold">
+      {/* Abstract image area */}
+      <div className="relative h-44 bg-[#0D0F12] border-b border-[#1F2530] overflow-hidden">
+        <div className="absolute inset-0 bg-grid-fine opacity-100" />
+        {/* Structural accent lines */}
+        <div className="absolute top-4 left-4 w-8 h-px bg-[#1B6FFF]/60" />
+        <div className="absolute top-4 left-4 w-px h-8 bg-[#1B6FFF]/60" />
+        <div className="absolute bottom-4 right-4 w-8 h-px bg-[#293040]" />
+        <div className="absolute bottom-4 right-4 w-px h-8 bg-[#293040]" />
+        {/* Badges */}
+        <div className="absolute top-4 left-4 flex gap-2 mt-8">
+          <span className="px-2 py-0.5 bg-[#1B6FFF] text-white font-mono text-[10px] tracking-wider uppercase">
             {category}
           </span>
-        </div>
-        <div className="absolute top-3 right-3">
-          <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-sm text-slate-300 text-xs">
+          <span className="px-2 py-0.5 bg-[#111417] border border-[#1F2530] text-[#8892A4] font-mono text-[10px] tracking-wider uppercase">
             {industry}
           </span>
         </div>
       </div>
 
       {/* Content */}
-      <div className="p-5">
-        <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#CFA3EA] transition-colors">
+      <div className="p-6">
+        <h3 className="text-base font-semibold text-[#EEF0F3] mb-2 leading-snug tracking-[-0.02em] group-hover:text-white transition-colors">
           {title}
         </h3>
-        <p className="text-slate-400 text-sm leading-relaxed mb-4 line-clamp-2">
+        <p className="text-[#8892A4] text-sm leading-relaxed mb-4 line-clamp-2">
           {shortDesc}
         </p>
 
-        {/* Tags */}
-        <div className="flex flex-wrap gap-1.5 mb-4">
+        {/* Tech tags */}
+        <div className="flex flex-wrap gap-1.5 mb-5">
           {tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className="px-2 py-0.5 rounded text-xs bg-[#3A0CA3]/30 text-[#CFA3EA] border border-[#3A0CA3]/30"
+              className="px-2 py-0.5 font-mono text-[10px] text-[#4E5A6E] border border-[#1F2530] tracking-wider"
             >
               {tag}
             </span>
@@ -68,11 +65,12 @@ export default function ProjectCard({ title, category, industry, shortDesc, slug
 
         <Link
           href={`/projects/${slug}`}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-[#831DC6] group-hover:text-[#CFA3EA] transition-colors"
+          className="inline-flex items-center gap-2 text-[13px] font-medium text-[#8892A4] group-hover:text-[#1B6FFF] transition-colors duration-200"
         >
-          View Case Study <ArrowRight size={14} />
+          View Case Study <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform duration-200" />
         </Link>
       </div>
     </motion.div>
   )
 }
+
