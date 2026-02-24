@@ -35,53 +35,52 @@ export default function BlogsClient() {
         primaryBtn={{ label: 'Subscribe for Updates', href: '/contact' }}
       />
 
-      <SectionWrapper className="bg-[#050510]">
+      <SectionWrapper className="bg-[#0A0A0F]">
         <SectionHeader
           badge="Latest Articles"
           title="Our"
           highlight="Blog"
         />
 
-        {/* Search + Filter */}
         <div className="flex flex-col sm:flex-row gap-4 mb-10">
           {/* Search */}
           <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#3A3854]" />
             <input
               type="text"
               placeholder="Search articles..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl glass border border-[#560BAD]/20 bg-transparent text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:border-[#831DC6]/60 transition-colors"
+              className="w-full pl-9 pr-4 py-2 border border-[#1E1E2E] bg-[#0A0A0F] text-[#9B98B3] text-xs font-mono placeholder-[#252538] focus:outline-none focus:border-[#7C2AE8] transition-colors"
             />
           </div>
 
           {/* Category filter */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {blogCategories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-medium transition-all duration-200 ${
+                className={`px-3.5 py-1.5 text-[10px] font-mono tracking-widest transition-all duration-150 ${
                   activeCategory === cat
-                    ? 'bg-gradient-to-r from-[#560BAD] to-[#4361EE] text-white shadow-[0_0_12px_rgba(86,11,173,0.4)]'
-                    : 'glass border border-[#560BAD]/20 text-slate-300 hover:border-[#560BAD]/60 hover:text-white'
+                    ? 'bg-[#7C2AE8] text-white border border-[#7C2AE8]'
+                    : 'border border-[#1E1E2E] text-[#3A3854] hover:border-[#4C1D95] hover:text-[#C4B5FD]'
                 }`}
               >
-                {cat}
+                {cat.toUpperCase()}
               </button>
             ))}
           </div>
         </div>
 
         {filtered.length === 0 ? (
-          <div className="text-center py-20 text-slate-500">No articles found. Try a different search or category.</div>
+          <div className="text-center py-20 sys-label">NO ARTICLES FOUND — TRY A DIFFERENT SEARCH OR CATEGORY.</div>
         ) : (
           <>
             {/* Featured post */}
             {featured && (
               <div className="mb-8">
-                <div className="text-xs font-semibold text-[#CFA3EA] uppercase tracking-wider mb-3">⭐ Featured Article</div>
+                <div className="sys-label-accent mb-3">FEATURED ARTICLE</div>
                 <BlogCard
                   title={featured.title}
                   category={featured.category}
@@ -99,7 +98,7 @@ export default function BlogsClient() {
             {/* Blog grid */}
             {rest.length > 0 && (
               <>
-                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">More Articles</div>
+                <div className="sys-label mb-4">MORE ARTICLES</div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                   {rest.map((blog, i) => (
                     <motion.div
