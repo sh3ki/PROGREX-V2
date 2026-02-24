@@ -3,14 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Play } from 'lucide-react'
-
-interface Particle {
-  left: number
-  top: number
-  duration: number
-  delay: number
-}
+import { ArrowRight } from 'lucide-react'
 
 interface HeroProps {
   badge?: string
@@ -23,10 +16,10 @@ interface HeroProps {
 }
 
 const stats = [
-  { value: '150+', label: 'Projects' },
-  { value: '80+', label: 'Clients' },
-  { value: '6+', label: 'Years' },
-  { value: '25+', label: 'Experts' },
+  { value: '150+', label: 'Projects Delivered' },
+  { value: '80+', label: 'Active Clients' },
+  { value: '6+', label: 'Years Operational' },
+  { value: '25+', label: 'Eng. Experts' },
 ]
 
 export default function Hero({
@@ -38,140 +31,160 @@ export default function Hero({
   secondaryBtn,
   showStats = false,
 }: HeroProps) {
-  const [particles, setParticles] = useState<Particle[]>([])
+  const [time, setTime] = useState('--:--:--')
 
   useEffect(() => {
-    setParticles(
-      Array.from({ length: 20 }, () => ({
-        left: Math.random() * 100,
-        top: Math.random() * 100,
-        duration: 3 + Math.random() * 4,
-        delay: Math.random() * 5,
-      }))
-    )
+    const update = () => {
+      const n = new Date()
+      setTime(
+        `${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}:${String(n.getSeconds()).padStart(2, '0')}`
+      )
+    }
+    update()
+    const id = setInterval(update, 1000)
+    return () => clearInterval(id)
   }, [])
+
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#050510]">
-      {/* Animated background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a1f] via-[#050510] to-[#0a0518]" />
-      <div className="absolute inset-0 bg-grid opacity-30" />
-      {/* Radial glows */}
-      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#3A0CA3]/20 rounded-full blur-[120px] animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-[#4361EE]/15 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-[#560BAD]/10 rounded-full blur-[80px]" />
+    <section className="relative min-h-screen flex flex-col overflow-hidden bg-[#0A0A0F] pt-[53px]">
+      {/* Tech grid */}
+      <div className="absolute inset-0 tech-grid pointer-events-none" />
+      {/* Ambient purple light — top right */}
+      <div className="absolute top-0 right-0 w-[50%] h-[55%] bg-[#2D1169]/15 blur-[140px] pointer-events-none" />
 
-      {/* Floating particles — client-only to avoid hydration mismatch */}
-      {particles.map((p, i) => (
-        <motion.div
-          key={i}
-          className="absolute w-1 h-1 rounded-full bg-[#560BAD]/60"
-          style={{ left: `${p.left}%`, top: `${p.top}%` }}
-          animate={{ y: [0, -30, 0], opacity: [0.2, 0.8, 0.2] }}
-          transition={{ duration: p.duration, repeat: Infinity, delay: p.delay }}
-        />
-      ))}
-
-      {/* Floating geometric shapes */}
-      <motion.div
-        animate={{ y: [0, -20, 0], rotate: [0, 180, 360] }}
-        transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-        className="absolute top-24 right-16 w-16 h-16 border border-[#560BAD]/30 rounded-lg opacity-40 hidden lg:block"
-      />
-      <motion.div
-        animate={{ y: [0, 20, 0], rotate: [360, 180, 0] }}
-        transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
-        className="absolute bottom-32 left-16 w-10 h-10 border border-[#4361EE]/30 rounded-full opacity-30 hidden lg:block"
-      />
-      <motion.div
-        animate={{ y: [0, -15, 0], x: [0, 10, 0] }}
-        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute top-1/3 right-1/4 w-8 h-8 bg-gradient-to-br from-[#560BAD]/20 to-[#4361EE]/20 rounded hidden lg:block"
-      />
-
-      {/* Content */}
-      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        {/* Badge */}
-        {badge && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass border border-[#560BAD]/30 text-[#CFA3EA] text-xs font-semibold uppercase tracking-widest mb-6"
-          >
-            <span className="w-2 h-2 rounded-full bg-[#831DC6] animate-pulse" />
-            {badge}
-          </motion.div>
-        )}
-
-        {/* Title */}
-        <motion.h1
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.1 }}
-          className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white leading-[1.05] tracking-tight mb-6"
-        >
-          {title}
-          {highlight && (
-            <>
-              {' '}
-              <span className="text-gradient neon-text">{highlight}</span>
-            </>
-          )}
-        </motion.h1>
-
-        {/* Subtitle */}
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.25 }}
-          className="text-base sm:text-lg lg:text-xl text-slate-300 leading-relaxed max-w-2xl mx-auto mb-10"
-        >
-          {subtitle}
-        </motion.p>
-
-        {/* Buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="flex flex-col sm:flex-row gap-4 justify-center"
-        >
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
-            <Link href={primaryBtn.href} className="btn-primary text-base px-8 py-4">
-              <span>{primaryBtn.label}</span>
-              <ArrowRight size={18} />
-            </Link>
-          </motion.div>
-          {secondaryBtn && (
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
-              <Link href={secondaryBtn.href} className="btn-outline text-base px-8 py-4 flex items-center gap-2">
-                <Play size={16} className="fill-current" />
-                {secondaryBtn.label}
-              </Link>
-            </motion.div>
-          )}
-        </motion.div>
-
-        {/* Stats */}
-        {showStats && (
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.6 }}
-            className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6"
-          >
-            {stats.map((stat, i) => (
-              <div key={i} className="glass-card rounded-xl p-4 text-center border border-[#560BAD]/20">
-                <div className="text-2xl sm:text-3xl font-extrabold text-gradient mb-1">{stat.value}</div>
-                <div className="text-slate-400 text-xs sm:text-sm font-medium">{stat.label}</div>
-              </div>
-            ))}
-          </motion.div>
-        )}
+      {/* Status bar */}
+      <div className="relative border-b border-[#1A1A24] bg-[#0A0A0F]">
+        <div className="max-w-screen-xl mx-auto px-6 lg:px-8 flex items-center justify-between h-8">
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <div className="status-dot-pulse" />
+              <span className="sys-label">SYS ONLINE</span>
+            </div>
+            <span className="hidden sm:block sys-label">PROGREX TECH SYSTEMS</span>
+          </div>
+          <div className="flex items-center gap-6">
+            <span className="sys-label font-mono">{time} UTC+8</span>
+            <span className="hidden md:block sys-label-accent">READY</span>
+          </div>
+        </div>
       </div>
 
-      {/* Bottom gradient fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#050510] to-transparent" />
+      {/* Main content */}
+      <div className="relative z-10 max-w-screen-xl mx-auto px-6 lg:px-8 w-full flex-1 flex items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-center w-full py-20 lg:py-0 min-h-[calc(100vh-53px-32px)]">
+
+          {/* Left — 7 cols */}
+          <motion.div
+            initial={{ opacity: 0, x: -24 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.55, ease: 'easeOut' }}
+            className="lg:col-span-7 lg:pr-16 lg:border-r border-[#1A1A24] py-12 lg:py-20"
+          >
+            {/* Badge */}
+            {badge && (
+              <div className="flex items-center gap-3 mb-8">
+                <div className="status-dot-pulse" />
+                <span className="sys-label-accent">{badge.replace(/^🚀\s*/, '')}</span>
+              </div>
+            )}
+
+            {/* Title */}
+            <h1 className="text-[clamp(2rem,4.8vw,4.2rem)] font-bold text-[#F0EEF8] leading-[0.94] tracking-tight mb-4">
+              {title}
+              {highlight && (
+                <span className="block text-[#7C2AE8] mt-2">{highlight}</span>
+              )}
+            </h1>
+
+            {/* Accent rule */}
+            <div className="tech-rule w-40 my-7" />
+
+            {/* Subtitle */}
+            <p className="text-[#5A5770] text-base leading-relaxed max-w-[500px] mb-10 font-light">
+              {subtitle}
+            </p>
+
+            {/* Buttons */}
+            <div className="flex flex-wrap gap-3">
+              <Link href={primaryBtn.href} className="btn-sys-filled">
+                {primaryBtn.label.toUpperCase()}
+                <ArrowRight size={14} />
+              </Link>
+              {secondaryBtn && (
+                <Link href={secondaryBtn.href} className="btn-sys">
+                  {secondaryBtn.label.toUpperCase()}
+                  <ArrowRight size={14} />
+                </Link>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Right — 5 cols */}
+          <motion.div
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.55, delay: 0.18, ease: 'easeOut' }}
+            className="lg:col-span-5 lg:pl-16 py-12 lg:py-20"
+          >
+            {/* Stats grid */}
+            {showStats && (
+              <div className="grid grid-cols-2 gap-[1px] bg-[#1A1A24] border border-[#1A1A24] mb-[1px]">
+                {stats.map((stat, i) => (
+                  <motion.div
+                    key={stat.label}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.4 + i * 0.1 }}
+                    className="bg-[#0F0F14] px-6 py-5 group hover:bg-[#14141B] transition-colors duration-150"
+                  >
+                    <div className="sys-label mb-2 group-hover:text-[#7C2AE8] transition-colors">
+                      {stat.label}
+                    </div>
+                    <div className="data-value">{stat.value}</div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+
+            {/* Operational status panel */}
+            <div className="bg-[#0F0F14] border border-[#1A1A24] p-5">
+              <div className="flex items-center justify-between mb-5">
+                <span className="sys-label">OPERATIONAL STATUS</span>
+                <span className="sys-label-accent">NOMINAL</span>
+              </div>
+              {[
+                { label: 'DEV PIPELINE', pct: 98 },
+                { label: 'DEPLOY SYS', pct: 100 },
+                { label: 'SUPPORT OPS', pct: 95 },
+                { label: 'CLIENT SYNC', pct: 92 },
+              ].map((row, i) => (
+                <div key={row.label} className="flex items-center gap-4 py-2.5 border-b border-[#1A1A24] last:border-0">
+                  <span className="sys-label w-28 shrink-0">{row.label}</span>
+                  <div className="flex-1 h-px bg-[#1A1A24] relative overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${row.pct}%` }}
+                      transition={{ duration: 1.2, delay: 0.6 + i * 0.15, ease: 'easeOut' }}
+                      className="absolute top-0 left-0 h-full bg-[#7C2AE8]"
+                    />
+                  </div>
+                  <span className="font-mono text-[9px] text-[#7C2AE8] shrink-0">{row.pct}%</span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Bottom border */}
+      <div className="relative border-t border-[#1A1A24]">
+        <div className="max-w-screen-xl mx-auto px-6 lg:px-8 flex items-center h-8">
+          <span className="sys-label">
+            SCROLL TO EXPLORE — BUILD FASTER. SCALE SMARTER.
+          </span>
+        </div>
+      </div>
     </section>
   )
 }
+
