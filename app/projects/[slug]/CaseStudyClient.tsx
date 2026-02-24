@@ -1,8 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import Link from 'next/link'
-import { ArrowRight, Star, CheckCircle, TrendingUp } from 'lucide-react'
+import { CheckCircle, TrendingUp } from 'lucide-react'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
 import CTASection from '@/components/CTASection'
 
@@ -24,42 +23,36 @@ export default function CaseStudyClient({ project }: { project: Project }) {
   return (
     <>
       {/* Hero */}
-      <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden bg-[#050510] pt-20">
-        <div className="absolute inset-0 bg-grid opacity-20" />
-        <div className="absolute inset-0 bg-gradient-to-br from-[#3A0CA3]/20 to-[#4361EE]/10" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-[#560BAD]/15 rounded-full blur-[100px]" />
-
-        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <section className="relative min-h-[55vh] flex items-center overflow-hidden bg-[#0A0A0F] pt-20">
+        <div className="absolute inset-0 tech-grid opacity-40 pointer-events-none" />
+        <div className="relative z-10 max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <span className="px-3 py-1 rounded-full bg-[#560BAD]/80 text-[#CFA3EA] text-xs font-semibold">{project.category}</span>
-              <span className="px-3 py-1 rounded-full bg-black/60 text-slate-300 text-xs">{project.industry}</span>
+            <div className="flex items-center gap-2 mb-5">
+              <span className="px-3 py-1 text-[10px] font-mono tracking-widest border border-[#4C1D95] text-[#C4B5FD]">{project.category.toUpperCase()}</span>
+              <span className="px-3 py-1 text-[10px] font-mono tracking-widest border border-[#1E1E2E] text-[#9B98B3]">{project.industry.toUpperCase()}</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-4 leading-tight">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#F0EEF8] mb-4 leading-tight max-w-3xl">
               {project.title}
             </h1>
-            <p className="text-slate-300 text-lg leading-relaxed max-w-2xl mx-auto">{project.shortDesc}</p>
+            <p className="text-[#5A5770] text-base leading-relaxed max-w-2xl font-light">{project.shortDesc}</p>
           </motion.div>
         </div>
-
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#050510] to-transparent" />
       </section>
 
-      {/* Image placeholder carousel */}
-      <SectionWrapper className="bg-[#050510]">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Screenshot placeholders */}
+      <SectionWrapper className="bg-[#0F0F14]">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-[1px] bg-[#1A1A24] border border-[#1A1A24]">
           {[1, 2, 3].map((n) => (
             <motion.div
               key={n}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: n * 0.1 }}
-              className="relative h-48 bg-gradient-to-br from-[#3A0CA3]/30 to-[#4361EE]/20 rounded-xl overflow-hidden border border-[#560BAD]/20"
+              transition={{ delay: n * 0.08 }}
+              className="relative h-48 bg-[#0A0A0F] tech-grid flex items-center justify-center"
             >
-              <div className="absolute inset-0 bg-dots opacity-20" />
-              <div className="absolute inset-0 flex items-center justify-center text-slate-600 text-sm">
-                Screenshot {n}
+              <div className="text-center">
+                <div className="sys-label mb-1">SCREENSHOT {n}</div>
               </div>
             </motion.div>
           ))}
@@ -67,61 +60,64 @@ export default function CaseStudyClient({ project }: { project: Project }) {
       </SectionWrapper>
 
       {/* Overview + Problem + Solution */}
-      <SectionWrapper className="bg-[#030308]">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <SectionWrapper className="bg-[#0A0A0F]">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-[1px] bg-[#1A1A24] border border-[#1A1A24]">
           {[
-            { label: 'Project Overview', content: project.overview, icon: '📋' },
-            { label: 'The Challenge', content: project.problem, icon: '⚠️' },
-            { label: 'Our Solution', content: project.solution, icon: '💡' },
+            { label: 'PROJECT OVERVIEW', content: project.overview, badge: '01' },
+            { label: 'THE CHALLENGE', content: project.problem, badge: '02' },
+            { label: 'OUR SOLUTION', content: project.solution, badge: '03' },
           ].map((item, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.15 }}
-              className="glass-card rounded-2xl p-6 border border-[#560BAD]/20"
+              transition={{ delay: i * 0.12 }}
+              className="bg-[#0F0F14] p-6 hover:bg-[#14141B] transition-colors group"
             >
-              <div className="text-2xl mb-3">{item.icon}</div>
-              <h3 className="text-base font-bold text-white mb-3">{item.label}</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">{item.content}</p>
+              <div className="flex items-center justify-between mb-4">
+                <div className="sys-label-accent">{item.label}</div>
+                <span className="font-mono text-[10px] text-[#252538]">{item.badge}</span>
+              </div>
+              <p className="text-[#5A5770] text-xs leading-relaxed font-light">{item.content}</p>
             </motion.div>
           ))}
         </div>
       </SectionWrapper>
 
-      {/* Features */}
-      <SectionWrapper className="bg-[#050510]">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      {/* Features + Technologies */}
+      <SectionWrapper className="bg-[#0F0F14]">
+        <div className="absolute inset-0 tech-grid opacity-30 pointer-events-none" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
           <div>
             <SectionHeader badge="What We Built" title="Key" highlight="Features" center={false} />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {project.features.map((feature, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, x: -20 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.06 }}
-                  className="flex items-center gap-3 text-sm text-slate-300"
+                  transition={{ delay: i * 0.05 }}
+                  className="flex items-center gap-2.5"
                 >
-                  <CheckCircle size={15} className="text-[#831DC6] shrink-0" />
-                  {feature}
+                  <CheckCircle size={12} className="text-[#7C2AE8] shrink-0" />
+                  <span className="text-xs text-[#9B98B3] font-light">{feature}</span>
                 </motion.div>
               ))}
             </div>
           </div>
           <div>
             <SectionHeader badge="Stack" title="Technologies" highlight="Used" center={false} />
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {project.technologies.map((tech, i) => (
                 <motion.span
                   key={tech}
-                  initial={{ opacity: 0, scale: 0.8 }}
+                  initial={{ opacity: 0, scale: 0.9 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.05 }}
-                  className="px-3 py-1.5 rounded-lg glass-card text-xs font-semibold text-[#CFA3EA] border border-[#560BAD]/20"
+                  transition={{ delay: i * 0.04 }}
+                  className="px-3 py-1.5 text-[10px] font-mono text-[#C4B5FD] border border-[#1E1E2E] hover:border-[#4C1D95] transition-colors cursor-default"
                 >
                   {tech}
                 </motion.span>
@@ -132,49 +128,50 @@ export default function CaseStudyClient({ project }: { project: Project }) {
       </SectionWrapper>
 
       {/* Results */}
-      <SectionWrapper className="bg-[#030308]">
+      <SectionWrapper className="bg-[#0A0A0F]">
         <SectionHeader badge="Measurable Impact" title="Results &" highlight="Metrics" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-[1px] bg-[#1A1A24] border border-[#1A1A24]">
           {project.results.map((result, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="glass-card rounded-2xl p-6 text-center border border-[#560BAD]/20 hover:border-[#560BAD]/50 hover:shadow-[0_0_20px_rgba(86,11,173,0.2)] transition-all"
+              transition={{ delay: i * 0.08 }}
+              className="bg-[#0F0F14] p-6 text-center hover:bg-[#14141B] transition-colors group"
             >
-              <TrendingUp size={20} className="text-[#831DC6] mx-auto mb-3" />
-              <div className="text-2xl sm:text-3xl font-extrabold text-gradient mb-2">{result.value}</div>
-              <div className="text-slate-400 text-xs sm:text-sm">{result.metric}</div>
+              <TrendingUp size={14} className="text-[#7C2AE8] mx-auto mb-3 opacity-60" />
+              <div className="data-value text-[#C4B5FD] text-2xl sm:text-3xl mb-1">{result.value}</div>
+              <div className="sys-label">{result.metric}</div>
             </motion.div>
           ))}
         </div>
       </SectionWrapper>
 
       {/* Testimonial */}
-      <SectionWrapper className="bg-[#050510]">
+      <SectionWrapper className="bg-[#0F0F14]">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="max-w-2xl mx-auto glass-card rounded-2xl p-8 sm:p-10 text-center border border-[#560BAD]/20"
+          className="max-w-2xl mx-auto border border-[#1E1E2E] bg-[#0A0A0F] p-8 sm:p-10 relative"
         >
-          <div className="flex justify-center gap-1 mb-5">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Star key={i} size={16} className="text-yellow-400 fill-yellow-400" />
-            ))}
+          <div className="absolute -top-px -left-px w-5 h-5 border-l-2 border-t-2 border-[#7C2AE8]" />
+          <div className="absolute -bottom-px -right-px w-5 h-5 border-r-2 border-b-2 border-[#7C2AE8]" />
+          <div className="flex items-center gap-2 mb-6">
+            <div className="status-dot-pulse" />
+            <span className="sys-label-accent">CLIENT TRANSMISSION</span>
           </div>
-          <p className="text-slate-200 text-lg leading-relaxed italic mb-6">
+          <p className="text-[#9B98B3] text-base leading-relaxed mb-6 font-light">
             &ldquo;{project.testimonial.quote}&rdquo;
           </p>
-          <div className="flex items-center justify-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#560BAD] to-[#4361EE] flex items-center justify-center text-white font-bold text-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 border border-[#4C1D95] flex items-center justify-center text-[#C4B5FD] font-bold text-sm font-mono bg-[#14141B]">
               {project.testimonial.author.charAt(0)}
             </div>
-            <div className="text-left">
-              <div className="font-semibold text-white text-sm">{project.testimonial.author}</div>
-              <div className="text-slate-400 text-xs">{project.testimonial.role}</div>
+            <div>
+              <div className="text-[#F0EEF8] text-sm font-semibold">{project.testimonial.author}</div>
+              <div className="sys-label mt-0.5">{project.testimonial.role}</div>
             </div>
           </div>
         </motion.div>
