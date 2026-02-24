@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Target, Zap, Lock, TrendingUp } from 'lucide-react'
 import Hero from '@/components/Hero'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
 import ServiceCard from '@/components/ServiceCard'
@@ -50,12 +50,12 @@ export default function ServicesPage() {
       <SectionWrapper className="bg-[#030308]">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass border border-[#560BAD]/30 text-[#CFA3EA] text-xs font-semibold uppercase tracking-widest mb-4">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#831DC6] animate-pulse" />
+            <div className="eyebrow-badge mb-4">
+              <span className="w-1.5 h-1.5 rounded-full bg-nebula-500 animate-pulse" />
               Our Approach
             </div>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-5 leading-tight">
-              We Don&apos;t Just Write Code — <span className="text-gradient">We Solve Problems</span>
+              We Don&apos;t Just Write Code — <span className="text-gradient-nebula">We Solve Problems</span>
             </h2>
             <p className="text-slate-400 leading-relaxed mb-6">
               Every engagement starts with understanding your business goals, not your technical requirements. We then map the right technology to the right problem, ensuring maximum ROI and minimal technical debt.
@@ -67,15 +67,15 @@ export default function ServicesPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             {[
-              { icon: '🎯', title: 'Goal-Oriented', desc: 'We align every technical decision with your business objectives.' },
-              { icon: '⚡', title: 'Agile Delivery', desc: 'Weekly sprints with demos, feedback, and iteration.' },
-              { icon: '🔒', title: 'Secure by Design', desc: 'Security best practices baked into every layer.' },
-              { icon: '📈', title: 'Scalable First', desc: 'Built to handle your growth — today and tomorrow.' },
+              { icon: <Target size={20} className="text-nebula-400" />, title: 'Goal-Oriented', desc: 'We align every technical decision with your business objectives.' },
+              { icon: <Zap size={20} className="text-aurora-400" />, title: 'Agile Delivery', desc: 'Weekly sprints with demos, feedback, and iteration.' },
+              { icon: <Lock size={20} className="text-pulsar-400" />, title: 'Secure by Design', desc: 'Security best practices baked into every layer.' },
+              { icon: <TrendingUp size={20} className="text-nebula-300" />, title: 'Scalable First', desc: 'Built to handle your growth — today and tomorrow.' },
             ].map((item, i) => (
-              <div key={i} className="glass-card rounded-xl p-4 border border-[#560BAD]/15 hover:border-[#560BAD]/40 transition-colors">
-                <div className="text-2xl mb-2">{item.icon}</div>
+              <div key={i} className="glass-card rounded-xl p-4 border border-nebula-700/15 hover:border-nebula-600/40 transition-colors">
+                <div className="mb-2">{item.icon}</div>
                 <div className="text-sm font-bold text-white mb-1">{item.title}</div>
-                <div className="text-xs text-slate-400 leading-relaxed">{item.desc}</div>
+                <div className="text-xs text-white/50 leading-relaxed">{item.desc}</div>
               </div>
             ))}
           </div>
