@@ -9,17 +9,34 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        sys: {
+          void: '#0A0A0F',
+          base: '#0F0F14',
+          surface: '#14141B',
+          panel: '#1A1A24',
+          'border-dim': '#1A1A24',
+          'border-mid': '#252538',
+          'border-accent': '#4C1D95',
+          accent: '#7C2AE8',
+          'accent-hover': '#8B39F0',
+          'accent-muted': '#2D1169',
+          'accent-text': '#C4B5FD',
+          'text-primary': '#F0EEF8',
+          'text-secondary': '#9B98B3',
+          'text-muted': '#5A5770',
+        },
+        /* keep legacy brand for mockData color references */
         brand: {
-          lavender: '#CFA3EA',
-          violet: '#831DC6',
-          purple: '#560BAD',
-          indigo: '#3A0CA3',
-          blue: '#4361EE',
+          lavender: '#C4B5FD',
+          violet: '#7C2AE8',
+          purple: '#4C1D95',
+          indigo: '#2D1169',
+          blue: '#5B21B6',
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        sans: ['Space Grotesk', 'Inter', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Courier New', 'monospace'],
       },
       backgroundImage: {
         'gradient-brand': 'linear-gradient(135deg, #3A0CA3 0%, #560BAD 30%, #831DC6 60%, #CFA3EA 100%)',
