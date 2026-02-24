@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Star, Quote, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowRight, Star, Quote, ChevronLeft, ChevronRight, Monitor } from 'lucide-react'
+import TechConstellation from '@/components/TechConstellation'
 import Hero from '@/components/Hero'
 import ServiceCard from '@/components/ServiceCard'
 import ProjectCard from '@/components/ProjectCard'
@@ -22,7 +23,7 @@ export default function HomeClient() {
     <>
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <Hero
-        badge="🚀 Next-Gen Technology Solutions"
+        badge="Next-Gen Technology Solutions"
         title="TECHNOLOGY SOLUTIONS THAT"
         highlight="DRIVES SUCCESS."
         subtitle="BUILD FASTER. SCALE SMARTER. WIN WITH PROGREX. — We engineer custom software, web apps, mobile platforms, and enterprise systems that transform your business."
@@ -119,15 +120,15 @@ export default function HomeClient() {
               transition={{ duration: 0.5, delay: i * 0.1 }}
               className="glass-card rounded-2xl p-6 hover-glow-card group"
             >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#560BAD] to-[#4361EE] flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">
-                💻
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-nebula-700 to-aurora-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Monitor size={18} className="text-nebula-300" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#CFA3EA] transition-colors">{sys.name}</h3>
+              <h3 className="text-lg font-bold text-white mb-2 group-hover:text-nebula-300 transition-colors">{sys.name}</h3>
               <p className="text-slate-400 text-sm mb-4 line-clamp-2">{sys.shortDesc}</p>
               <ul className="space-y-1.5 mb-5">
                 {sys.features.slice(0, 4).map((f) => (
                   <li key={f} className="flex items-center gap-2 text-xs text-slate-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#831DC6] shrink-0" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-nebula-500 shrink-0" />
                     {f}
                   </li>
                 ))}
@@ -163,10 +164,12 @@ export default function HomeClient() {
             <StaggerItem key={tech.name}>
               <motion.div
                 whileHover={{ scale: 1.1, y: -4 }}
-                className="glass-card rounded-xl p-3 text-center hover:border-[#560BAD]/50 hover:shadow-[0_0_15px_rgba(86,11,173,0.3)] transition-all duration-300 cursor-default"
+                className="glass-card rounded-xl p-3 text-center hover:border-nebula-600/50 hover:shadow-nebula-sm transition-all duration-300 cursor-default"
               >
-                <div className="text-2xl mb-1">⚡</div>
-                <div className="text-[10px] text-slate-400 font-medium">{tech.name}</div>
+                <div className="w-7 h-7 rounded-md bg-nebula-400/10 border border-nebula-400/30 flex items-center justify-center mx-auto mb-1.5">
+                  <span className="font-mono text-[9px] font-bold text-nebula-400">{tech.name.substring(0, 2).toUpperCase()}</span>
+                </div>
+                <div className="text-[10px] text-white/50 font-mono">{tech.name}</div>
               </motion.div>
             </StaggerItem>
           ))}
@@ -190,7 +193,7 @@ export default function HomeClient() {
             transition={{ duration: 0.4 }}
             className="glass-card rounded-2xl p-8 sm:p-10 relative"
           >
-            <Quote className="text-[#560BAD]/40 absolute top-6 right-8" size={40} />
+            <Quote className="text-nebula-600/40 absolute top-6 right-8" size={40} />
             {/* Stars */}
             <div className="flex gap-1 mb-5">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -201,12 +204,12 @@ export default function HomeClient() {
               &ldquo;{testimonials[activeTestimonial].quote}&rdquo;
             </p>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#560BAD] to-[#4361EE] flex items-center justify-center text-white font-bold text-sm">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-nebula-700 to-aurora-600 flex items-center justify-center text-white font-bold text-sm">
                 {testimonials[activeTestimonial].name.charAt(0)}
               </div>
               <div>
                 <div className="font-semibold text-white text-sm">{testimonials[activeTestimonial].name}</div>
-                <div className="text-slate-400 text-xs">{testimonials[activeTestimonial].role}</div>
+                <div className="text-nebula-300/70 text-xs font-mono">{testimonials[activeTestimonial].role}</div>
               </div>
             </div>
           </motion.div>
@@ -215,7 +218,7 @@ export default function HomeClient() {
           <div className="flex items-center justify-center gap-4 mt-6">
             <button
               onClick={prevTestimonial}
-              className="w-10 h-10 rounded-full glass border border-[#560BAD]/30 flex items-center justify-center text-slate-300 hover:text-white hover:border-[#831DC6]/60 transition-all"
+              className="w-10 h-10 rounded-full glass border border-nebula-600/30 flex items-center justify-center text-white/50 hover:text-nebula-300 hover:border-nebula-500/60 transition-all"
             >
               <ChevronLeft size={18} />
             </button>
@@ -224,13 +227,13 @@ export default function HomeClient() {
                 <button
                   key={i}
                   onClick={() => setActiveTestimonial(i)}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${i === activeTestimonial ? 'w-8 bg-[#831DC6]' : 'w-2 bg-slate-600 hover:bg-slate-400'}`}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${i === activeTestimonial ? 'w-8 bg-nebula-500' : 'w-2 bg-white/20 hover:bg-white/40'}`}
                 />
               ))}
             </div>
             <button
               onClick={nextTestimonial}
-              className="w-10 h-10 rounded-full glass border border-[#560BAD]/30 flex items-center justify-center text-slate-300 hover:text-white hover:border-[#831DC6]/60 transition-all"
+              className="w-10 h-10 rounded-full glass border border-nebula-600/30 flex items-center justify-center text-white/50 hover:text-nebula-300 hover:border-nebula-500/60 transition-all"
             >
               <ChevronRight size={18} />
             </button>
