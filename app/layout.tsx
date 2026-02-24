@@ -4,6 +4,8 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import CustomCursor from '@/components/CustomCursor'
 import Chatbot from '@/components/Chatbot'
+import StarfieldCanvas from '@/components/StarfieldCanvas'
+import ConstellationOverlay from '@/components/ConstellationOverlay'
 
 export const metadata: Metadata = {
   title: {
@@ -50,12 +52,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="bg-[#050510] text-slate-100 antialiased cursor-none-desktop">
+      <body className="bg-[#03030F] text-slate-100 antialiased cursor-none-desktop">
+        {/* Global starfield + constellation layers — fixed, behind everything */}
+        <StarfieldCanvas />
+        <ConstellationOverlay />
         <CustomCursor />
         <Navbar />
         <main>{children}</main>
