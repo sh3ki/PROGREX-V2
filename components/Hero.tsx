@@ -1,16 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useEffect, useRef } from 'react'
+import { motion, useInView } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Play } from 'lucide-react'
-
-interface Particle {
-  left: number
-  top: number
-  duration: number
-  delay: number
-}
+import { ArrowRight, ChevronRight } from 'lucide-react'
+import OrbitOrb from './OrbitOrb'
 
 interface HeroProps {
   badge?: string
@@ -23,11 +17,33 @@ interface HeroProps {
 }
 
 const stats = [
-  { value: '150+', label: 'Projects' },
-  { value: '80+', label: 'Clients' },
-  { value: '6+', label: 'Years' },
-  { value: '25+', label: 'Experts' },
+  { value: 150, suffix: '+', label: 'Projects' },
+  { value: 80,  suffix: '+', label: 'Clients' },
+  { value: 6,   suffix: '+', label: 'Years' },
+  { value: 25,  suffix: '+', label: 'Experts' },
 ]
+
+function CountUp({ target, suffix }: { target: number; suffix: string }) {
+  const [count, setCount] = useState(0)
+  const ref = useRef<HTMLSpanElement>(null)
+  const inView = useInView(ref, { once: true })
+
+  useEffect(() => {
+    if (!inView) return
+    const duration = 1200
+    const start = performance.now()
+    const step = (now: number) => {
+      const progress = Math.min((now - start) / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setCount(Math.floor(eased * target))
+      if (progress < 1) requestAnimationFrame(step)
+      else setCount(target)
+    }
+    requestAnimationFrame(step)
+  }, [inView, target])
+
+  return <span ref={ref}>{count}{suffix}</span>
+}
 
 export default function Hero({
   badge,
@@ -38,140 +54,129 @@ export default function Hero({
   secondaryBtn,
   showStats = false,
 }: HeroProps) {
-  const [particles, setParticles] = useState<Particle[]>([])
-
-  useEffect(() => {
-    setParticles(
-      Array.from({ length: 20 }, () => ({
-        left: Math.random() * 100,
-        top: Math.random() * 100,
-        duration: 3 + Math.random() * 4,
-        delay: Math.random() * 5,
-      }))
-    )
-  }, [])
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#050510]">
-      {/* Animated background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a1f] via-[#050510] to-[#0a0518]" />
-      <div className="absolute inset-0 bg-grid opacity-30" />
-      {/* Radial glows */}
-      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#3A0CA3]/20 rounded-full blur-[120px] animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-[#4361EE]/15 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-[#560BAD]/10 rounded-full blur-[80px]" />
-
-      {/* Floating particles — client-only to avoid hydration mismatch */}
-      {particles.map((p, i) => (
-        <motion.div
-          key={i}
-          className="absolute w-1 h-1 rounded-full bg-[#560BAD]/60"
-          style={{ left: `${p.left}%`, top: `${p.top}%` }}
-          animate={{ y: [0, -30, 0], opacity: [0.2, 0.8, 0.2] }}
-          transition={{ duration: p.duration, repeat: Infinity, delay: p.delay }}
-        />
-      ))}
-
-      {/* Floating geometric shapes */}
-      <motion.div
-        animate={{ y: [0, -20, 0], rotate: [0, 180, 360] }}
-        transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-        className="absolute top-24 right-16 w-16 h-16 border border-[#560BAD]/30 rounded-lg opacity-40 hidden lg:block"
+    <section className="relative min-h-screen flex items-center overflow-hidden bg-[#03030F]">
+      {/* Nebula blobs */}
+      <div
+        className="nebula-blob nebula-cyan absolute pointer-events-none"
+        style={{ width: 600, height: 600, top: '-10%', right: '-5%', opacity: 0.08 }}
       />
-      <motion.div
-        animate={{ y: [0, 20, 0], rotate: [360, 180, 0] }}
-        transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
-        className="absolute bottom-32 left-16 w-10 h-10 border border-[#4361EE]/30 rounded-full opacity-30 hidden lg:block"
-      />
-      <motion.div
-        animate={{ y: [0, -15, 0], x: [0, 10, 0] }}
-        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute top-1/3 right-1/4 w-8 h-8 bg-gradient-to-br from-[#560BAD]/20 to-[#4361EE]/20 rounded hidden lg:block"
+      <div
+        className="nebula-blob nebula-violet absolute pointer-events-none"
+        style={{ width: 500, height: 500, bottom: '-15%', left: '-10%', opacity: 0.07 }}
       />
 
-      {/* Content */}
-      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        {/* Badge */}
-        {badge && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass border border-[#560BAD]/30 text-[#CFA3EA] text-xs font-semibold uppercase tracking-widest mb-6"
-          >
-            <span className="w-2 h-2 rounded-full bg-[#831DC6] animate-pulse" />
-            {badge}
-          </motion.div>
-        )}
+      {/* Dot grid */}
+      <div className="absolute inset-0 bg-dot-grid opacity-30 pointer-events-none" />
 
-        {/* Title */}
-        <motion.h1
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.1 }}
-          className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white leading-[1.05] tracking-tight mb-6"
-        >
-          {title}
-          {highlight && (
-            <>
-              {' '}
-              <span className="text-gradient neon-text">{highlight}</span>
-            </>
-          )}
-        </motion.h1>
+      {/* Bottom fade */}
+      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#03030F] to-transparent pointer-events-none" />
 
-        {/* Subtitle */}
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.25 }}
-          className="text-base sm:text-lg lg:text-xl text-slate-300 leading-relaxed max-w-2xl mx-auto mb-10"
-        >
-          {subtitle}
-        </motion.p>
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-28 w-full">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          {/* LEFT — Text */}
+          <div className="order-2 lg:order-1">
+            {/* Eyebrow badge */}
+            {badge && (
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="eyebrow-badge mb-6"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-nebula-400 animate-pulse inline-block mr-2" />
+                {badge}
+              </motion.div>
+            )}
 
-        {/* Buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="flex flex-col sm:flex-row gap-4 justify-center"
-        >
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
-            <Link href={primaryBtn.href} className="btn-primary text-base px-8 py-4">
-              <span>{primaryBtn.label}</span>
-              <ArrowRight size={18} />
-            </Link>
-          </motion.div>
-          {secondaryBtn && (
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
-              <Link href={secondaryBtn.href} className="btn-outline text-base px-8 py-4 flex items-center gap-2">
-                <Play size={16} className="fill-current" />
-                {secondaryBtn.label}
+            {/* Title */}
+            <motion.h1
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.1 }}
+              className="font-display font-black text-4xl sm:text-5xl lg:text-6xl xl:text-7xl text-white leading-[1.04] tracking-tight mb-6"
+            >
+              {title}
+              {highlight && (
+                <>
+                  {' '}
+                  <span className="text-gradient-nebula">{highlight}</span>
+                </>
+              )}
+            </motion.h1>
+
+            {/* Subtitle */}
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.25 }}
+              className="text-base sm:text-lg text-white/55 leading-relaxed max-w-xl mb-10"
+            >
+              {subtitle}
+            </motion.p>
+
+            {/* Buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="flex flex-col sm:flex-row gap-4"
+            >
+              <Link href={primaryBtn.href} className="btn-primary text-base px-8 py-4">
+                <span>{primaryBtn.label}</span>
+                <ArrowRight size={18} />
               </Link>
+              {secondaryBtn && (
+                <Link
+                  href={secondaryBtn.href}
+                  className="btn-outline text-base px-8 py-4 flex items-center gap-2"
+                >
+                  <ChevronRight size={16} />
+                  {secondaryBtn.label}
+                </Link>
+              )}
             </motion.div>
-          )}
-        </motion.div>
 
-        {/* Stats */}
-        {showStats && (
+            {/* Stats */}
+            {showStats && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.6 }}
+                className="mt-14 grid grid-cols-2 sm:grid-cols-4 gap-4"
+              >
+                {stats.map((stat, i) => (
+                  <div
+                    key={i}
+                    className="panel-corner relative rounded-lg p-4 text-center"
+                    style={{
+                      background: 'rgba(103,232,249,0.04)',
+                      border: '1px solid rgba(103,232,249,0.12)',
+                    }}
+                  >
+                    <div className="font-display font-black text-2xl sm:text-3xl text-nebula-300 mb-1">
+                      <CountUp target={stat.value} suffix={stat.suffix} />
+                    </div>
+                    <div className="font-mono text-[10px] text-white/40 uppercase tracking-widest">
+                      {stat.label}
+                    </div>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+          </div>
+
+          {/* RIGHT — Orbit Orb */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.6 }}
-            className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6"
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, delay: 0.2, ease: 'easeOut' }}
+            className="order-1 lg:order-2 flex justify-center"
           >
-            {stats.map((stat, i) => (
-              <div key={i} className="glass-card rounded-xl p-4 text-center border border-[#560BAD]/20">
-                <div className="text-2xl sm:text-3xl font-extrabold text-gradient mb-1">{stat.value}</div>
-                <div className="text-slate-400 text-xs sm:text-sm font-medium">{stat.label}</div>
-              </div>
-            ))}
+            <OrbitOrb />
           </motion.div>
-        )}
+        </div>
       </div>
-
-      {/* Bottom gradient fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#050510] to-transparent" />
     </section>
   )
 }
