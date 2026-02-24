@@ -25,7 +25,7 @@ export default function ProjectsClient() {
         primaryBtn={{ label: 'Start Your Project', href: '/contact' }}
       />
 
-      <SectionWrapper className="bg-[#050510]">
+      <SectionWrapper className="bg-[#0A0A0F]">
         <SectionHeader
           badge="Case Studies"
           title="Our"
@@ -34,26 +34,25 @@ export default function ProjectsClient() {
         />
 
         {/* Filter tabs */}
-        <div className="flex flex-wrap gap-2 justify-center mb-10">
+        <div className="flex flex-wrap gap-1.5 justify-start mb-10">
           {projectCategories.map((cat) => (
             <motion.button
               key={cat}
               onClick={() => setActiveFilter(cat)}
-              whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.97 }}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+              className={`px-4 py-1.5 text-[10px] font-mono tracking-widest transition-all duration-150 ${
                 activeFilter === cat
-                  ? 'bg-gradient-to-r from-[#560BAD] to-[#4361EE] text-white shadow-[0_0_15px_rgba(86,11,173,0.4)]'
-                  : 'glass border border-[#560BAD]/20 text-slate-300 hover:border-[#560BAD]/60 hover:text-white'
+                  ? 'bg-[#7C2AE8] text-white border border-[#7C2AE8]'
+                  : 'border border-[#1E1E2E] text-[#3A3854] hover:border-[#4C1D95] hover:text-[#C4B5FD]'
               }`}
             >
-              {cat}
+              {cat.toUpperCase()}
             </motion.button>
           ))}
         </div>
 
         {/* Project grid */}
-        <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[1px] bg-[#1A1A24] border border-[#1A1A24]">
           <AnimatePresence mode="popLayout">
             {filtered.map((project, i) => (
               <motion.div
@@ -79,9 +78,7 @@ export default function ProjectsClient() {
         </motion.div>
 
         {filtered.length === 0 && (
-          <div className="text-center py-20 text-slate-500">
-            No projects found in this category yet.
-          </div>
+          <div className="text-center py-20 sys-label">NO PROJECTS FOUND IN THIS CATEGORY YET.</div>
         )}
       </SectionWrapper>
 
