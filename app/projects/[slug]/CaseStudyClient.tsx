@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Star, CheckCircle, TrendingUp } from 'lucide-react'
+import { ArrowRight, Star, CheckCircle, TrendingUp, AlignLeft, AlertTriangle, Lightbulb } from 'lucide-react'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
 import CTASection from '@/components/CTASection'
 
@@ -25,15 +25,15 @@ export default function CaseStudyClient({ project }: { project: Project }) {
     <>
       {/* Hero */}
       <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden bg-[#050510] pt-20">
-        <div className="absolute inset-0 bg-grid opacity-20" />
-        <div className="absolute inset-0 bg-gradient-to-br from-[#3A0CA3]/20 to-[#4361EE]/10" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-[#560BAD]/15 rounded-full blur-[100px]" />
+        <div className="absolute inset-0 bg-dot-grid opacity-15" />
+        <div className="absolute inset-0 bg-gradient-to-br from-aurora-700/10 to-nebula-700/5" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-nebula-700/10 rounded-full blur-[100px]" />
 
         <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
             <div className="flex items-center justify-center gap-3 mb-4">
-              <span className="px-3 py-1 rounded-full bg-[#560BAD]/80 text-[#CFA3EA] text-xs font-semibold">{project.category}</span>
-              <span className="px-3 py-1 rounded-full bg-black/60 text-slate-300 text-xs">{project.industry}</span>
+              <span className="font-mono text-xs px-3 py-1 border border-nebula-500/40 text-nebula-300 bg-nebula-400/10">[{project.category}]</span>
+              <span className="font-mono text-xs px-3 py-1 border border-white/10 text-white/40">[{project.industry}]</span>
             </div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-4 leading-tight">
               {project.title}
@@ -55,11 +55,11 @@ export default function CaseStudyClient({ project }: { project: Project }) {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: n * 0.1 }}
-              className="relative h-48 bg-gradient-to-br from-[#3A0CA3]/30 to-[#4361EE]/20 rounded-xl overflow-hidden border border-[#560BAD]/20"
+              className="relative h-48 bg-space-800 rounded-xl overflow-hidden border border-nebula-700/20"
             >
-              <div className="absolute inset-0 bg-dots opacity-20" />
-              <div className="absolute inset-0 flex items-center justify-center text-slate-600 text-sm">
-                Screenshot {n}
+              <div className="absolute inset-0 bg-dot-grid opacity-20" />
+              <div className="absolute inset-0 flex items-center justify-center text-white/20 text-sm font-mono">
+                // screenshot_{n}
               </div>
             </motion.div>
           ))}
@@ -70,9 +70,9 @@ export default function CaseStudyClient({ project }: { project: Project }) {
       <SectionWrapper className="bg-[#030308]">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {[
-            { label: 'Project Overview', content: project.overview, icon: '📋' },
-            { label: 'The Challenge', content: project.problem, icon: '⚠️' },
-            { label: 'Our Solution', content: project.solution, icon: '💡' },
+            { label: 'Project Overview', content: project.overview, icon: <AlignLeft size={22} className="text-nebula-400" /> },
+            { label: 'The Challenge', content: project.problem, icon: <AlertTriangle size={22} className="text-pulsar-400" /> },
+            { label: 'Our Solution', content: project.solution, icon: <Lightbulb size={22} className="text-aurora-400" /> },
           ].map((item, i) => (
             <motion.div
               key={i}
@@ -80,9 +80,9 @@ export default function CaseStudyClient({ project }: { project: Project }) {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.15 }}
-              className="glass-card rounded-2xl p-6 border border-[#560BAD]/20"
+              className="glass-card rounded-2xl p-6 border border-nebula-700/20"
             >
-              <div className="text-2xl mb-3">{item.icon}</div>
+              <div className="mb-3">{item.icon}</div>
               <h3 className="text-base font-bold text-white mb-3">{item.label}</h3>
               <p className="text-slate-400 text-sm leading-relaxed">{item.content}</p>
             </motion.div>
@@ -103,9 +103,9 @@ export default function CaseStudyClient({ project }: { project: Project }) {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.06 }}
-                  className="flex items-center gap-3 text-sm text-slate-300"
+                  className="flex items-center gap-3 text-sm text-white/60"
                 >
-                  <CheckCircle size={15} className="text-[#831DC6] shrink-0" />
+                  <CheckCircle size={15} className="text-nebula-500 shrink-0" />
                   {feature}
                 </motion.div>
               ))}
@@ -121,7 +121,7 @@ export default function CaseStudyClient({ project }: { project: Project }) {
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.05 }}
-                  className="px-3 py-1.5 rounded-lg glass-card text-xs font-semibold text-[#CFA3EA] border border-[#560BAD]/20"
+                  className="font-mono text-xs px-3 py-1.5 border border-nebula-700/20 text-nebula-300/70 bg-nebula-400/5"
                 >
                   {tech}
                 </motion.span>
@@ -142,11 +142,11 @@ export default function CaseStudyClient({ project }: { project: Project }) {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              className="glass-card rounded-2xl p-6 text-center border border-[#560BAD]/20 hover:border-[#560BAD]/50 hover:shadow-[0_0_20px_rgba(86,11,173,0.2)] transition-all"
+              className="glass-card rounded-2xl p-6 text-center border border-nebula-700/20 hover:border-nebula-500/50 hover:shadow-nebula-sm transition-all"
             >
-              <TrendingUp size={20} className="text-[#831DC6] mx-auto mb-3" />
-              <div className="text-2xl sm:text-3xl font-extrabold text-gradient mb-2">{result.value}</div>
-              <div className="text-slate-400 text-xs sm:text-sm">{result.metric}</div>
+              <TrendingUp size={20} className="text-nebula-500 mx-auto mb-3" />
+              <div className="text-2xl sm:text-3xl font-extrabold text-gradient-nebula mb-2">{result.value}</div>
+              <div className="text-white/45 text-xs sm:text-sm">{result.metric}</div>
             </motion.div>
           ))}
         </div>
@@ -158,7 +158,7 @@ export default function CaseStudyClient({ project }: { project: Project }) {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="max-w-2xl mx-auto glass-card rounded-2xl p-8 sm:p-10 text-center border border-[#560BAD]/20"
+          className="max-w-2xl mx-auto glass-card rounded-2xl p-8 sm:p-10 text-center border border-nebula-700/20"
         >
           <div className="flex justify-center gap-1 mb-5">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -169,7 +169,7 @@ export default function CaseStudyClient({ project }: { project: Project }) {
             &ldquo;{project.testimonial.quote}&rdquo;
           </p>
           <div className="flex items-center justify-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#560BAD] to-[#4361EE] flex items-center justify-center text-white font-bold text-sm">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-nebula-700 to-aurora-600 flex items-center justify-center text-white font-bold text-sm">
               {project.testimonial.author.charAt(0)}
             </div>
             <div className="text-left">
