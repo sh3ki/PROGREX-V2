@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Search } from 'lucide-react'
 import Hero from '@/components/Hero'
 import BlogCard from '@/components/BlogCard'
 import CTASection from '@/components/CTASection'
@@ -46,13 +45,13 @@ export default function BlogsClient() {
         <div className="flex flex-col sm:flex-row gap-4 mb-10">
           {/* Search */}
           <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-nebula-500 text-sm select-none">{'>'}</span>
             <input
               type="text"
               placeholder="Search articles..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl glass border border-[#560BAD]/20 bg-transparent text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:border-[#831DC6]/60 transition-colors"
+              className="w-full pl-8 pr-4 py-2.5 rounded-none border-0 border-b border-nebula-600/30 bg-transparent text-white/80 text-sm font-mono placeholder-nebula-600/50 focus:outline-none focus:border-nebula-400/60 transition-colors"
             />
           </div>
 
@@ -62,13 +61,13 @@ export default function BlogsClient() {
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-medium transition-all duration-200 ${
+                className={`font-mono text-xs px-3 py-1.5 border transition-all duration-200 ${
                   activeCategory === cat
-                    ? 'bg-gradient-to-r from-[#560BAD] to-[#4361EE] text-white shadow-[0_0_12px_rgba(86,11,173,0.4)]'
-                    : 'glass border border-[#560BAD]/20 text-slate-300 hover:border-[#560BAD]/60 hover:text-white'
+                    ? 'border-nebula-400/60 text-nebula-300 bg-nebula-400/10'
+                    : 'border-white/10 text-white/40 hover:border-nebula-600/40 hover:text-white/70'
                 }`}
               >
-                {cat}
+                [{cat}]
               </button>
             ))}
           </div>
@@ -81,7 +80,7 @@ export default function BlogsClient() {
             {/* Featured post */}
             {featured && (
               <div className="mb-8">
-                <div className="text-xs font-semibold text-[#CFA3EA] uppercase tracking-wider mb-3">⭐ Featured Article</div>
+                <div className="font-mono text-xs text-nebula-400 mb-3">// FEATURED_ARTICLE</div>
                 <BlogCard
                   title={featured.title}
                   category={featured.category}
@@ -99,7 +98,7 @@ export default function BlogsClient() {
             {/* Blog grid */}
             {rest.length > 0 && (
               <>
-                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">More Articles</div>
+                <div className="font-mono text-xs text-white/30 uppercase tracking-wider mb-4">// more_articles</div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                   {rest.map((blog, i) => (
                     <motion.div
