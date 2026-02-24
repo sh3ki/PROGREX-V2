@@ -4,16 +4,15 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Zap } from 'lucide-react'
 
 const navLinks = [
-  { label: 'Home', href: '/' },
-  { label: 'About Us', href: '/about' },
-  { label: 'Services', href: '/services' },
-  { label: 'Projects', href: '/projects' },
-  { label: 'Ready-Made Systems', href: '/ready-made-systems' },
-  { label: 'Blogs', href: '/blogs' },
-  { label: 'Contact Us', href: '/contact' },
+  { label: 'HOME', href: '/' },
+  { label: 'ABOUT', href: '/about' },
+  { label: 'SERVICES', href: '/services' },
+  { label: 'PROJECTS', href: '/projects' },
+  { label: 'SYSTEMS', href: '/ready-made-systems' },
+  { label: 'BLOG', href: '/blogs' },
+  { label: 'CONTACT', href: '/contact' },
 ]
 
 export default function Navbar() {
@@ -34,75 +33,90 @@ export default function Navbar() {
   return (
     <>
       <motion.header
-        initial={{ y: -100, opacity: 0 }}
+        initial={{ y: -60, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled
-            ? 'bg-[#050510]/90 backdrop-blur-xl border-b border-[#560BAD]/20 shadow-[0_4px_30px_rgba(86,11,173,0.15)]'
-            : 'bg-transparent'
-        }`}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+        className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-200 ${
+          scrolled ? 'bg-[#0A0A0F]/97' : 'bg-[#0A0A0F]'
+        } border-b border-[#1A1A24]`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 lg:h-20">
+        {/* Top accent line */}
+        <div className="h-[1px] bg-[#7C2AE8]" />
+
+        <div className="max-w-screen-xl mx-auto px-6 lg:px-8">
+          <div className="flex items-center justify-between h-[52px]">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#560BAD] to-[#4361EE] flex items-center justify-center shadow-[0_0_15px_rgba(86,11,173,0.5)] group-hover:shadow-[0_0_25px_rgba(131,29,198,0.7)] transition-all duration-300">
-                <Zap size={16} className="text-white" />
+            <Link href="/" className="flex items-center gap-3 group shrink-0">
+              <div className="relative w-6 h-6 border border-[#4C1D95] flex items-center justify-center group-hover:border-[#7C2AE8] transition-colors duration-150">
+                <div className="w-2.5 h-2.5 bg-[#7C2AE8]" />
+                <div className="absolute -top-px -right-px w-1 h-1 bg-[#7C2AE8]" />
               </div>
-              <span className="text-xl font-extrabold tracking-tight text-gradient">
+              <span className="text-[12px] font-bold tracking-[0.25em] text-[#F0EEF8] uppercase font-mono">
                 PROGREX
+              </span>
+              <span className="hidden sm:block text-[8px] font-mono text-[#3A3854] tracking-widest border-l border-[#1A1A24] pl-3 whitespace-nowrap">
+                TECH.SYS v2
               </span>
             </Link>
 
             {/* Desktop Nav */}
-            <nav className="hidden lg:flex items-center gap-1">
+            <nav className="hidden lg:flex items-center h-[52px]">
               {navLinks.map((link) => {
-                const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href))
+                const isActive =
+                  pathname === link.href ||
+                  (link.href !== '/' && pathname.startsWith(link.href))
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`relative px-3 py-2 text-sm font-medium transition-colors duration-200 group ${
-                      isActive ? 'text-[#CFA3EA]' : 'text-slate-300 hover:text-white'
+                    className={`relative flex items-center h-full px-4 text-[10px] font-mono tracking-[0.18em] transition-colors duration-150 border-r border-[#1A1A24] first:border-l ${
+                      isActive
+                        ? 'text-[#C4B5FD] bg-[#0F0F14]'
+                        : 'text-[#3A3854] hover:text-[#9B98B3] hover:bg-[#0C0C12]'
                     }`}
                   >
                     {link.label}
-                    <span
-                      className={`absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-[#560BAD] to-[#4361EE] transition-all duration-300 ${
-                        isActive ? 'w-full' : 'w-0 group-hover:w-full'
-                      }`}
-                    />
+                    {isActive && (
+                      <motion.div
+                        layoutId="nav-indicator"
+                        className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#7C2AE8]"
+                        transition={{ duration: 0.18, ease: 'linear' }}
+                      />
+                    )}
                   </Link>
                 )
               })}
             </nav>
 
             {/* CTA + Hamburger */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center h-[52px]">
               <Link
                 href="/contact"
-                className="hidden sm:inline-flex btn-primary text-sm"
+                className="hidden sm:flex items-center gap-2 px-5 h-full text-[10px] font-mono tracking-[0.15em] border-l border-[#1A1A24] text-[#C4B5FD] hover:bg-[#7C2AE8] hover:text-white hover:border-[#7C2AE8] transition-all duration-150"
               >
-                <span>Get a Quote</span>
+                GET QUOTE
               </Link>
 
               <button
                 onClick={() => setMobileOpen(!mobileOpen)}
-                className="lg:hidden p-2 rounded-lg glass border border-[#560BAD]/30 text-slate-300 hover:text-white transition-colors"
+                className="lg:hidden flex flex-col items-center justify-center gap-[5px] w-[52px] h-full border-l border-[#1A1A24] text-[#5A5770] hover:text-[#C4B5FD] hover:bg-[#0F0F14] transition-colors"
                 aria-label="Toggle menu"
               >
-                <AnimatePresence mode="wait">
-                  {mobileOpen ? (
-                    <motion.div key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }}>
-                      <X size={20} />
-                    </motion.div>
-                  ) : (
-                    <motion.div key="open" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.2 }}>
-                      <Menu size={20} />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                <motion.span
+                  animate={{ rotate: mobileOpen ? 45 : 0, y: mobileOpen ? 7 : 0 }}
+                  className="block w-4 h-px bg-current"
+                  transition={{ duration: 0.15 }}
+                />
+                <motion.span
+                  animate={{ opacity: mobileOpen ? 0 : 1 }}
+                  className="block w-4 h-px bg-current"
+                  transition={{ duration: 0.1 }}
+                />
+                <motion.span
+                  animate={{ rotate: mobileOpen ? -45 : 0, y: mobileOpen ? -7 : 0 }}
+                  className="block w-4 h-px bg-current"
+                  transition={{ duration: 0.15 }}
+                />
               </button>
             </div>
           </div>
@@ -113,44 +127,49 @@ export default function Navbar() {
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="fixed top-16 left-0 right-0 z-40 bg-[#070714]/95 backdrop-blur-xl border-b border-[#560BAD]/20 lg:hidden"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.18, ease: 'easeInOut' }}
+            className="fixed top-[53px] left-0 right-0 z-40 bg-[#0A0A0F] border-b border-[#1A1A24] lg:hidden overflow-hidden"
           >
-            <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col gap-1">
-              {navLinks.map((link, i) => {
-                const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href))
-                return (
-                  <motion.div
-                    key={link.href}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.05 }}
+            {navLinks.map((link, i) => {
+              const isActive =
+                pathname === link.href ||
+                (link.href !== '/' && pathname.startsWith(link.href))
+              return (
+                <motion.div
+                  key={link.href}
+                  initial={{ opacity: 0, x: -16 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.04 }}
+                >
+                  <Link
+                    href={link.href}
+                    className={`flex items-center gap-4 px-6 py-3.5 border-b border-[#0F0F14] text-[10px] font-mono tracking-[0.2em] transition-colors ${
+                      isActive
+                        ? 'text-[#C4B5FD] bg-[#0F0F14] border-l-2 border-l-[#7C2AE8]'
+                        : 'text-[#3A3854] hover:text-[#9B98B3] hover:bg-[#0C0C12]'
+                    }`}
                   >
-                    <Link
-                      href={link.href}
-                      className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-                        isActive
-                          ? 'bg-gradient-to-r from-[#560BAD]/30 to-[#4361EE]/20 text-[#CFA3EA] border border-[#560BAD]/40'
-                          : 'text-slate-300 hover:bg-white/5 hover:text-white'
-                      }`}
-                    >
-                      {link.label}
-                    </Link>
-                  </motion.div>
-                )
-              })}
-              <div className="pt-2 pb-1">
-                <Link href="/contact" className="btn-primary w-full justify-center text-sm">
-                  <span>Get a Quote</span>
-                </Link>
-              </div>
-            </div>
+                    <span className="text-[#1E1E2E] font-mono text-[8px] w-5">
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    {link.label}
+                  </Link>
+                </motion.div>
+              )
+            })}
+            <Link
+              href="/contact"
+              className="flex items-center justify-center py-4 text-[10px] font-mono tracking-[0.2em] bg-[#7C2AE8] text-white hover:bg-[#8B39F0] transition-colors"
+            >
+              INITIATE CONTACT
+            </Link>
           </motion.div>
         )}
       </AnimatePresence>
     </>
   )
 }
+
