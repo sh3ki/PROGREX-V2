@@ -41,13 +41,13 @@ export default function ProjectsClient() {
               onClick={() => setActiveFilter(cat)}
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.97 }}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+              className={`font-mono text-xs px-3 py-1.5 border transition-all duration-200 ${
                 activeFilter === cat
-                  ? 'bg-gradient-to-r from-[#560BAD] to-[#4361EE] text-white shadow-[0_0_15px_rgba(86,11,173,0.4)]'
-                  : 'glass border border-[#560BAD]/20 text-slate-300 hover:border-[#560BAD]/60 hover:text-white'
+                  ? 'border-nebula-400/60 text-nebula-300 bg-nebula-400/10'
+                  : 'border-white/10 text-white/40 hover:border-nebula-600/40 hover:text-white/70'
               }`}
             >
-              {cat}
+              [{cat}]
             </motion.button>
           ))}
         </div>
