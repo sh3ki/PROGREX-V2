@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { Linkedin, Github, CheckCircle, ArrowRight } from 'lucide-react'
+import { Linkedin, Github, CheckCircle, ArrowRight, Target, Telescope } from 'lucide-react'
 import Hero from '@/components/Hero'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
 import CTASection from '@/components/CTASection'
@@ -49,12 +49,12 @@ export default function AboutClient() {
             viewport={{ once: true }}
             transition={{ duration: 0.7 }}
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass border border-[#560BAD]/30 text-[#CFA3EA] text-xs font-semibold uppercase tracking-widest mb-4">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#831DC6] animate-pulse" />
+            <div className="eyebrow-badge mb-4">
+              <span className="w-1.5 h-1.5 rounded-full bg-nebula-500 animate-pulse" />
               Our Story
             </div>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-5 leading-tight">
-              From a Small Dev Shop <span className="text-gradient">to a Technology Powerhouse</span>
+              From a Small Dev Shop <span className="text-gradient-nebula">to a Technology Powerhouse</span>
             </h2>
             <div className="space-y-4 text-slate-400 leading-relaxed">
               <p>
@@ -77,8 +77,8 @@ export default function AboutClient() {
             className="grid grid-cols-2 gap-4"
           >
             {stats.map((stat, i) => (
-              <div key={i} className="glass-card rounded-2xl p-6 text-center border border-[#560BAD]/20 hover:border-[#560BAD]/50 transition-colors">
-                <div className="text-4xl font-extrabold text-gradient mb-2">{stat.value}</div>
+              <div key={i} className="glass-card rounded-2xl p-6 text-center border border-nebula-700/20 hover:border-nebula-600/50 transition-colors">
+                <div className="text-4xl font-extrabold text-gradient-nebula mb-2">{stat.value}</div>
                 <div className="text-slate-400 text-sm font-medium">{stat.label}</div>
               </div>
             ))}
@@ -109,10 +109,10 @@ export default function AboutClient() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: i * 0.15 }}
-              className="glass-card rounded-2xl p-8 border border-[#560BAD]/20 hover:border-[#560BAD]/50 hover:shadow-[0_0_30px_rgba(86,11,173,0.2)] transition-all duration-300"
+              className="glass-card rounded-2xl p-8 border border-nebula-700/20 hover:border-nebula-600/50 hover:shadow-nebula transition-all duration-300"
             >
-              <div className="text-4xl mb-4">{item.icon}</div>
-              <div className="text-xs font-semibold text-[#CFA3EA] uppercase tracking-wider mb-2">{item.label}</div>
+              <div className="mb-4">{i === 0 ? <Target size={28} className="text-nebula-400" /> : <Telescope size={28} className="text-aurora-400" />}</div>
+              <div className="text-xs font-mono font-semibold text-nebula-400 uppercase tracking-wider mb-2">{item.label}</div>
               <h3 className="text-xl font-bold text-white mb-3 leading-snug">{item.title}</h3>
               <p className="text-slate-400 leading-relaxed text-sm">{item.desc}</p>
             </motion.div>
@@ -138,8 +138,10 @@ export default function AboutClient() {
               transition={{ duration: 0.5, delay: i * 0.1 }}
               className="glass-card rounded-2xl p-6 hover-glow-card group"
             >
-              <div className="text-3xl mb-4">{val.icon}</div>
-              <h3 className="text-base font-bold text-white mb-2 group-hover:text-[#CFA3EA] transition-colors">{val.title}</h3>
+              <div className="w-10 h-10 rounded-xl border border-nebula-400/30 bg-nebula-400/10 flex items-center justify-center mb-4">
+                <span className="font-mono text-xs font-bold text-nebula-400">// {String(i + 1).padStart(2, '0')}</span>
+              </div>
+              <h3 className="text-base font-bold text-white mb-2 group-hover:text-nebula-300 transition-colors">{val.title}</h3>
               <p className="text-slate-400 text-sm leading-relaxed">{val.desc}</p>
             </motion.div>
           ))}
@@ -165,17 +167,17 @@ export default function AboutClient() {
               whileHover={{ y: -6 }}
               className="glass-card rounded-2xl p-6 text-center hover-glow-card group"
             >
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#560BAD] to-[#4361EE] flex items-center justify-center text-2xl font-black text-white mx-auto mb-4 shadow-[0_0_20px_rgba(86,11,173,0.4)] group-hover:shadow-[0_0_30px_rgba(131,29,198,0.6)] transition-all">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-nebula-700 to-aurora-600 flex items-center justify-center text-2xl font-black text-white mx-auto mb-4 shadow-nebula group-hover:shadow-nebula-lg transition-all">
                 {member.name.charAt(0)}
               </div>
-              <h3 className="text-base font-bold text-white mb-0.5 group-hover:text-[#CFA3EA] transition-colors">{member.name}</h3>
-              <div className="text-xs font-medium text-[#831DC6] mb-3">{member.role}</div>
+              <h3 className="text-base font-bold text-white mb-0.5 group-hover:text-nebula-300 transition-colors">{member.name}</h3>
+              <div className="text-xs font-mono font-medium text-nebula-500 mb-3">{member.role}</div>
               <p className="text-slate-400 text-sm leading-relaxed mb-4">{member.bio}</p>
               <div className="flex justify-center gap-3">
-                <a href={member.linkedin} className="w-8 h-8 rounded-lg glass border border-[#560BAD]/20 flex items-center justify-center text-slate-400 hover:text-[#CFA3EA] hover:border-[#831DC6]/50 transition-all">
+                <a href={member.linkedin} className="w-8 h-8 rounded-lg glass border border-nebula-700/20 flex items-center justify-center text-white/40 hover:text-nebula-300 hover:border-nebula-500/50 transition-all">
                   <Linkedin size={14} />
                 </a>
-                <a href={member.github} className="w-8 h-8 rounded-lg glass border border-[#560BAD]/20 flex items-center justify-center text-slate-400 hover:text-[#CFA3EA] hover:border-[#831DC6]/50 transition-all">
+                <a href={member.github} className="w-8 h-8 rounded-lg glass border border-nebula-700/20 flex items-center justify-center text-white/40 hover:text-nebula-300 hover:border-nebula-500/50 transition-all">
                   <Github size={14} />
                 </a>
               </div>
@@ -202,9 +204,9 @@ export default function AboutClient() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: i * 0.06 }}
-                className="flex items-center gap-3 text-sm text-slate-300"
+                className="flex items-center gap-3 text-sm text-white/60"
               >
-                <CheckCircle size={16} className="text-[#831DC6] shrink-0" />
+                <CheckCircle size={16} className="text-nebula-500 shrink-0" />
                 {item}
               </motion.div>
             ))}
@@ -222,7 +224,7 @@ export default function AboutClient() {
         />
         <div className="relative">
           {/* Vertical line */}
-          <div className="absolute left-6 sm:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-[#560BAD] to-[#4361EE] opacity-30 hidden sm:block" />
+          <div className="absolute left-6 sm:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-nebula-600 to-aurora-500 opacity-30 hidden sm:block" />
 
           <div className="space-y-8">
             {processSteps.map((step, i) => (
@@ -235,15 +237,15 @@ export default function AboutClient() {
                 className={`flex items-start gap-6 sm:gap-0 ${i % 2 === 0 ? 'sm:flex-row' : 'sm:flex-row-reverse'}`}
               >
                 <div className={`sm:w-1/2 ${i % 2 === 0 ? 'sm:pr-12 sm:text-right' : 'sm:pl-12 sm:text-left'}`}>
-                  <div className="glass-card rounded-xl p-5 hover:border-[#560BAD]/40 transition-colors">
-                    <div className="text-xs font-bold text-[#CFA3EA] uppercase tracking-wider mb-1">Step {step.step}</div>
+                  <div className="glass-card rounded-xl p-5 hover:border-nebula-600/40 transition-colors">
+                    <div className="text-xs font-bold font-mono text-nebula-400 uppercase tracking-wider mb-1">Step {step.step}</div>
                     <h3 className="text-base font-bold text-white mb-2">{step.title}</h3>
                     <p className="text-slate-400 text-sm leading-relaxed">{step.desc}</p>
                   </div>
                 </div>
                 {/* Center dot */}
                 <div className="hidden sm:flex sm:w-0 items-center justify-center relative">
-                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-[#560BAD] to-[#4361EE] shadow-[0_0_10px_rgba(86,11,173,0.6)] z-10" />
+                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-nebula-600 to-aurora-500 shadow-nebula-sm z-10" />
                 </div>
                 <div className="hidden sm:block sm:w-1/2" />
               </motion.div>
