@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { Linkedin, Github, CheckCircle, ArrowRight, Target, Telescope } from 'lucide-react'
 import Hero from '@/components/Hero'
+import ConstellationDecor from '@/components/ConstellationDecor'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
 import CTASection from '@/components/CTASection'
 import { team, coreValues, stats } from '@/lib/mockData'
@@ -41,7 +42,7 @@ export default function AboutClient() {
       />
 
       {/* Company Story */}
-      <SectionWrapper className="bg-[#050510]">
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="gemini" side="left" offsetY="15%" />}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <motion.div
             initial={{ opacity: 0, x: -40 }}
@@ -87,7 +88,7 @@ export default function AboutClient() {
       </SectionWrapper>
 
       {/* Mission & Vision */}
-      <SectionWrapper className="bg-[#030308]">
+      <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="cassiopeia" side="right" offsetY="20%" />}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[
             {
@@ -121,7 +122,7 @@ export default function AboutClient() {
       </SectionWrapper>
 
       {/* Core Values */}
-      <SectionWrapper className="bg-[#050510]">
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="orion" side="left" offsetY="10%" />}>
         <SectionHeader
           badge="What We Stand For"
           title="Our Core"
@@ -149,7 +150,7 @@ export default function AboutClient() {
       </SectionWrapper>
 
       {/* Team */}
-      <SectionWrapper className="bg-[#030308]" id="team">
+      <SectionWrapper className="bg-section-b" id="team" decoration={<ConstellationDecor name="scorpius" side="right" offsetY="12%" />}>
         <SectionHeader
           badge="The People Behind PROGREX"
           title="Meet Our"
@@ -187,7 +188,7 @@ export default function AboutClient() {
       </SectionWrapper>
 
       {/* Why Choose Us */}
-      <SectionWrapper className="bg-[#050510]">
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="bigdipper" side="left" offsetY="25%" />}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <SectionHeader
             badge="Why PROGREX"
@@ -215,7 +216,7 @@ export default function AboutClient() {
       </SectionWrapper>
 
       {/* Process Timeline */}
-      <SectionWrapper className="bg-[#030308]">
+      <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="leo" side="right" offsetY="18%" />}>
         <SectionHeader
           badge="How We Work"
           title="Our Proven"
