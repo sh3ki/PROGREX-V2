@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { ArrowRight, Star, CheckCircle, TrendingUp, AlignLeft, AlertTriangle, Lightbulb } from 'lucide-react'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
+import ConstellationDecor from '@/components/ConstellationDecor'
 import CTASection from '@/components/CTASection'
 
 interface Project {
@@ -24,7 +25,7 @@ export default function CaseStudyClient({ project }: { project: Project }) {
   return (
     <>
       {/* Hero */}
-      <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden bg-[#050510] pt-20">
+      <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden bg-section-a pt-20">
         <div className="absolute inset-0 bg-dot-grid opacity-15" />
         <div className="absolute inset-0 bg-gradient-to-br from-aurora-700/10 to-nebula-700/5" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-nebula-700/10 rounded-full blur-[100px]" />
@@ -42,11 +43,11 @@ export default function CaseStudyClient({ project }: { project: Project }) {
           </motion.div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#050510] to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[rgba(5,5,16,0.7)] to-transparent" />
       </section>
 
       {/* Image placeholder carousel */}
-      <SectionWrapper className="bg-[#050510]">
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="orion" side="left" offsetY="15%" />}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[1, 2, 3].map((n) => (
             <motion.div
@@ -67,7 +68,7 @@ export default function CaseStudyClient({ project }: { project: Project }) {
       </SectionWrapper>
 
       {/* Overview + Problem + Solution */}
-      <SectionWrapper className="bg-[#030308]">
+      <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="scorpius" side="right" offsetY="10%" />}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {[
             { label: 'Project Overview', content: project.overview, icon: <AlignLeft size={22} className="text-nebula-400" /> },
@@ -91,7 +92,7 @@ export default function CaseStudyClient({ project }: { project: Project }) {
       </SectionWrapper>
 
       {/* Features */}
-      <SectionWrapper className="bg-[#050510]">
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="bigdipper" side="left" offsetY="20%" />}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
             <SectionHeader badge="What We Built" title="Key" highlight="Features" center={false} />
@@ -132,7 +133,7 @@ export default function CaseStudyClient({ project }: { project: Project }) {
       </SectionWrapper>
 
       {/* Results */}
-      <SectionWrapper className="bg-[#030308]">
+      <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="crux" side="right" offsetY="25%" />}>
         <SectionHeader badge="Measurable Impact" title="Results &" highlight="Metrics" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {project.results.map((result, i) => (
@@ -153,7 +154,7 @@ export default function CaseStudyClient({ project }: { project: Project }) {
       </SectionWrapper>
 
       {/* Testimonial */}
-      <SectionWrapper className="bg-[#050510]">
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="gemini" side="left" offsetY="30%" />}>
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}

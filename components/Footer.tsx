@@ -57,7 +57,7 @@ export default function Footer() {
     <footer
       className="relative overflow-hidden border-t"
       style={{
-        background: 'rgba(2,2,10,0.95)',
+        background: 'rgba(2,2,10,0.82)',
         borderTopColor: 'rgba(103,232,249,0.1)',
       }}
     >

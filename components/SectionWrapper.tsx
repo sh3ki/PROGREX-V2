@@ -8,12 +8,15 @@ interface SectionWrapperProps {
   className?: string
   id?: string
   withDivider?: boolean
+  decoration?: ReactNode  // constellation or other absolute-positioned decor
 }
 
-export default function SectionWrapper({ children, className = '', id, withDivider = false }: SectionWrapperProps) {
+export default function SectionWrapper({ children, className = '', id, withDivider = false, decoration }: SectionWrapperProps) {
   return (
     <section id={id} className={`section-padding relative ${className}`}>
       {withDivider && <div className="section-divider mb-16" />}
+      {/* Constellation / decorative element — rendered outside the content max-w so it lives in the margin gutter */}
+      {decoration}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {children}
       </div>

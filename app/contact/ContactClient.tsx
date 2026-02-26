@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Mail, Phone, MapPin, Send, CheckCircle, Github, Twitter, Linkedin, Facebook } from 'lucide-react'
 import SectionWrapper from '@/components/SectionWrapper'
+import ConstellationDecor from '@/components/ConstellationDecor'
 
 const services = [
   'Custom Software Development',
@@ -67,7 +68,7 @@ export default function ContactClient() {
   return (
     <>
       {/* Hero */}
-      <section className="relative pt-32 pb-16 overflow-hidden bg-[#050510]">
+      <section className="relative pt-32 pb-16 overflow-hidden bg-section-a">
         <div className="absolute inset-0 bg-dot-grid opacity-15" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-nebula-700/10 rounded-full blur-[100px]" />
 
@@ -86,10 +87,10 @@ export default function ContactClient() {
           </motion.div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#050510] to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[rgba(5,5,16,0.7)] to-transparent" />
       </section>
 
-      <SectionWrapper className="bg-[#050510]">
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="gemini" side="right" offsetY="15%" />}>
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
           {/* Form */}
           <div className="lg:col-span-3">

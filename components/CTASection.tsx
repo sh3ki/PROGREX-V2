@@ -21,8 +21,8 @@ export default function CTASection({
 
   return (
     <section className="relative py-28 overflow-hidden">
-      {/* Deep space background */}
-      <div className="absolute inset-0 bg-[#03030F]" />
+      {/* Deep space background — semi-transparent so starfield shows through */}
+      <div className="absolute inset-0" style={{ background: 'rgba(3,3,15,0.82)' }} />
       <div className="absolute inset-0 bg-dot-grid opacity-25 pointer-events-none" />
 
       {/* Concentric circles decoration */}

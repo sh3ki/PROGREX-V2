@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Hero from '@/components/Hero'
 import ProjectCard from '@/components/ProjectCard'
 import CTASection from '@/components/CTASection'
+import ConstellationDecor from '@/components/ConstellationDecor'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
 import { projects, projectCategories } from '@/lib/mockData'
 
@@ -25,7 +26,7 @@ export default function ProjectsClient() {
         primaryBtn={{ label: 'Start Your Project', href: '/contact' }}
       />
 
-      <SectionWrapper className="bg-[#050510]">
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="orion" side="right" offsetY="12%" />}>
         <SectionHeader
           badge="Case Studies"
           title="Our"

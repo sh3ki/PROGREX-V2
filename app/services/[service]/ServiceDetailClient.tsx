@@ -5,6 +5,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { ChevronDown, ArrowRight } from 'lucide-react'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
+import ConstellationDecor from '@/components/ConstellationDecor'
 import CTASection from '@/components/CTASection'
 
 interface Service {
@@ -24,7 +25,7 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
   return (
     <>
       {/* Service Hero */}
-      <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden bg-[#050510] pt-20">
+      <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden bg-section-a pt-20">
         <div className="absolute inset-0 bg-dot-grid opacity-15" />
         <div className="absolute inset-0 bg-gradient-to-br from-aurora-700/10 to-nebula-700/5" />
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-nebula-700/10 rounded-full blur-[100px]" />
@@ -58,11 +59,11 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
           </motion.div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#050510] to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[rgba(5,5,16,0.7)] to-transparent" />
       </section>
 
       {/* Process */}
-      <SectionWrapper className="bg-[#050510]">
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="gemini" side="right" offsetY="15%" />}>
         <SectionHeader
           badge="How We Deliver"
           title="Our"
@@ -90,7 +91,7 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
       </SectionWrapper>
 
       {/* Technologies */}
-      <SectionWrapper className="bg-[#030308]">
+      <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="crux" side="left" offsetY="20%" />}>
         <SectionHeader
           badge="Tech Stack"
           title="Technologies"
@@ -115,7 +116,7 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
       </SectionWrapper>
 
       {/* FAQs */}
-      <SectionWrapper className="bg-[#050510]">
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="scorpius" side="right" offsetY="10%" />}>
         <SectionHeader
           badge="Common Questions"
           title="Frequently Asked"

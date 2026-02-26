@@ -55,7 +55,7 @@ export default function Hero({
   showStats = false,
 }: HeroProps) {
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden bg-[#03030F]">
+    <section className="relative min-h-screen flex items-center overflow-hidden">
       {/* Nebula blobs */}
       <div
         className="nebula-blob nebula-cyan absolute pointer-events-none"
@@ -70,7 +70,7 @@ export default function Hero({
       <div className="absolute inset-0 bg-dot-grid opacity-30 pointer-events-none" />
 
       {/* Bottom fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#03030F] to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[rgba(3,3,15,0.7)] to-transparent pointer-events-none" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-28 w-full">
         <div className="grid lg:grid-cols-2 gap-16 items-center">

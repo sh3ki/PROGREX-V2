@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import Hero from '@/components/Hero'
 import BlogCard from '@/components/BlogCard'
 import CTASection from '@/components/CTASection'
+import ConstellationDecor from '@/components/ConstellationDecor'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
 import { blogs, blogCategories } from '@/lib/mockData'
 
@@ -34,7 +35,7 @@ export default function BlogsClient() {
         primaryBtn={{ label: 'Subscribe for Updates', href: '/contact' }}
       />
 
-      <SectionWrapper className="bg-[#050510]">
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="cassiopeia" side="left" offsetY="15%" />}>
         <SectionHeader
           badge="Latest Articles"
           title="Our"

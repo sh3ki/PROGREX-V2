@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { ArrowRight, Target, Zap, Lock, TrendingUp } from 'lucide-react'
 import Hero from '@/components/Hero'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
+import ConstellationDecor from '@/components/ConstellationDecor'
 import ServiceCard from '@/components/ServiceCard'
 import CTASection from '@/components/CTASection'
 import { services } from '@/lib/mockData'
@@ -24,7 +25,7 @@ export default function ServicesPage() {
         primaryBtn={{ label: 'Get a Quote', href: '/contact' }}
       />
 
-      <SectionWrapper className="bg-[#050510]">
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="orion" side="right" offsetY="12%" />}>
         <SectionHeader
           badge="Our Capabilities"
           title="Six Core Service"
@@ -47,7 +48,7 @@ export default function ServicesPage() {
       </SectionWrapper>
 
       {/* Approach section */}
-      <SectionWrapper className="bg-[#030308]">
+      <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="bigdipper" side="left" offsetY="20%" />}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
             <div className="eyebrow-badge mb-4">

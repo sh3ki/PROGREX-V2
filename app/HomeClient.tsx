@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { ArrowRight, Star, Quote, ChevronLeft, ChevronRight, Monitor } from 'lucide-react'
 import TechConstellation from '@/components/TechConstellation'
 import Hero from '@/components/Hero'
+import ConstellationDecor from '@/components/ConstellationDecor'
 import ServiceCard from '@/components/ServiceCard'
 import ProjectCard from '@/components/ProjectCard'
 import CTASection from '@/components/CTASection'
@@ -33,7 +34,7 @@ export default function HomeClient() {
       />
 
       {/* ── SERVICES PREVIEW ─────────────────────────────────────────────── */}
-      <SectionWrapper className="bg-[#050510]">
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="orion" side="right" offsetY="10%" />}>
         <SectionHeader
           badge="What We Build"
           title="Comprehensive Technology"
@@ -67,7 +68,7 @@ export default function HomeClient() {
       </SectionWrapper>
 
       {/* ── FEATURED PROJECTS ────────────────────────────────────────────── */}
-      <SectionWrapper className="bg-[#030308]">
+      <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="bigdipper" side="left" offsetY="15%" />}>
         <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
         <SectionHeader
           badge="Our Work"
@@ -103,7 +104,7 @@ export default function HomeClient() {
       </SectionWrapper>
 
       {/* ── READY-MADE SYSTEMS ───────────────────────────────────────────── */}
-      <SectionWrapper className="bg-[#050510]">
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="cassiopeia" side="right" offsetY="20%" />}>
         <SectionHeader
           badge="Ready-Made Systems"
           title="Launch-Ready"
@@ -152,7 +153,7 @@ export default function HomeClient() {
       </SectionWrapper>
 
       {/* ── TECHNOLOGIES ─────────────────────────────────────────────────── */}
-      <SectionWrapper className="bg-[#030308]">
+      <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="leo" side="left" offsetY="25%" />}>
         <SectionHeader
           badge="Our Stack"
           title="Technologies We"
@@ -177,7 +178,7 @@ export default function HomeClient() {
       </SectionWrapper>
 
       {/* ── TESTIMONIALS ─────────────────────────────────────────────────── */}
-      <SectionWrapper className="bg-[#050510]">
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="crux" side="right" offsetY="30%" />}>
         <SectionHeader
           badge="Client Stories"
           title="What Our Clients"

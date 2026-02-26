@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { CheckCircle, ChevronDown, Monitor, ArrowRight, Users, LifeBuoy, PlayCircle } from 'lucide-react'
 import Hero from '@/components/Hero'
+import ConstellationDecor from '@/components/ConstellationDecor'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
 import CTASection from '@/components/CTASection'
 import { systems } from '@/lib/mockData'
@@ -31,7 +32,7 @@ export default function ReadyMadeSystemsClient() {
 
       {/* Systems */}
       {systems.map((sys, si) => (
-        <SectionWrapper key={sys.id} className={si % 2 === 0 ? 'bg-[#050510]' : 'bg-[#030308]'} id={sys.slug}>
+        <SectionWrapper key={sys.id} className={si % 2 === 0 ? 'bg-section-a' : 'bg-section-b'} id={sys.slug} decoration={<ConstellationDecor name={(['orion','bigdipper','cassiopeia','scorpius','leo','crux','gemini'] as const)[si % 7]} side={si % 2 === 0 ? 'left' : 'right'} offsetY="20%" />}>
           <div className={`grid grid-cols-1 lg:grid-cols-2 gap-12 items-start ${si % 2 === 1 ? 'direction-rtl' : ''}`}>
             {/* Info */}
             <motion.div

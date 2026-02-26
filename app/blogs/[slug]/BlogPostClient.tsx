@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { Clock, User, ArrowLeft, Share2, Twitter, Linkedin } from 'lucide-react'
 import BlogCard from '@/components/BlogCard'
+import ConstellationDecor from '@/components/ConstellationDecor'
 import CTASection from '@/components/CTASection'
 import SectionWrapper from '@/components/SectionWrapper'
 
@@ -35,7 +36,7 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
   return (
     <>
       {/* Hero */}
-      <section className="relative pt-32 pb-16 overflow-hidden bg-[#050510]">
+      <section className="relative pt-32 pb-16 overflow-hidden bg-section-a">
         <div className="absolute inset-0 bg-dot-grid opacity-15" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-nebula-700/10 rounded-full blur-[100px]" />
 
@@ -130,7 +131,7 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
 
       {/* Related posts */}
       {relatedPosts.length > 0 && (
-        <SectionWrapper className="bg-[#030308]">
+        <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="leo" side="right" offsetY="15%" />}>
           <div className="font-mono text-xs text-nebula-400/60 uppercase tracking-widest mb-6">// related_articles</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {relatedPosts.map((post, i) => (

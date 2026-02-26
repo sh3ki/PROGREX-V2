@@ -5,7 +5,6 @@ import Footer from '@/components/Footer'
 import CustomCursor from '@/components/CustomCursor'
 import Chatbot from '@/components/Chatbot'
 import StarfieldCanvas from '@/components/StarfieldCanvas'
-import ConstellationOverlay from '@/components/ConstellationOverlay'
 
 export const metadata: Metadata = {
   title: {
@@ -60,9 +59,8 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-[#03030F] text-slate-100 antialiased cursor-none-desktop">
-        {/* Global starfield + constellation layers — fixed, behind everything */}
+        {/* Global starfield — fixed, behind everything */}
         <StarfieldCanvas />
-        <ConstellationOverlay />
         <CustomCursor />
         <Navbar />
         <main>{children}</main>
