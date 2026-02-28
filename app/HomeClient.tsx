@@ -8,11 +8,11 @@ import TechConstellation from '@/components/TechConstellation'
 import Hero from '@/components/Hero'
 import ConstellationDecor from '@/components/ConstellationDecor'
 import ServiceCard from '@/components/ServiceCard'
-import ProjectCard from '@/components/ProjectCard'
+import FeaturedProjectsCarousel from '@/components/FeaturedProjectsCarousel'
 import CTASection from '@/components/CTASection'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
 import { StaggerContainer, StaggerItem } from '@/components/AnimatedContainer'
-import { services, projects, systems, testimonials, technologies } from '@/lib/mockData'
+import { services, systems, testimonials, technologies } from '@/lib/mockData'
 
 export default function HomeClient() {
   const [activeTestimonial, setActiveTestimonial] = useState(0)
@@ -25,9 +25,11 @@ export default function HomeClient() {
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <Hero
         badge="Next-Gen Technology Solutions"
-        title="TECHNOLOGY SOLUTIONS THAT"
-        highlight="DRIVES SUCCESS."
-        subtitle="BUILD FASTER. SCALE SMARTER. WIN WITH PROGREX. — We engineer custom software, web apps, mobile platforms, and enterprise systems that transform your business."
+        title="TECHNOLOGY SOLUTIONS"
+        highlight="THAT DRIVES SUCCESS."
+        highlightNewLine
+        subtitleLabel="BUILD FASTER. SCALE SMARTER. WIN WITH PROGREX."
+        subtitle="We engineer custom software, web apps, mobile platforms, and enterprise systems that transform your business."
         primaryBtn={{ label: 'Get a Quote', href: '/contact' }}
         secondaryBtn={{ label: 'View Projects', href: '/projects' }}
         showStats
@@ -35,12 +37,16 @@ export default function HomeClient() {
 
       {/* ── SERVICES PREVIEW ─────────────────────────────────────────────── */}
       <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="orion" side="right" offsetY="10%" />}>
+        {/* Ambient top glow */}
+        <div className="absolute inset-x-0 top-0 h-64 pointer-events-none" style={{ background: 'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(14,165,233,0.07) 0%, transparent 100%)' }} />
+
         <SectionHeader
           badge="What We Build"
           title="Comprehensive Technology"
           highlight="Services"
-          subtitle="From custom software to enterprise systems — we deliver solutions that scale with your ambitions."
+          subtitle="From custom software to enterprise systems — we deliver efficient solutions that scale with your ambitions."
         />
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {services.map((service, i) => (
             <ServiceCard
@@ -59,8 +65,13 @@ export default function HomeClient() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.6 }}
-          className="text-center mt-10"
+          className="text-center mt-12"
         >
+          <div className="flex justify-center gap-2 mb-6">
+            {[...Array(3)].map((_, i) => (
+              <span key={i} className="w-1 h-1 rounded-full bg-nebula-400/30" />
+            ))}
+          </div>
           <Link href="/services" className="btn-outline inline-flex">
             Explore All Services <ArrowRight size={16} />
           </Link>
@@ -70,31 +81,30 @@ export default function HomeClient() {
       {/* ── FEATURED PROJECTS ────────────────────────────────────────────── */}
       <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="bigdipper" side="left" offsetY="15%" />}>
         <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
+        {/* Ambient glow */}
+        <div className="absolute inset-x-0 top-0 h-72 pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 40% at 50% 0%, rgba(124,58,237,0.07) 0%, transparent 100%)' }} />
+
         <SectionHeader
           badge="Our Work"
           title="Featured"
           highlight="Projects"
-          subtitle="Real-world solutions with measurable impact. See what we've built for our clients."
+          subtitle="Real-world solutions with measurable impact that drive efficiency, growth, and lasting value. See what we’ve successfully built and delivered for our clients."
         />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {projects.slice(0, 3).map((project, i) => (
-            <ProjectCard
-              key={project.id}
-              title={project.title}
-              category={project.category}
-              industry={project.industry}
-              shortDesc={project.shortDesc}
-              slug={project.slug}
-              tags={project.tags}
-              index={i}
-            />
-          ))}
-        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, delay: 0.2 }}
+        >
+          <FeaturedProjectsCarousel />
+        </motion.div>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.5 }}
           className="text-center mt-10"
         >
           <Link href="/projects" className="btn-outline inline-flex">
@@ -107,9 +117,9 @@ export default function HomeClient() {
       <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="cassiopeia" side="right" offsetY="20%" />}>
         <SectionHeader
           badge="Ready-Made Systems"
-          title="Launch-Ready"
+          title="Ready-Made"
           highlight="Business Systems"
-          subtitle="Pre-built, production-ready software systems. Customizable, deployable in days — not months."
+          subtitle="Pre-built, production-ready software systems. Fully customizable to fit your needs and budget - deploy in days, not months."
         />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {systems.map((sys, i) => (
@@ -158,7 +168,7 @@ export default function HomeClient() {
           badge="Our Stack"
           title="Technologies We"
           highlight="Master"
-          subtitle="A world-class technology stack for building scalable, reliable, and high-performance solutions."
+          subtitle="A robust technology stack for building scalable, reliable, and high-performance solutions."
         />
         <StaggerContainer className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
           {technologies.map((tech) => (
