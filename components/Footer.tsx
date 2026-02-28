@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Mail, Phone, MapPin, Github, Twitter, Linkedin, Facebook } from 'lucide-react'
 
 const footerLinks = {
@@ -74,15 +75,14 @@ export default function Footer() {
         <div className="py-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-10">
           {/* Brand column */}
           <div className="lg:col-span-2">
-            <Link href="/" className="inline-flex items-center gap-2.5 mb-5 group" aria-label="PROGREX">
-              {/* Hex logo */}
-              <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
-                <polygon points="14,2 26,8 26,20 14,26 2,20 2,8" fill="none" stroke="rgba(103,232,249,0.7)" strokeWidth="1.2"/>
-                <circle cx="14" cy="14" r="2.5" fill="#67E8F9"/>
-              </svg>
-              <span className="font-display font-bold text-lg tracking-[0.12em] text-white group-hover:text-nebula-300 transition-colors">
-                PROGREX
-              </span>
+            <Link href="/" className="inline-flex mb-5 group overflow-visible" aria-label="PROGREX">
+              <Image
+                src="/Progrex Logo White Transparent.png"
+                alt="PROGREX"
+                width={220}
+                height={64}
+                className="h-36 w-auto object-contain group-hover:opacity-80 transition-opacity duration-200"
+              />
             </Link>
 
             <p className="text-white/45 text-sm leading-relaxed mb-6 max-w-xs">
