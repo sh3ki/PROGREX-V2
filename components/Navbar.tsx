@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X } from 'lucide-react'
@@ -15,31 +16,6 @@ const navLinks = [
   { label: 'Blogs', href: '/blogs' },
   { label: 'Contact Us', href: '/contact' },
 ]
-
-// Constellation hex logo SVG
-function LogoMark() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-      <polygon
-        points="14,2 26,8 26,20 14,26 2,20 2,8"
-        fill="none"
-        stroke="rgba(103,232,249,0.8)"
-        strokeWidth="1.2"
-      />
-      <polygon
-        points="14,7 21,11 21,17 14,21 7,17 7,11"
-        fill="rgba(103,232,249,0.12)"
-        stroke="rgba(103,232,249,0.5)"
-        strokeWidth="0.8"
-      />
-      <circle cx="14" cy="14" r="2.5" fill="#67E8F9" />
-      <line x1="14" y1="2"  x2="14" y2="7"  stroke="rgba(103,232,249,0.5)" strokeWidth="0.8"/>
-      <line x1="14" y1="21" x2="14" y2="26" stroke="rgba(103,232,249,0.5)" strokeWidth="0.8"/>
-      <line x1="2"  y1="8"  x2="7"  y2="11" stroke="rgba(103,232,249,0.5)" strokeWidth="0.8"/>
-      <line x1="21" y1="17" x2="26" y2="20" stroke="rgba(103,232,249,0.5)" strokeWidth="0.8"/>
-    </svg>
-  )
-}
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
@@ -71,20 +47,24 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 lg:h-18">
 
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-2.5 group" aria-label="PROGREX Home">
-              <LogoMark />
-              <span className="font-display font-bold text-lg tracking-[0.12em] text-white group-hover:text-nebula-300 transition-colors duration-200">
-                PROGREX
-              </span>
-            </Link>
-
-            {/* Coordinate decoration — desktop only */}
-            <div className="hidden xl:flex items-center gap-1 font-mono text-[10px] text-nebula-400/40 tracking-widest absolute left-1/2 -translate-x-1/2">
-              <span>SYS</span>
-              <span className="text-nebula-400/20">://</span>
-              <span>MISSION_CONTROL</span>
-              <span className="text-nebula-400/20 ml-2 animate-blink-dot">▮</span>
+            {/* Logo + Status indicator group */}
+            <div className="flex items-center gap-3 shrink-0">
+              <Link href="/" className="flex items-center group" aria-label="PROGREX Home">
+                <Image
+                  src="/Progrex Logo White Transparent.png"
+                  alt="PROGREX"
+                  width={140}
+                  height={40}
+                  className="h-22 w-auto object-contain group-hover:opacity-80 transition-opacity duration-200"
+                  priority
+                />
+              </Link>
+              {/* Status pill — only on very wide screens, inline (no absolute, no overlap) */}
+              <div className="hidden 2xl:flex items-center gap-1.5 font-mono text-[9px] text-nebula-400/35 tracking-widest select-none border border-nebula-400/15 rounded-full px-2 py-0.5">
+                <span className="w-1 h-1 rounded-full bg-emerald-400/70 animate-pulse" />
+                <span>SYS_LIVE</span>
+                <span className="text-nebula-400/20 animate-blink-dot">▮</span>
+              </div>
             </div>
 
             {/* Desktop Nav */}
@@ -97,14 +77,21 @@ export default function Navbar() {
                     key={link.href}
                     href={link.href}
                     className={`relative px-3 py-2 text-sm font-medium transition-colors duration-200 group ${
-                      isActive ? 'text-nebula-300' : 'text-white/60 hover:text-white'
+                      isActive ? 'text-white' : 'text-white/55 hover:text-white'
                     }`}
                   >
                     {link.label}
+                    {/* Sliding underline — scaleX from left on hover, always visible when active */}
                     <span
-                      className={`absolute bottom-0 left-3 right-3 h-px bg-gradient-to-r from-nebula-400 to-aurora-400 transition-all duration-300 ${
-                        isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-60'
+                      className={`absolute bottom-0 left-3 right-3 h-[1.5px] origin-left transition-transform duration-300 ${
+                        isActive
+                          ? 'scale-x-100'
+                          : 'scale-x-0 group-hover:scale-x-100'
                       }`}
+                      style={{
+                        background: 'linear-gradient(90deg, #0EA5E9 0%, #7C3AED 100%)',
+                        boxShadow: isActive ? '0 0 8px rgba(14,165,233,0.7)' : undefined,
+                      }}
                     />
                   </Link>
                 )
