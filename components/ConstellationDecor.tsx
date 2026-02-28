@@ -223,7 +223,7 @@ export default function ConstellationDecor({
   side,
   offsetY = '15%',
   scale = 0.85,
-  opacity = 0.22,
+  opacity = 0.68,
 }: ConstellationDecorProps) {
   const data = CONSTELLATIONS[name]
   if (!data) return null
@@ -279,8 +279,8 @@ export default function ConstellationDecor({
   }
 
   return (
-    // Only visible at 2xl (≥1536px) where there's genuine margin space
-    <div className="hidden 2xl:block" style={posStyle} aria-hidden="true">
+    // Only visible at xl (≥1280px) where there's genuine margin space
+    <div className="hidden xl:block" style={posStyle} aria-hidden="true">
       {/* Label */}
       <div
         style={{
@@ -305,10 +305,12 @@ export default function ConstellationDecor({
         overflow="visible"
       >
         <defs>
-          <filter id={`cg-${name}`} x="-80%" y="-80%" width="260%" height="260%">
-            <feGaussianBlur stdDeviation="2.5" result="blur" />
+          <filter id={`cg-${name}`} x="-120%" y="-120%" width="340%" height="340%">
+            <feGaussianBlur stdDeviation="5.5" result="blur1" />
+            <feGaussianBlur stdDeviation="2.5" result="blur2" />
             <feMerge>
-              <feMergeNode in="blur" />
+              <feMergeNode in="blur1" />
+              <feMergeNode in="blur2" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
@@ -327,8 +329,8 @@ export default function ConstellationDecor({
               key={li}
               x1={from.x} y1={from.y}
               x2={to.x}   y2={to.y}
-              stroke="rgba(103,232,249,0.35)"
-              strokeWidth="0.7"
+              stroke="rgba(103,232,249,0.78)"
+              strokeWidth="1.3"
               strokeDasharray={len}
               strokeDashoffset={drawnEdges[li] ? 0 : len}
               style={{ transition: 'stroke-dashoffset 0.7s ease-out' }}
