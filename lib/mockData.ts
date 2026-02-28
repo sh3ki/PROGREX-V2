@@ -98,8 +98,8 @@ export const services = [
   {
     id: 'academic-capstone-system-development',
     slug: 'academic-capstone-system-development',
-    title: 'Academic / Capstone System Development',
-    shortDesc: 'Professional, functional capstone and thesis systems for students — delivered on time, every time.',
+    title: 'Capstone System Development',
+    shortDesc: 'Professional, functional capstone and thesis systems for students - delivered on time',
     icon: '🎓',
     color: 'from-[#3A0CA3] to-[#831DC6]',
     description:
