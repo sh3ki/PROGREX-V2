@@ -1,58 +1,53 @@
 'use client'
 
-import { useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 
 interface DataFragment {
   label: string
   value: string
+  color?: string
 }
 
 const FRAGMENTS: DataFragment[] = [
-  { label: 'SYS', value: 'ONLINE' },
-  { label: 'LAT', value: '12ms' },
-  { label: 'UPT', value: '99.9%' },
-  { label: 'VER', value: 'v4.2.1' },
+  { label: 'UPTIME',  value: '99.9%',  color: '#34D399' },
+  { label: 'CLIENTS', value: '80+',    color: '#67E8F9' },
+  { label: 'BUILDS',  value: '150+',   color: '#A78BFA' },
+  { label: 'PING',    value: '12ms',   color: '#67E8F9' },
 ]
 
-const ORBIT_NODES = [
-  { angle: 0, color: '#67E8F9', label: 'API' },
-  { angle: 120, color: '#A78BFA', label: 'DB' },
-  { angle: 240, color: '#34D399', label: 'UI' },
-]
 
 export default function OrbitOrb() {
   return (
-    <div className="relative w-[340px] h-[340px] md:w-[420px] md:h-[420px] flex items-center justify-center select-none">
-      {/* Central sphere */}
+    <div className="relative w-[260px] h-[260px] sm:w-[320px] sm:h-[320px] md:w-[380px] md:h-[380px] lg:w-[420px] lg:h-[420px] flex items-center justify-center select-none">
+      {/* Central sphere — no constellation inside */}
       <motion.div
-        className="relative z-10 w-28 h-28 md:w-36 md:h-36 rounded-full"
+        className="relative z-10 w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-36 lg:h-36 rounded-full"
         style={{
-          background: 'radial-gradient(ellipse at 35% 35%, rgba(103,232,249,0.25), rgba(124,58,237,0.15) 60%, rgba(3,3,15,0.6))',
-          boxShadow: '0 0 40px rgba(103,232,249,0.2), inset 0 0 30px rgba(103,232,249,0.08)',
-          border: '1px solid rgba(103,232,249,0.25)',
+          background: 'radial-gradient(ellipse at 35% 35%, rgba(103,232,249,0.30), rgba(124,58,237,0.18) 55%, rgba(3,3,15,0.65))',
+          boxShadow: '0 0 48px rgba(103,232,249,0.25), 0 0 80px rgba(103,232,249,0.08), inset 0 0 30px rgba(103,232,249,0.12)',
+          border: '1.5px solid rgba(103,232,249,0.35)',
         }}
         animate={{ rotate: 360 }}
         transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
       >
-        {/* Inner glow */}
+        {/* Inner glow highlight */}
         <div
           className="absolute inset-3 rounded-full"
-          style={{ background: 'radial-gradient(circle at 40% 35%, rgba(103,232,249,0.18), transparent 70%)' }}
+          style={{ background: 'radial-gradient(circle at 38% 32%, rgba(103,232,249,0.25), transparent 60%)' }}
         />
-        {/* Constellation inside */}
-        <svg className="absolute inset-0 w-full h-full opacity-40" viewBox="0 0 100 100">
-          <circle cx="30" cy="35" r="2" fill="#67E8F9" />
-          <circle cx="55" cy="25" r="1.5" fill="#A78BFA" />
-          <circle cx="70" cy="50" r="2" fill="#67E8F9" />
-          <circle cx="45" cy="65" r="1.5" fill="#67E8F9" />
-          <circle cx="25" cy="60" r="1" fill="#A78BFA" />
-          <line x1="30" y1="35" x2="55" y2="25" stroke="rgba(103,232,249,0.5)" strokeWidth="0.7" />
-          <line x1="55" y1="25" x2="70" y2="50" stroke="rgba(103,232,249,0.5)" strokeWidth="0.7" />
-          <line x1="70" y1="50" x2="45" y2="65" stroke="rgba(103,232,249,0.5)" strokeWidth="0.7" />
-          <line x1="45" y1="65" x2="25" y2="60" stroke="rgba(103,232,249,0.5)" strokeWidth="0.7" />
-          <line x1="25" y1="60" x2="30" y2="35" stroke="rgba(103,232,249,0.3)" strokeWidth="0.7" />
+        {/* Tech pattern — subtle grid lines instead of constellation */}
+        <svg className="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 100 100">
+          <line x1="50" y1="10" x2="50" y2="90" stroke="rgba(103,232,249,0.6)" strokeWidth="0.5" />
+          <line x1="10" y1="50" x2="90" y2="50" stroke="rgba(103,232,249,0.6)" strokeWidth="0.5" />
+          <circle cx="50" cy="50" r="25" fill="none" stroke="rgba(103,232,249,0.4)" strokeWidth="0.5" />
+          <circle cx="50" cy="50" r="12" fill="none" stroke="rgba(167,139,250,0.4)" strokeWidth="0.5" />
         </svg>
+        {/* Center dot */}
+        <div
+          className="absolute inset-0 flex items-center justify-center"
+        >
+          <div className="w-2 h-2 rounded-full bg-nebula-300" style={{ boxShadow: '0 0 8px #67E8F9, 0 0 16px rgba(103,232,249,0.5)' }} />
+        </div>
       </motion.div>
 
       {/* Orbit ring 1 */}
@@ -60,23 +55,20 @@ export default function OrbitOrb() {
         className="absolute rounded-full border"
         style={{
           width: '65%', height: '65%',
-          borderColor: 'rgba(103,232,249,0.18)',
+          borderColor: 'rgba(103,232,249,0.22)',
           transform: 'rotateX(70deg)',
         }}
         animate={{ rotate: 360 }}
         transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
       >
-        {ORBIT_NODES.slice(0, 1).map((node) => (
-          <div
-            key={node.label}
-            className="absolute w-3 h-3 rounded-full -translate-x-1.5 -translate-y-1.5"
-            style={{
-              top: '0%', left: '50%',
-              background: node.color,
-              boxShadow: `0 0 8px ${node.color}`,
-            }}
-          />
-        ))}
+        <div
+          className="absolute w-2.5 h-2.5 md:w-3 md:h-3 rounded-full -translate-x-1/2 -translate-y-1/2"
+          style={{
+            top: '0%', left: '50%',
+            background: '#67E8F9',
+            boxShadow: '0 0 10px #67E8F9, 0 0 20px rgba(103,232,249,0.4)',
+          }}
+        />
       </motion.div>
 
       {/* Orbit ring 2 */}
@@ -84,18 +76,18 @@ export default function OrbitOrb() {
         className="absolute rounded-full border"
         style={{
           width: '82%', height: '82%',
-          borderColor: 'rgba(124,58,237,0.15)',
+          borderColor: 'rgba(124,58,237,0.18)',
           transform: 'rotateX(70deg) rotateZ(40deg)',
         }}
         animate={{ rotate: -360 }}
         transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
       >
         <div
-          className="absolute w-2.5 h-2.5 rounded-full -translate-x-1.25 -translate-y-1.25"
+          className="absolute w-2 h-2 md:w-2.5 md:h-2.5 rounded-full -translate-x-1/2 -translate-y-1/2"
           style={{
             top: '0%', left: '50%',
             background: '#A78BFA',
-            boxShadow: '0 0 8px #A78BFA',
+            boxShadow: '0 0 8px #A78BFA, 0 0 16px rgba(167,139,250,0.4)',
           }}
         />
       </motion.div>
@@ -105,39 +97,44 @@ export default function OrbitOrb() {
         className="absolute rounded-full border"
         style={{
           width: '100%', height: '100%',
-          borderColor: 'rgba(52,211,153,0.10)',
+          borderColor: 'rgba(52,211,153,0.13)',
           transform: 'rotateX(70deg) rotateZ(-25deg)',
         }}
         animate={{ rotate: 360 }}
         transition={{ duration: 28, repeat: Infinity, ease: 'linear' }}
       >
         <div
-          className="absolute w-2 h-2 rounded-full -translate-x-1 -translate-y-1"
+          className="absolute w-1.5 h-1.5 md:w-2 md:h-2 rounded-full -translate-x-1/2 -translate-y-1/2"
           style={{
             top: '0%', left: '50%',
             background: '#34D399',
-            boxShadow: '0 0 6px #34D399',
+            boxShadow: '0 0 6px #34D399, 0 0 12px rgba(52,211,153,0.4)',
           }}
         />
       </motion.div>
 
-      {/* Floating data fragments */}
+      {/* Floating data fragments — meaningful operational metrics */}
       {FRAGMENTS.map((frag, i) => {
         const angles = [45, 135, 225, 315]
         const rad = (angles[i] * Math.PI) / 180
-        const r = 48
+        const r = 46
         const x = 50 + Math.cos(rad) * r
         const y = 50 + Math.sin(rad) * r
         return (
           <motion.div
             key={frag.label}
-            className="absolute font-mono text-[9px] leading-tight"
-            style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}
-            animate={{ opacity: [0.4, 0.9, 0.4] }}
+            className="absolute font-mono leading-tight text-center"
+            style={{
+              left: `${x}%`,
+              top: `${y}%`,
+              transform: 'translate(-50%, -50%)',
+              fontSize: 'clamp(7px, 1.5vw, 10px)',
+            }}
+            animate={{ opacity: [0.5, 1, 0.5] }}
             transition={{ duration: 3 + i * 0.7, repeat: Infinity, delay: i * 0.5 }}
           >
-            <span className="text-nebula-400/60">{frag.label}</span>
-            <span className="text-star-100/80 ml-1">{frag.value}</span>
+            <div style={{ color: frag.color ?? '#67E8F9', opacity: 0.75, letterSpacing: '0.08em' }}>{frag.label}</div>
+            <div className="text-white/90 font-semibold">{frag.value}</div>
           </motion.div>
         )
       })}
