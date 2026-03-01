@@ -3,49 +3,50 @@
 import { useEffect, useRef, useState } from 'react'
 
 export default function CustomCursor() {
-  const dotRef = useRef<HTMLDivElement>(null)
+  const dotRef  = useRef<HTMLDivElement>(null)
   const ringRef = useRef<HTMLDivElement>(null)
   const [isHovering, setIsHovering] = useState(false)
   const [isClicking, setIsClicking] = useState(false)
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
     if (window.matchMedia('(hover: none)').matches) return
 
-    let mouseX = 0, mouseY = 0
-    let ringX = 0, ringY = 0
+    let mx = 0, my = 0
+    let rx = 0, ry = 0
     let rafId: number
 
     const onMove = (e: MouseEvent) => {
-      mouseX = e.clientX
-      mouseY = e.clientY
+      mx = e.clientX
+      my = e.clientY
       setVisible(true)
       const t = e.target as HTMLElement
       setIsHovering(!!t.closest('a,button,[role="button"],input,textarea,select,label,[tabindex]'))
     }
-
     const onLeave = () => setVisible(false)
-    const onDown = () => setIsClicking(true)
-    const onUp = () => setIsClicking(false)
+    const onDown  = () => setIsClicking(true)
+    const onUp    = () => setIsClicking(false)
 
     const loop = () => {
+      // dot snaps instantly to mouse (hotspot = center)
       if (dotRef.current) {
-        dotRef.current.style.transform = 'translate(' + (mouseX - 4) + 'px, ' + (mouseY - 4) + 'px)'
+        dotRef.current.style.transform = `translate(${mx - 8}px, ${my - 8}px)`
       }
-      ringX += (mouseX - ringX) * 0.12
-      ringY += (mouseY - ringY) * 0.12
+      // ring lerps behind (lag = 8%)
+      rx += (mx - rx) * 0.08
+      ry += (my - ry) * 0.08
       if (ringRef.current) {
-        ringRef.current.style.transform = 'translate(' + (ringX - 20) + 'px, ' + (ringY - 20) + 'px)'
+        ringRef.current.style.transform = `translate(${rx - 24}px, ${ry - 24}px)`
       }
       rafId = requestAnimationFrame(loop)
     }
     rafId = requestAnimationFrame(loop)
 
-    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mousemove', onMove, { passive: true })
     window.addEventListener('mouseleave', onLeave)
     window.addEventListener('mousedown', onDown)
     window.addEventListener('mouseup', onUp)
-
     return () => {
       cancelAnimationFrame(rafId)
       window.removeEventListener('mousemove', onMove)
@@ -55,68 +56,121 @@ export default function CustomCursor() {
     }
   }, [])
 
+  const cyan   = '#0EA5E9'
+  const cyanHi = '#67E8F9'
+  const purp   = 'rgba(124,58,237,0.7)'
+
   return (
     <>
-      <style>{`* { cursor: none !important; }`}</style>
+      <style>{`
+        * { cursor: none !important; }
+        @keyframes reticle-spin { to { transform: rotate(360deg); } }
+        @keyframes reticle-spin-rev { to { transform: rotate(-360deg); } }
+        .reticle-spin     { animation: reticle-spin     9s linear infinite; transform-origin: 24px 24px; }
+        .reticle-spin-rev { animation: reticle-spin-rev 6s linear infinite; transform-origin: 24px 24px; }
+      `}</style>
 
-      {/* Center reticle dot */}
+      {/* ── INNER DOT / CROSSHAIR — instant, centered on mouse ── */}
       <div
         ref={dotRef}
-        className="fixed top-0 left-0 pointer-events-none z-[9999]"
-        style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.2s' }}
+        className="fixed top-0 left-0 pointer-events-none select-none"
+        style={{ zIndex: 2147483647, opacity: visible ? 1 : 0, transition: 'opacity 0.15s', willChange: 'transform' }}
       >
-        <svg
-          width="8" height="8" viewBox="0 0 8 8"
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
           style={{
+            transition: 'transform 0.1s cubic-bezier(0.22,1,0.36,1)',
+            transform: isClicking ? 'scale(0.6)' : isHovering ? 'scale(1.3)' : 'scale(1)',
             filter: isHovering
-              ? 'drop-shadow(0 0 5px rgba(103,232,249,1))'
-              : 'drop-shadow(0 0 3px rgba(103,232,249,0.8))',
-            transition: 'filter 0.2s',
+              ? `drop-shadow(0 0 4px ${cyanHi}) drop-shadow(0 0 10px ${cyan})`
+              : `drop-shadow(0 0 2px ${cyan})`,
           }}
         >
-          <circle
-            cx="4" cy="4"
-            r={isClicking ? 1.5 : isHovering ? 3.5 : 2.5}
-            fill={isHovering ? '#67E8F9' : 'rgba(103,232,249,0.9)'}
+          {/* Center dot */}
+          <circle cx="8" cy="8" r={isClicking ? 1.5 : isHovering ? 3 : 1.8}
+            fill={isHovering ? cyanHi : cyan}
           />
+          {/* Four crosshair ticks */}
+          <line x1="8" y1="1"  x2="8" y2="5"  stroke={isHovering ? cyanHi : cyan} strokeWidth="1" strokeLinecap="round"/>
+          <line x1="8" y1="11" x2="8" y2="15" stroke={isHovering ? cyanHi : cyan} strokeWidth="1" strokeLinecap="round"/>
+          <line x1="1" y1="8"  x2="5" y2="8"  stroke={isHovering ? cyanHi : cyan} strokeWidth="1" strokeLinecap="round"/>
+          <line x1="11" y1="8" x2="15" y2="8" stroke={isHovering ? cyanHi : cyan} strokeWidth="1" strokeLinecap="round"/>
         </svg>
       </div>
 
-      {/* Outer reticle ring with crosshair lines */}
+      {/* ── OUTER RETICLE RING — lags behind ── */}
       <div
         ref={ringRef}
-        className="fixed top-0 left-0 pointer-events-none z-[9998]"
-        style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.2s' }}
+        className="fixed top-0 left-0 pointer-events-none select-none"
+        style={{ zIndex: 2147483646, opacity: visible ? 1 : 0, transition: 'opacity 0.2s', willChange: 'transform' }}
       >
-        <svg
-          width="40" height="40" viewBox="0 0 40 40"
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none"
           style={{
-            animation: 'cursor-ring-spin 8s linear infinite',
-            filter: isHovering ? 'drop-shadow(0 0 6px rgba(103,232,249,0.5))' : 'none',
-            transition: 'filter 0.2s',
+            transition: 'transform 0.15s cubic-bezier(0.22,1,0.36,1)',
+            transform: isClicking ? 'scale(0.75)' : isHovering ? 'scale(1.18)' : 'scale(1)',
+            filter: isHovering
+              ? `drop-shadow(0 0 6px ${cyan}) drop-shadow(0 0 16px ${purp})`
+              : isClicking
+              ? `drop-shadow(0 0 8px ${cyanHi})`
+              : `drop-shadow(0 0 2px rgba(14,165,233,0.4))`,
           }}
         >
-          {/* Dashed orbit ring */}
-          <circle
-            cx="20" cy="20"
-            r={isHovering ? 16 : 18}
-            fill="none"
-            stroke={isHovering ? 'rgba(103,232,249,0.9)' : 'rgba(103,232,249,0.4)'}
-            strokeWidth="0.8"
-            strokeDasharray={isHovering ? '4 2' : '3 3'}
-          />
-          {/* Crosshair ticks */}
-          <line x1="20" y1="2"  x2="20" y2="8"  stroke="rgba(103,232,249,0.6)" strokeWidth="0.8"/>
-          <line x1="20" y1="32" x2="20" y2="38" stroke="rgba(103,232,249,0.6)" strokeWidth="0.8"/>
-          <line x1="2"  y1="20" x2="8"  y2="20" stroke="rgba(103,232,249,0.6)" strokeWidth="0.8"/>
-          <line x1="32" y1="20" x2="38" y2="20" stroke="rgba(103,232,249,0.6)" strokeWidth="0.8"/>
-          {/* Corner brackets on hover */}
+          {/* Outer dashed arc ring — slow spin */}
+          <g className="reticle-spin">
+            <circle cx="24" cy="24"
+              r={isHovering ? 19 : 21}
+              fill="none"
+              stroke={isHovering ? cyan : 'rgba(14,165,233,0.35)'}
+              strokeWidth="0.75"
+              strokeDasharray={isHovering ? '5 3' : '3 5'}
+              style={{ transition: 'all 0.25s' }}
+            />
+          </g>
+
+          {/* Inner counter-rotating ring — 4 arc segments with gaps */}
+          <g className="reticle-spin-rev">
+            {/* Top arc */}
+            <path d="M 14 24 A 10 10 0 0 1 24 14"
+              fill="none" stroke={isHovering ? cyanHi : cyan}
+              strokeWidth={isHovering ? 1.5 : 1} strokeLinecap="round"
+              style={{ transition: 'all 0.2s' }}
+            />
+            {/* Right arc */}
+            <path d="M 24 14 A 10 10 0 0 1 34 24"
+              fill="none" stroke={isHovering ? cyanHi : cyan}
+              strokeWidth={isHovering ? 1.5 : 1} strokeLinecap="round"
+              style={{ transition: 'all 0.2s' }}
+            />
+            {/* Bottom arc */}
+            <path d="M 34 24 A 10 10 0 0 1 24 34"
+              fill="none" stroke={isHovering ? cyanHi : cyan}
+              strokeWidth={isHovering ? 1.5 : 1} strokeLinecap="round"
+              style={{ transition: 'all 0.2s' }}
+            />
+            {/* Left arc */}
+            <path d="M 24 34 A 10 10 0 0 1 14 24"
+              fill="none" stroke={isHovering ? cyanHi : cyan}
+              strokeWidth={isHovering ? 1.5 : 1} strokeLinecap="round"
+              style={{ transition: 'all 0.2s' }}
+            />
+          </g>
+
+          {/* Corner bracket accents — only on hover */}
           {isHovering && (
             <>
-              <path d="M 8 12 L 8 8 L 12 8"   fill="none" stroke="rgba(103,232,249,0.8)" strokeWidth="1"/>
-              <path d="M 28 8 L 32 8 L 32 12"  fill="none" stroke="rgba(103,232,249,0.8)" strokeWidth="1"/>
-              <path d="M 8 28 L 8 32 L 12 32"  fill="none" stroke="rgba(103,232,249,0.8)" strokeWidth="1"/>
-              <path d="M 28 32 L 32 32 L 32 28" fill="none" stroke="rgba(103,232,249,0.8)" strokeWidth="1"/>
+              <path d="M 7 11 L 7 7 L 11 7"   fill="none" stroke={cyanHi} strokeWidth="1.2" strokeLinecap="round"/>
+              <path d="M 37 7  L 41 7 L 41 11" fill="none" stroke={cyanHi} strokeWidth="1.2" strokeLinecap="round"/>
+              <path d="M 7 37  L 7 41 L 11 41" fill="none" stroke={cyanHi} strokeWidth="1.2" strokeLinecap="round"/>
+              <path d="M 37 41 L 41 41 L 41 37" fill="none" stroke={cyanHi} strokeWidth="1.2" strokeLinecap="round"/>
+            </>
+          )}
+
+          {/* Purple diagonal accent dots on hover */}
+          {isHovering && (
+            <>
+              <circle cx="10" cy="10" r="1" fill={purp}/>
+              <circle cx="38" cy="10" r="1" fill={purp}/>
+              <circle cx="10" cy="38" r="1" fill={purp}/>
+              <circle cx="38" cy="38" r="1" fill={purp}/>
             </>
           )}
         </svg>
