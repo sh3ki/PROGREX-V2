@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Code2, Globe, Smartphone, GitMerge, BookOpen, Server, Cpu, Database, Layers } from 'lucide-react'
+import { ArrowRight, Code2, Globe, Smartphone, BookOpen, Server, Cpu, Database, Layers, Wifi, BrainCircuit, Zap, Rocket, Palette, Shield } from 'lucide-react'
 
 // Map service slug/title to Lucide icon
 function getServiceIcon(slug: string) {
@@ -13,7 +13,12 @@ function getServiceIcon(slug: string) {
     'it-consulting-infrastructure': <Server size={22} className="text-nebula-300" />,
     'system-integration': <Database size={22} className="text-nebula-300" />,
     'academic-capstone-system-development': <Layers size={22} className="text-nebula-300" />,
-    'ui-ux-design': <GitMerge size={22} className="text-nebula-300" />,
+    'hardware-integration': <Wifi size={22} className="text-nebula-300" />,
+    'ai-machine-learning': <BrainCircuit size={22} className="text-nebula-300" />,
+    'business-automation': <Zap size={22} className="text-nebula-300" />,
+    'deployment-hosting-services': <Rocket size={22} className="text-nebula-300" />,
+    'ui-ux-design': <Palette size={22} className="text-nebula-300" />,
+    'cybersecurity-data-protection': <Shield size={22} className="text-nebula-300" />,
     'training-workshops': <BookOpen size={22} className="text-nebula-300" />,
   }
   return map[slug] ?? <Cpu size={22} className="text-nebula-300" />
