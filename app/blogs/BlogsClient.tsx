@@ -32,7 +32,7 @@ export default function BlogsClient() {
         title="Tech Insights From the"
         highlight="PROGREX Team"
         subtitle="Engineering best practices, business technology strategies, and deep dives from our team of experts."
-        primaryBtn={{ label: 'Subscribe for Updates', href: '/contact' }}
+        primaryBtn={{ label: 'Work With Us', href: '/contact' }}
       />
 
       <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="cassiopeia" side="left" offsetY="15%" />}>
