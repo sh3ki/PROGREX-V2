@@ -8,11 +8,26 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, Globe, ChevronDown } from 'lucide-react'
 
 const LANGUAGES = [
-  { code: 'EN', label: 'English',  flag: '🇺🇸' },
-  { code: 'FIL', label: 'Filipino', flag: '🇵🇭' },
-  { code: 'JA', label: '日本語',   flag: '🇯🇵' },
-  { code: 'ES', label: 'Español',  flag: '🇪🇸' },
-  { code: 'FR', label: 'Français', flag: '🇫🇷' },
+  { code: 'EN',  label: 'English',    flag: '🇺🇸' },
+  { code: 'FIL', label: 'Filipino',   flag: '🇵🇭' },
+  { code: 'ZH',  label: '中文',       flag: '🇨🇳' },
+  { code: 'ES',  label: 'Español',    flag: '🇪🇸' },
+  { code: 'AR',  label: 'العربية',    flag: '🇸🇦' },
+  { code: 'HI',  label: 'हिन्दी',      flag: '🇮🇳' },
+  { code: 'FR',  label: 'Français',   flag: '🇫🇷' },
+  { code: 'BN',  label: 'বাংলা',      flag: '🇧🇩' },
+  { code: 'RU',  label: 'Русский',    flag: '🇷🇺' },
+  { code: 'PT',  label: 'Português',  flag: '🇧🇷' },
+  { code: 'ID',  label: 'Indonesia',  flag: '🇮🇩' },
+  { code: 'DE',  label: 'Deutsch',    flag: '🇩🇪' },
+  { code: 'JA',  label: '日本語',     flag: '🇯🇵' },
+  { code: 'KO',  label: '한국어',     flag: '🇰🇷' },
+  { code: 'VI',  label: 'Tiếng Việt', flag: '🇻🇳' },
+  { code: 'TR',  label: 'Türkçe',     flag: '🇹🇷' },
+  { code: 'IT',  label: 'Italiano',   flag: '🇮🇹' },
+  { code: 'TH',  label: 'ภาษาไทย',   flag: '🇹🇭' },
+  { code: 'NL',  label: 'Nederlands', flag: '🇳🇱' },
+  { code: 'PL',  label: 'Polski',     flag: '🇵🇱' },
 ]
 
 const navLinks = [
@@ -32,6 +47,14 @@ export default function Navbar() {
   const [activeLang, setActiveLang]   = useState(LANGUAGES[0])
   const langRef                        = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
+
+  const changeLang = (lang: typeof LANGUAGES[0]) => {
+    setActiveLang(lang)
+    try {
+      localStorage.setItem('progrex-lang', lang.code)
+      document.dispatchEvent(new CustomEvent('progrex-lang-change', { detail: lang.code }))
+    } catch { /* ignore SSR */ }
+  }
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20)
@@ -207,13 +230,17 @@ export default function Navbar() {
                       }}
                     >
                       <div className="h-[1px] w-full" style={{ background: 'linear-gradient(90deg, transparent, #0EA5E9, #7C3AED, transparent)' }} />
-                      <div className="py-1.5">
+                      <div className="py-1.5 overflow-y-auto max-h-64 scrollbar-thin"
+                        style={{
+                          scrollbarWidth: 'thin',
+                          scrollbarColor: 'rgba(14,165,233,0.3) transparent',
+                        }}>
                         {LANGUAGES.map((lang) => {
                           const isSelected = lang.code === activeLang.code
                           return (
                             <button
                               key={lang.code}
-                              onClick={() => { setActiveLang(lang); setLangOpen(false) }}
+                              onClick={() => { changeLang(lang); setLangOpen(false) }}
                               className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left transition-all duration-150"
                               style={{
                                 background: isSelected ? 'rgba(14,165,233,0.10)' : 'transparent',
