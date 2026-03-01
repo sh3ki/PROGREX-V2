@@ -55,13 +55,13 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
   return (
     <>
       {/* Service Hero */}
-      <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden bg-section-a pt-20">
+      <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-section-a pt-2">
         <div className="absolute inset-0 bg-dot-grid opacity-15" />
         <div className="absolute inset-0 bg-gradient-to-br from-aurora-700/10 to-nebula-700/5" />
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-nebula-700/10 rounded-full blur-[100px]" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-nebula-700/10 rounded-full blur-[120px]" />
+        <div className="absolute top-1/4 left-1/4 w-[300px] h-[300px] bg-aurora-700/5 rounded-full blur-[100px]" />
 
         <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="absolute inset-0 pointer-events-none" />
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -76,14 +76,52 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
             <p className="text-slate-300 text-lg leading-relaxed max-w-2xl mx-auto mb-8">
               {service.description}
             </p>
-            <Link href="/contact" className="btn-primary inline-flex text-base">
-              <span>Request Proposal</span>
-              <ArrowRight size={16} />
-            </Link>
+            <div className="flex flex-wrap items-center justify-center gap-4 mb-10">
+              <Link href="/contact" className="btn-primary inline-flex text-base">
+                <span>Request Proposal</span>
+                <ArrowRight size={16} />
+              </Link>
+              <Link
+                href="/projects"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-base text-nebula-300 transition-all duration-200 hover:text-white"
+                style={{ border: '1px solid rgba(103,232,249,0.2)', background: 'rgba(14,165,233,0.06)' }}
+              >
+                View Projects
+              </Link>
+            </div>
+
+            {/* Trust stats */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.35 }}
+              className="flex flex-wrap justify-center gap-3"
+            >
+              {[
+                { value: '52+', label: 'Projects Delivered' },
+                { value: 'NDA', label: 'Always Protected' },
+                { value: '100%', label: 'IP Ownership' },
+                { value: '30-Day', label: 'Bug-Fix Warranty' },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="flex items-center gap-2.5 px-4 py-2 rounded-full"
+                  style={{
+                    background: 'rgba(14,165,233,0.08)',
+                    border: '1px solid rgba(14,165,233,0.18)',
+                  }}
+                >
+                  <span className="font-mono font-bold text-sm text-nebula-300">{stat.value}</span>
+                  <span className="text-slate-400 text-xs">{stat.label}</span>
+                </div>
+              ))}
+            </motion.div>
           </motion.div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[rgba(5,5,16,0.7)] to-transparent" />
+
+
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[rgba(5,5,16,0.8)] to-transparent" />
       </section>
 
       {/* Process — zigzag timeline */}
@@ -205,19 +243,47 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
           highlight="Deliverables"
           subtitle="Every engagement ends with tangible, documented assets you own completely."
         />
-        <div className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
           {service.deliverables.map((item, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: i * 0.07 }}
-              className="flex items-start gap-3 rounded-xl p-4"
-              style={{ background: 'rgba(14,165,233,0.05)', border: '1px solid rgba(14,165,233,0.12)' }}
+              transition={{ duration: 0.45, delay: i * 0.07 }}
+              className="group relative rounded-xl overflow-hidden cursor-default"
+              style={{ background: 'rgba(8,8,28,0.92)', border: '1px solid rgba(103,232,249,0.12)' }}
+              whileHover={{
+                y: -4,
+                background: 'rgba(14,14,40,0.97)',
+                boxShadow: '0 0 28px rgba(14,165,233,0.14), 0 0 56px rgba(124,58,237,0.08), 0 12px 36px rgba(0,0,0,0.5)',
+                borderColor: 'rgba(14,165,233,0.35)',
+              }}
             >
-              <CheckCircle size={16} className="text-nebula-400 shrink-0 mt-0.5" />
-              <span className="text-slate-300 text-sm">{item}</span>
+              {/* Circuit texture */}
+              <div
+                className="absolute inset-0 pointer-events-none rounded-xl opacity-60"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cline x1='0' y1='22' x2='16' y2='22' stroke='rgba(103,232,249,0.05)' stroke-width='0.7'/%3E%3Cline x1='28' y1='22' x2='44' y2='22' stroke='rgba(103,232,249,0.05)' stroke-width='0.7'/%3E%3Cline x1='22' y1='0' x2='22' y2='16' stroke='rgba(103,232,249,0.05)' stroke-width='0.7'/%3E%3Cline x1='22' y1='28' x2='22' y2='44' stroke='rgba(103,232,249,0.05)' stroke-width='0.7'/%3E%3Ccircle cx='22' cy='22' r='4' fill='none' stroke='rgba(103,232,249,0.09)' stroke-width='0.8'/%3E%3Ccircle cx='22' cy='22' r='1.2' fill='rgba(103,232,249,0.11)'/%3E%3Ccircle cx='0' cy='0' r='1.2' fill='rgba(103,232,249,0.05)'/%3E%3Ccircle cx='44' cy='0' r='1.2' fill='rgba(103,232,249,0.05)'/%3E%3Ccircle cx='0' cy='44' r='1.2' fill='rgba(103,232,249,0.05)'/%3E%3Ccircle cx='44' cy='44' r='1.2' fill='rgba(103,232,249,0.05)'/%3E%3C/svg%3E")`,
+                  backgroundSize: '44px 44px',
+                  maskImage: 'radial-gradient(ellipse 110% 80% at 50% 10%, black 20%, transparent 90%)',
+                  WebkitMaskImage: 'radial-gradient(ellipse 110% 80% at 50% 10%, black 20%, transparent 90%)',
+                } as React.CSSProperties}
+              />
+              {/* Top scan line */}
+              <div
+                className="absolute inset-x-0 top-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                style={{ background: 'linear-gradient(to right, transparent, rgba(14,165,233,0.8), rgba(124,58,237,0.8), transparent)' }}
+              />
+              <div className="relative flex items-start gap-3 p-4">
+                <div
+                  className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center mt-0.5"
+                  style={{ background: 'rgba(14,165,233,0.1)', border: '1px solid rgba(14,165,233,0.22)' }}
+                >
+                  <CheckCircle size={14} className="text-nebula-400" />
+                </div>
+                <span className="text-slate-300 text-sm leading-relaxed pt-0.5">{item}</span>
+              </div>
             </motion.div>
           ))}
         </div>
@@ -239,25 +305,48 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="relative rounded-xl overflow-hidden group"
+              className="group relative rounded-xl overflow-hidden cursor-default"
               style={{ background: 'rgba(8,8,28,0.92)', border: '1px solid rgba(103,232,249,0.12)' }}
+              whileHover={{
+                y: -6,
+                background: 'rgba(14,14,40,0.97)',
+                boxShadow: '0 0 32px rgba(14,165,233,0.18), 0 0 64px rgba(124,58,237,0.12), 0 16px 40px rgba(0,0,0,0.5)',
+                borderColor: 'rgba(14,165,233,0.35)',
+              }}
             >
+              {/* Circuit texture */}
+              <div
+                className="absolute inset-0 pointer-events-none rounded-xl opacity-60"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cline x1='0' y1='22' x2='16' y2='22' stroke='rgba(103,232,249,0.05)' stroke-width='0.7'/%3E%3Cline x1='28' y1='22' x2='44' y2='22' stroke='rgba(103,232,249,0.05)' stroke-width='0.7'/%3E%3Cline x1='22' y1='0' x2='22' y2='16' stroke='rgba(103,232,249,0.05)' stroke-width='0.7'/%3E%3Cline x1='22' y1='28' x2='22' y2='44' stroke='rgba(103,232,249,0.05)' stroke-width='0.7'/%3E%3Ccircle cx='22' cy='22' r='4' fill='none' stroke='rgba(103,232,249,0.09)' stroke-width='0.8'/%3E%3Ccircle cx='22' cy='22' r='1.2' fill='rgba(103,232,249,0.11)'/%3E%3Ccircle cx='0' cy='0' r='1.2' fill='rgba(103,232,249,0.05)'/%3E%3Ccircle cx='44' cy='0' r='1.2' fill='rgba(103,232,249,0.05)'/%3E%3Ccircle cx='0' cy='44' r='1.2' fill='rgba(103,232,249,0.05)'/%3E%3Ccircle cx='44' cy='44' r='1.2' fill='rgba(103,232,249,0.05)'/%3E%3C/svg%3E")`,
+                  backgroundSize: '44px 44px',
+                  maskImage: 'radial-gradient(ellipse 110% 80% at 50% 10%, black 20%, transparent 90%)',
+                  WebkitMaskImage: 'radial-gradient(ellipse 110% 80% at 50% 10%, black 20%, transparent 90%)',
+                } as React.CSSProperties}
+              />
+              {/* Hover gradient overlay */}
               <motion.div
-                whileHover={{ y: -4, borderColor: 'rgba(14,165,233,0.35)', boxShadow: '0 0 28px rgba(14,165,233,0.12), 0 12px 36px rgba(0,0,0,0.5)' }}
-                transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-                className="h-full p-6"
-              >
+                className="absolute inset-0 rounded-xl pointer-events-none"
+                initial={{ opacity: 0 }}
+                whileHover={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                style={{ background: 'linear-gradient(135deg, rgba(14,165,233,0.06) 0%, rgba(124,58,237,0.06) 100%)' }}
+              />
+              {/* Top scan line */}
+              <div
+                className="absolute inset-x-0 top-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                style={{ background: 'linear-gradient(to right, transparent, rgba(14,165,233,0.8), rgba(124,58,237,0.8), transparent)' }}
+              />
+              <div className="relative p-6">
                 <div
-                  className="absolute inset-x-0 top-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  style={{ background: 'linear-gradient(to right, transparent, rgba(14,165,233,0.8), rgba(124,58,237,0.8), transparent)' }}
-                />
-                <div
-                  className="w-2 h-2 rounded-full mb-4"
-                  style={{ background: 'linear-gradient(135deg, #0EA5E9, #7C3AED)', boxShadow: '0 0 10px rgba(14,165,233,0.5)' }}
-                />
+                  className="w-8 h-8 rounded-lg flex items-center justify-center mb-4"
+                  style={{ background: 'rgba(14,165,233,0.1)', border: '1px solid rgba(14,165,233,0.22)' }}
+                >
+                  <div className="w-2 h-2 rounded-full" style={{ background: 'linear-gradient(135deg, #0EA5E9, #7C3AED)' }} />
+                </div>
                 <h3 className="text-white font-bold text-base mb-2 group-hover:text-nebula-300 transition-colors duration-200">{item.title}</h3>
                 <p className="text-slate-400 text-sm leading-relaxed">{item.desc}</p>
-              </motion.div>
+              </div>
             </motion.div>
           ))}
         </div>
@@ -281,18 +370,39 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.08 }}
-                className="relative rounded-xl overflow-hidden group"
+                className="group relative rounded-xl overflow-hidden cursor-default"
                 style={{ background: 'rgba(8,8,28,0.92)', border: '1px solid rgba(103,232,249,0.12)' }}
+                whileHover={{
+                  y: -6,
+                  background: 'rgba(14,14,40,0.97)',
+                  boxShadow: '0 0 32px rgba(14,165,233,0.18), 0 0 64px rgba(124,58,237,0.12), 0 16px 40px rgba(0,0,0,0.5)',
+                  borderColor: 'rgba(14,165,233,0.35)',
+                }}
               >
+                {/* Circuit texture */}
+                <div
+                  className="absolute inset-0 pointer-events-none rounded-xl opacity-60"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cline x1='0' y1='22' x2='16' y2='22' stroke='rgba(103,232,249,0.05)' stroke-width='0.7'/%3E%3Cline x1='28' y1='22' x2='44' y2='22' stroke='rgba(103,232,249,0.05)' stroke-width='0.7'/%3E%3Cline x1='22' y1='0' x2='22' y2='16' stroke='rgba(103,232,249,0.05)' stroke-width='0.7'/%3E%3Cline x1='22' y1='28' x2='22' y2='44' stroke='rgba(103,232,249,0.05)' stroke-width='0.7'/%3E%3Ccircle cx='22' cy='22' r='4' fill='none' stroke='rgba(103,232,249,0.09)' stroke-width='0.8'/%3E%3Ccircle cx='22' cy='22' r='1.2' fill='rgba(103,232,249,0.11)'/%3E%3Ccircle cx='0' cy='0' r='1.2' fill='rgba(103,232,249,0.05)'/%3E%3Ccircle cx='44' cy='0' r='1.2' fill='rgba(103,232,249,0.05)'/%3E%3Ccircle cx='0' cy='44' r='1.2' fill='rgba(103,232,249,0.05)'/%3E%3Ccircle cx='44' cy='44' r='1.2' fill='rgba(103,232,249,0.05)'/%3E%3C/svg%3E")`,
+                    backgroundSize: '44px 44px',
+                    maskImage: 'radial-gradient(ellipse 110% 80% at 50% 10%, black 20%, transparent 90%)',
+                    WebkitMaskImage: 'radial-gradient(ellipse 110% 80% at 50% 10%, black 20%, transparent 90%)',
+                  } as React.CSSProperties}
+                />
+                {/* Hover gradient overlay */}
                 <motion.div
-                  whileHover={{ y: -4, boxShadow: '0 0 28px rgba(14,165,233,0.14), 0 12px 36px rgba(0,0,0,0.5)', borderColor: 'rgba(14,165,233,0.35)' }}
-                  transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-                  className="h-full p-5 flex gap-4 items-start"
-                >
-                  <div
-                    className="absolute inset-x-0 top-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                    style={{ background: 'linear-gradient(to right, transparent, rgba(14,165,233,0.8), rgba(124,58,237,0.8), transparent)' }}
-                  />
+                  className="absolute inset-0 rounded-xl pointer-events-none"
+                  initial={{ opacity: 0 }}
+                  whileHover={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                  style={{ background: 'linear-gradient(135deg, rgba(14,165,233,0.06) 0%, rgba(124,58,237,0.06) 100%)' }}
+                />
+                {/* Top scan line */}
+                <div
+                  className="absolute inset-x-0 top-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  style={{ background: 'linear-gradient(to right, transparent, rgba(14,165,233,0.8), rgba(124,58,237,0.8), transparent)' }}
+                />
+                <div className="relative p-5 flex gap-4 items-start">
                   <div
                     className="shrink-0 w-11 h-11 rounded-lg flex items-center justify-center"
                     style={{ background: 'rgba(14,165,233,0.1)', border: '1px solid rgba(14,165,233,0.22)' }}
@@ -303,7 +413,7 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
                     <h3 className="text-white font-bold text-sm mb-1.5 group-hover:text-nebula-300 transition-colors duration-200">{item.label}</h3>
                     <p className="text-slate-400 text-sm leading-relaxed">{item.desc}</p>
                   </div>
-                </motion.div>
+                </div>
               </motion.div>
             )
           })}
