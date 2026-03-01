@@ -312,7 +312,7 @@ export default function AboutClient() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <SectionHeader
             badge="Why PROGREX"
-            title="Why 80+ Businesses Choose"
+            title="Why 38+ Businesses Choose"
             highlight="Us"
             subtitle="We don't just write code. We build solutions that generate real business outcomes."
             center={false}
