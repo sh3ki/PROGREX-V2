@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Star, Quote, ChevronLeft, ChevronRight, Monitor, Check, Send, CheckCircle, Bot } from 'lucide-react'
+import { ArrowRight, Star, Quote, ChevronLeft, ChevronRight, Monitor, Check, Send, CheckCircle, Bot, Paperclip, X as XIcon } from 'lucide-react'
 import Image from 'next/image'
 import TechConstellation from '@/components/TechConstellation'
 import Hero from '@/components/Hero'
@@ -100,6 +100,21 @@ export default function HomeClient() {
   const [ctaErrors, setCtaErrors] = useState<{ name?: string; email?: string; message?: string }>({})
   const [ctaLoading, setCtaLoading] = useState(false)
   const [ctaSubmitted, setCtaSubmitted] = useState(false)
+  const [ctaServerError, setCtaServerError] = useState('')
+  const [ctaAttachedFile, setCtaAttachedFile] = useState<File | null>(null)
+  const [ctaFileError, setCtaFileError] = useState('')
+  const [ctaDragOver, setCtaDragOver] = useState(false)
+  const ctaFileInputRef = useRef<HTMLInputElement>(null)
+
+  const CTA_MAX_FILE_SIZE = 3 * 1024 * 1024 // 3 MB
+  const handleCtaFileSelect = (file: File) => {
+    setCtaFileError('')
+    if (file.size > CTA_MAX_FILE_SIZE) {
+      setCtaFileError(`File too large (max 3 MB). "${file.name}" is ${(file.size / 1024 / 1024).toFixed(1)} MB.`)
+      return
+    }
+    setCtaAttachedFile(file)
+  }
 
   const ctaServices = [
     'Custom Software Development', 'Web Development', 'Mobile App Development',
@@ -117,9 +132,32 @@ export default function HomeClient() {
     setCtaErrors(errs)
     if (Object.keys(errs).length > 0) return
     setCtaLoading(true)
-    await new Promise((res) => setTimeout(res, 1500))
-    setCtaLoading(false)
-    setCtaSubmitted(true)
+    setCtaServerError('')
+    try {
+      let attachment: { name: string; data: string; contentType: string } | undefined
+      if (ctaAttachedFile) {
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve((reader.result as string).split(',')[1])
+          reader.onerror = reject
+          reader.readAsDataURL(ctaAttachedFile)
+        })
+        attachment = { name: ctaAttachedFile.name, data: base64, contentType: ctaAttachedFile.type }
+      }
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...ctaForm, attachment }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to send')
+      setCtaAttachedFile(null)
+      setCtaSubmitted(true)
+    } catch (err: unknown) {
+      setCtaServerError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
+    } finally {
+      setCtaLoading(false)
+    }
   }
   const DURATION = 7 // seconds auto-advance
 
@@ -667,7 +705,7 @@ export default function HomeClient() {
                     Thanks, <strong className="text-white">{ctaForm.name}</strong>! We&apos;ll get back to you within 24 hours.
                   </p>
                   <button
-                    onClick={() => { setCtaSubmitted(false); setCtaForm({ name: '', email: '', phone: '', company: '', service: '', budget: '', message: '' }) }}
+                    onClick={() => { setCtaSubmitted(false); setCtaForm({ name: '', email: '', phone: '', company: '', service: '', budget: '', message: '' }); setCtaAttachedFile(null); setCtaServerError('') }}
                     className="btn-outline text-sm px-6 py-2.5 inline-flex"
                   >
                     Send Another Message
@@ -780,7 +818,55 @@ export default function HomeClient() {
                       onBlur={(e) => { if (!ctaErrors.message) e.currentTarget.style.borderColor = 'rgba(103,232,249,0.15)' }}
                     />
                     {ctaErrors.message && <p className="text-red-400 text-xs mt-1">{ctaErrors.message}</p>}
+
+                    {/* File attachment drop zone */}
+                    <div
+                      onClick={() => ctaFileInputRef.current?.click()}
+                      onDragOver={(e) => { e.preventDefault(); setCtaDragOver(true) }}
+                      onDragLeave={() => setCtaDragOver(false)}
+                      onDrop={(e) => { e.preventDefault(); setCtaDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleCtaFileSelect(f) }}
+                      className="mt-3 flex items-center gap-3 px-4 py-3 rounded-xl border border-dashed cursor-pointer transition-all duration-200"
+                      style={{
+                        borderColor: ctaDragOver ? 'rgba(14,165,233,0.6)' : 'rgba(103,232,249,0.2)',
+                        background: ctaDragOver ? 'rgba(14,165,233,0.06)' : 'transparent',
+                      }}
+                    >
+                      <input
+                        ref={ctaFileInputRef}
+                        type="file"
+                        className="hidden"
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleCtaFileSelect(f); e.target.value = '' }}
+                      />
+                      {ctaAttachedFile ? (
+                        <>
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <Check size={14} className="text-emerald-400 shrink-0" />
+                            <span className="text-white/70 text-xs truncate">{ctaAttachedFile.name}</span>
+                            <span className="text-slate-500 text-xs shrink-0">({(ctaAttachedFile.size / 1024).toFixed(0)} KB)</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setCtaAttachedFile(null); setCtaFileError('') }}
+                            className="shrink-0 text-slate-500 hover:text-red-400 transition-colors"
+                          >
+                            <XIcon size={14} />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <Paperclip size={14} className="shrink-0" style={{ color: 'rgba(103,232,249,0.45)' }} />
+                          <span className="text-slate-500 text-xs">
+                            {ctaDragOver ? 'Drop file here...' : 'Attach a file — click or drag & drop (max 3 MB)'}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    {ctaFileError && <p className="text-red-400 text-xs mt-1.5">{ctaFileError}</p>}
                   </div>
+
+                  {ctaServerError && (
+                    <p className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2.5">{ctaServerError}</p>
+                  )}
 
                   <motion.button
                     type="submit"
