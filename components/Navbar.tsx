@@ -1,11 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, Globe, ChevronDown } from 'lucide-react'
+
+const LANGUAGES = [
+  { code: 'EN', label: 'English',  flag: '🇺🇸' },
+  { code: 'FIL', label: 'Filipino', flag: '🇵🇭' },
+  { code: 'JA', label: '日本語',   flag: '🇯🇵' },
+  { code: 'ES', label: 'Español',  flag: '🇪🇸' },
+  { code: 'FR', label: 'Français', flag: '🇫🇷' },
+]
 
 const navLinks = [
   { label: 'Home', href: '/' },
@@ -18,14 +26,28 @@ const navLinks = [
 ]
 
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
+  const [scrolled, setScrolled]       = useState(false)
+  const [mobileOpen, setMobileOpen]   = useState(false)
+  const [langOpen, setLangOpen]       = useState(false)
+  const [activeLang, setActiveLang]   = useState(LANGUAGES[0])
+  const langRef                        = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // Close language dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) {
+        setLangOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
   }, [])
 
   useEffect(() => {
@@ -49,7 +71,17 @@ export default function Navbar() {
 
             {/* Logo + Status indicator group */}
             <div className="flex items-center gap-3 shrink-0">
-              <Link href="/" className="flex items-center group" aria-label="PROGREX Home">
+              <Link
+                href="/"
+                className="flex items-center group"
+                aria-label="PROGREX Home"
+                onClick={(e) => {
+                  if (window.location.pathname === '/') {
+                    e.preventDefault()
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }
+                }}
+              >
                 <Image
                   src="/Progrex Logo White Transparent.png"
                   alt="PROGREX"
@@ -98,8 +130,9 @@ export default function Navbar() {
               })}
             </nav>
 
-            {/* CTA + Hamburger */}
+            {/* CTA + Hamburger + Language (language always far-right) */}
             <div className="flex items-center gap-3">
+
               <Link
                 href="/contact"
                 className="hidden sm:inline-flex btn-primary text-sm"
@@ -136,6 +169,72 @@ export default function Navbar() {
                   )}
                 </AnimatePresence>
               </button>
+
+              {/* Language selector — always far right */}
+              <div className="relative" ref={langRef}>
+                <button
+                  onClick={() => setLangOpen((o) => !o)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-mono text-[11px] tracking-wider transition-all duration-200 border"
+                  style={{
+                    background: langOpen ? 'rgba(14,165,233,0.12)' : 'rgba(103,232,249,0.05)',
+                    borderColor: langOpen ? 'rgba(14,165,233,0.45)' : 'rgba(103,232,249,0.18)',
+                    color: langOpen ? '#93E6FB' : 'rgba(255,255,255,0.5)',
+                  }}
+                  aria-label="Select language"
+                >
+                  <Globe size={12} className="shrink-0" />
+                  <span className="hidden sm:inline">{activeLang.code}</span>
+                  <ChevronDown
+                    size={10}
+                    className="shrink-0 transition-transform duration-200"
+                    style={{ transform: langOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                  />
+                </button>
+
+                <AnimatePresence>
+                  {langOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                      transition={{ duration: 0.18, ease: 'easeOut' }}
+                      className="absolute right-0 top-full mt-2 w-40 rounded-xl overflow-hidden z-50"
+                      style={{
+                        background: 'rgba(3,3,15,0.97)',
+                        border: '1px solid rgba(103,232,249,0.15)',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(14,165,233,0.08)',
+                        backdropFilter: 'blur(20px)',
+                      }}
+                    >
+                      <div className="h-[1px] w-full" style={{ background: 'linear-gradient(90deg, transparent, #0EA5E9, #7C3AED, transparent)' }} />
+                      <div className="py-1.5">
+                        {LANGUAGES.map((lang) => {
+                          const isSelected = lang.code === activeLang.code
+                          return (
+                            <button
+                              key={lang.code}
+                              onClick={() => { setActiveLang(lang); setLangOpen(false) }}
+                              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left transition-all duration-150"
+                              style={{
+                                background: isSelected ? 'rgba(14,165,233,0.10)' : 'transparent',
+                                color: isSelected ? '#93E6FB' : 'rgba(255,255,255,0.55)',
+                              }}
+                              onMouseEnter={(e) => { if (!isSelected) { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' } }}
+                              onMouseLeave={(e) => { if (!isSelected) { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.55)' } }}
+                            >
+                              <span className="text-base leading-none">{lang.flag}</span>
+                              <span className="font-mono text-[11px] tracking-wide">{lang.label}</span>
+                              {isSelected && (
+                                <span className="ml-auto w-1 h-1 rounded-full bg-nebula-400 shrink-0" />
+                              )}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           </div>
         </div>
