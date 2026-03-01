@@ -173,7 +173,7 @@ export default function TeamCarousel() {
                       <span
                         className="font-mono text-[10px] px-2.5 py-1 rounded-full backdrop-blur-sm"
                         style={{
-                          background: 'rgba(14,165,233,0.22)',
+                          background: 'rgba(14,165,233,0.52)',
                           border: '1px solid rgba(14,165,233,0.5)',
                           color: '#93E6FB',
                         }}
