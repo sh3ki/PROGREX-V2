@@ -123,8 +123,24 @@ export default function FeaturedProjectsCarousel() {
 
   return (
     <div className="relative w-full select-none">
-      {/* Constrained 3-D stage — matches content column width, clips side cards */}
-      <div className="relative max-w-7xl mx-auto overflow-hidden rounded-2xl">
+      <style>{`
+        .carousel-card {
+          transition: box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+        .carousel-card:hover {
+          box-shadow: 0 0 0 1px rgba(14,165,233,0.3), 0 0 35px rgba(14,165,233,0.28), 0 8px 40px rgba(0,0,0,0.55);
+          border-color: rgba(14,165,233,0.45) !important;
+        }
+        .carousel-card-center:hover {
+          box-shadow: 0 0 0 1px rgba(14,165,233,0.6), 0 0 60px rgba(14,165,233,0.55), 0 0 120px rgba(124,58,237,0.35), 0 24px 70px rgba(0,0,0,0.7);
+          border-color: rgba(14,165,233,0.75) !important;
+        }
+      `}</style>
+      {/* Constrained 3-D stage */}
+      <div className="relative max-w-7xl mx-auto">
+      {/* Edge-fade overlays — replaces overflow-hidden so box-shadow glows can escape */}
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-24 z-20" style={{ background: 'linear-gradient(to right, var(--bg, #03030f), transparent)' }} />
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-24 z-20" style={{ background: 'linear-gradient(to left, var(--bg, #03030f), transparent)' }} />
       <div
         className="relative w-full h-[580px] sm:h-[620px]"
         style={{ perspective: '1100px' }}
@@ -153,20 +169,18 @@ export default function FeaturedProjectsCarousel() {
                 damping: 32,
                 mass: 0.8,
               }}
-              style={{ zIndex: style.zIndex, transformStyle: 'preserve-3d', cursor: isCenter ? 'grab' : 'default' }}
+              style={{ zIndex: style.zIndex, transformStyle: 'preserve-3d', cursor: isCenter ? 'grab' : 'pointer' }}
               drag={isCenter ? 'x' : false}
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.12}
               onDragStart={() => setDragging(true)}
               onDragEnd={handleDragEnd}
               whileDrag={{ cursor: 'grabbing' }}
+              onClick={() => { if (!isCenter && !dragging) go(offset > 0 ? 1 : -1) }}
             >
               {/* Card — entire card is a link */}
-              <Link
-                href={`/projects/${project.slug}`}
-                draggable={false}
-                onClick={(e) => dragging && e.preventDefault()}
-                className="block relative rounded-2xl overflow-hidden"
+              <div
+                className={`relative rounded-2xl carousel-card${isCenter ? ' carousel-card-center' : ''}`}
                 style={{
                   background: 'rgba(6,6,22,0.97)',
                   border: isCenter
@@ -177,107 +191,125 @@ export default function FeaturedProjectsCarousel() {
                     : '0 8px 32px rgba(0,0,0,0.4)',
                 }}
               >
-                {/* Image — 16:9 */}
-                <div className="relative aspect-[16/9] overflow-hidden">
-                  <Image
-                    src={project.image}
-                    alt={project.title}
-                    fill
-                    className="object-cover object-top"
-                    sizes="(max-width: 768px) 100vw, 672px"
-                    draggable={false}
-                  />
-                  {/* overlay */}
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      background:
-                        'linear-gradient(to bottom, rgba(6,6,22,0.1) 0%, rgba(6,6,22,0.65) 100%)',
-                    }}
-                  />
+              {(() => {
+                const inner = (
+                  <>
+                    {/* Image — 16:9 */}
+                    <div className="relative aspect-[16/9] overflow-hidden">
+                      <Image
+                        src={project.image}
+                        alt={project.title}
+                        fill
+                        className="object-cover object-top"
+                        sizes="(max-width: 768px) 100vw, 672px"
+                        draggable={false}
+                      />
+                      {/* overlay */}
+                      <div
+                        className="absolute inset-0"
+                        style={{
+                          background:
+                            'linear-gradient(to bottom, rgba(6,6,22,0.1) 0%, rgba(6,6,22,0.65) 100%)',
+                        }}
+                      />
 
-                  {/* Top-edge gradient line */}
-                  <div
-                    className="absolute inset-x-0 top-0 h-[2px]"
-                    style={{
-                      background: isCenter
-                        ? 'linear-gradient(to right, transparent, #0EA5E9, #7C3AED, transparent)'
-                        : 'transparent',
-                    }}
-                  />
+                      {/* Top-edge gradient line */}
+                      <div
+                        className="absolute inset-x-0 top-0 h-[2px]"
+                        style={{
+                          background: isCenter
+                            ? 'linear-gradient(to right, transparent, #0EA5E9, #7C3AED, transparent)'
+                            : 'transparent',
+                        }}
+                      />
 
-                  {/* Badges */}
-                  <div className="absolute top-4 left-4 z-10 flex gap-2">
-                    <span
-                      className="font-mono text-[10px] px-2.5 py-1 rounded-full backdrop-blur-sm"
-                      style={{
-                        background: 'rgba(14,165,233,0.25)',
-                        border: '1px solid rgba(14,165,233,0.5)',
-                        color: '#93E6FB',
-                      }}
-                    >
-                      {project.category}
-                    </span>
-                  </div>
-                  <div className="absolute top-4 right-4 z-10">
-                    <span className="font-mono text-[9px] text-white/40 bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded">
-                      {project.industry}
-                    </span>
-                  </div>
-
-                  {/* Index indicator */}
-                  <div className="absolute bottom-4 right-4 z-10">
-                    <span className="font-mono text-[10px] text-nebula-400/50">
-                      {String(current + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="p-5 sm:p-6">
-                  <h3
-                    className="font-display font-bold text-xl sm:text-2xl mb-3"
-                    style={{
-                      color: isCenter ? '#fff' : 'rgba(255,255,255,0.75)',
-                    }}
-                  >
-                    {project.title}
-                  </h3>
-                  <p className="text-white/50 text-sm leading-relaxed mb-5">
-                    {project.shortDesc}
-                  </p>
-
-                  <div className="flex items-center justify-between gap-4">
-                    {/* Tags */}
-                    <div className="flex flex-wrap gap-1.5">
-                      {project.tags.map((tag) => (
+                      {/* Badges */}
+                      <div className="absolute top-4 left-4 z-10 flex gap-2">
                         <span
-                          key={tag}
-                          className="font-mono text-[10px] px-2 py-0.5 rounded"
+                          className="font-mono text-[10px] px-2.5 py-1 rounded-full backdrop-blur-sm"
                           style={{
-                            background: 'rgba(103,232,249,0.07)',
-                            border: '1px solid rgba(103,232,249,0.18)',
-                            color: 'rgba(103,232,249,0.7)',
+                            background: 'rgba(14,165,233,0.25)',
+                            border: '1px solid rgba(14,165,233,0.5)',
+                            color: '#93E6FB',
                           }}
                         >
-                          {tag}
+                          {project.category}
                         </span>
-                      ))}
+                      </div>
+                      <div className="absolute top-4 right-4 z-10">
+                        <span className="font-mono text-[9px] text-white/40 bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded">
+                          {project.industry}
+                        </span>
+                      </div>
+
+                      {/* Index indicator */}
+                      <div className="absolute bottom-4 right-4 z-10">
+                        <span className="font-mono text-[10px] text-nebula-400/50">
+                          {String(current + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
+                        </span>
+                      </div>
                     </div>
 
-                    {isCenter && (
-                      <span className="shrink-0 inline-flex items-center gap-1.5 font-mono text-sm text-nebula-400">
-                        View Case Study
-                        <ArrowRight size={13} />
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </Link>
+                    {/* Content */}
+                    <div className="p-5 sm:p-6">
+                      <h3
+                        className="font-display font-bold text-xl sm:text-2xl mb-3"
+                        style={{
+                          color: isCenter ? '#fff' : 'rgba(255,255,255,0.75)',
+                        }}
+                      >
+                        {project.title}
+                      </h3>
+                      <p className="text-white/50 text-sm leading-relaxed mb-5">
+                        {project.shortDesc}
+                      </p>
+
+                      <div className="flex items-center justify-between gap-4">
+                        {/* Tags */}
+                        <div className="flex flex-wrap gap-1.5">
+                          {project.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="font-mono text-xs px-2 py-0.5 rounded"
+                              style={{
+                                background: 'rgba(103,232,249,0.07)',
+                                border: '1px solid rgba(103,232,249,0.18)',
+                                color: 'rgba(103,232,249,0.7)',
+                              }}
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+
+                        {isCenter && (
+                          <span className="shrink-0 inline-flex items-center gap-1.5 font-mono text-sm text-nebula-400">
+                            View Case Study
+                            <ArrowRight size={13} />
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )
+                return isCenter ? (
+                  <Link
+                    href={`/projects/${project.slug}`}
+                    draggable={false}
+                    onClick={(e) => dragging && e.preventDefault()}
+                    className="block rounded-2xl overflow-hidden"
+                  >
+                    {inner}
+                  </Link>
+                ) : (
+                  <div className="rounded-2xl overflow-hidden">{inner}</div>
+                )
+              })()}
+              </div>
             </motion.div>
           )
         })}
-      </div>      </div> {/* end overflow-hidden stage */}
+      </div>      </div> {/* end stage */}
       {/* Arrow buttons */}
       <div className="flex items-center justify-center gap-6 mt-6">
         <motion.button
