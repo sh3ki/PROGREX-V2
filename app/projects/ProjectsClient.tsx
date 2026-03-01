@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Hero from '@/components/Hero'
 import ProjectCard from '@/components/ProjectCard'
 import CTASection from '@/components/CTASection'
-import ConstellationDecor from '@/components/ConstellationDecor'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
 import { projects, projectCategories } from '@/lib/mockData'
 
@@ -26,7 +25,7 @@ export default function ProjectsClient() {
         primaryBtn={{ label: 'Start Your Project', href: '/contact' }}
       />
 
-      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="orion" side="right" offsetY="12%" />}>
+      <SectionWrapper className="bg-[#050510]">
         <SectionHeader
           badge="Case Studies"
           title="Our"
@@ -42,13 +41,13 @@ export default function ProjectsClient() {
               onClick={() => setActiveFilter(cat)}
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.97 }}
-              className={`font-mono text-xs px-3 py-1.5 border transition-all duration-200 ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                 activeFilter === cat
-                  ? 'border-nebula-400/60 text-nebula-300 bg-nebula-400/10'
-                  : 'border-white/10 text-white/40 hover:border-nebula-600/40 hover:text-white/70'
+                  ? 'bg-gradient-to-r from-[#560BAD] to-[#4361EE] text-white shadow-[0_0_15px_rgba(86,11,173,0.4)]'
+                  : 'glass border border-[#560BAD]/20 text-slate-300 hover:border-[#560BAD]/60 hover:text-white'
               }`}
             >
-              [{cat}]
+              {cat}
             </motion.button>
           ))}
         </div>
