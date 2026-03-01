@@ -21,7 +21,7 @@ export default function ProjectsClient() {
         badge="Our Portfolio"
         title="Projects That"
         highlight="Drive Impact"
-        subtitle="150+ delivered solutions. Each one built with purpose, precision, and a commitment to measurable results."
+        subtitle="52+ delivered solutions. Each one built with purpose, precision, and a commitment to measurable results."
         primaryBtn={{ label: 'Start Your Project', href: '/contact' }}
       />
 
@@ -43,7 +43,7 @@ export default function ProjectsClient() {
               whileTap={{ scale: 0.97 }}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                 activeFilter === cat
-                  ? 'bg-gradient-to-r from-[#560BAD] to-[#4361EE] text-white shadow-[0_0_15px_rgba(86,11,173,0.4)]'
+                  ? 'bg-linear-to-r from-[#560BAD] to-[#4361EE] text-white shadow-[0_0_15px_rgba(86,11,173,0.4)]'
                   : 'glass border border-[#560BAD]/20 text-slate-300 hover:border-[#560BAD]/60 hover:text-white'
               }`}
             >
@@ -71,6 +71,7 @@ export default function ProjectsClient() {
                   shortDesc={project.shortDesc}
                   slug={project.slug}
                   tags={project.tags}
+                  image={project.image}
                   index={0}
                 />
               </motion.div>
