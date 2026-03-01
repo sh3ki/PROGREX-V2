@@ -19,9 +19,9 @@ interface HeroProps {
 }
 
 const stats = [
-  { value: 150, suffix: '+', label: 'Projects' },
-  { value: 80,  suffix: '+', label: 'Clients' },
-  { value: 6,   suffix: '+', label: 'Years' },
+  { value: 52, suffix: '+', label: 'Projects' },
+  { value: 38,  suffix: '+', label: 'Clients' },
+  { value: 4,   suffix: '+', label: 'Years' },
   { value: 25,  suffix: '+', label: 'Experts' },
 ]
 
