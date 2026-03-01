@@ -13,11 +13,38 @@ interface Message {
   timestamp: Date
 }
 
-const WELCOME_MESSAGE: Message = {
-  id: 'welcome',
-  role: 'assistant',
-  content: "Hi there! 👋 I'm **PROGREX AI**, your intelligent assistant. Ask me anything about our services, tech stack, pricing, or how we can help build your next big idea!",
-  timestamp: new Date(),
+type FormStep = 'name' | 'email' | 'phone' | 'company' | 'message'
+
+const WELCOME_MESSAGES: Record<string, string> = {
+  EN:  "Hi there! 👋 I'm **PROGREX AI**, your intelligent assistant. Ask me anything about our services, tech stack, pricing, or how we can help build your next big idea!",
+  FIL: "Kumusta! 👋 Ako si **PROGREX AI**, ang iyong matalinong assistant. Magtanong tungkol sa aming mga serbisyo, tech stack, presyo, o kung paano namin matutulungan ang iyong susunod na proyekto!",
+  ZH:  "你好！👋 我是 **PROGREX AI**，您的智能助手。欢迎询问有关我们的服务、技术栈、价格，或我们如何帮您打造下一个大创意！",
+  ES:  "¡Hola! 👋 Soy **PROGREX AI**, tu asistente inteligente. ¡Pregúntame sobre nuestros servicios, tecnologías, precios o cómo podemos ayudarte a construir tu próxima gran idea!",
+  AR:  "مرحباً! 👋 أنا **PROGREX AI**، مساعدك الذكي. اسألني عن خدماتنا، تقنياتنا، الأسعار، أو كيف يمكننا مساعدتك في بناء مشروعك القادم!",
+  HI:  "नमस्ते! 👋 मैं **PROGREX AI** हूँ, आपका बुद्धिमान सहायक। हमारी सेवाओं, टेक स्टैक, मूल्य, या अपनी अगली बड़ी परियोजना के बारे में पूछें!",
+  FR:  "Bonjour! 👋 Je suis **PROGREX AI**, votre assistant intelligent. Posez-moi des questions sur nos services, notre stack technique, nos tarifs ou comment nous pouvons vous aider!",
+  BN:  "হ্যালো! 👋 আমি **PROGREX AI**, আপনার বুদ্ধিমান সহকারী। আমাদের সেবা, মূল্য বা পরবর্তী প্রজেক্ট সম্পর্কে যেকোনো প্রশ্ন করুন!",
+  RU:  "Привет! 👋 Я **PROGREX AI**, ваш умный ассистент. Задавайте вопросы о наших услугах, технологиях, ценах или реализации вашей идеи!",
+  PT:  "Olá! 👋 Sou **PROGREX AI**, seu assistente inteligente. Pergunte-me sobre nossos serviços, tecnologias, preços ou como podemos ajudar a sua próxima grande ideia!",
+  ID:  "Halo! 👋 Saya **PROGREX AI**, asisten cerdas Anda. Tanyakan tentang layanan kami, teknologi, harga, atau bagaimana kami dapat membantu proyek Anda berikutnya!",
+  DE:  "Hallo! 👋 Ich bin **PROGREX AI**, Ihr intelligenter Assistent. Fragen Sie mich zu unseren Dienstleistungen, Technologien, Preisen oder Ihrer nächsten großen Idee!",
+  JA:  "こんにちは！👋 私は **PROGREX AI**、あなたのインテリジェントアシスタントです。サービス、技術スタック、料金、または次のプロジェクトについてお気軽にどうぞ！",
+  KO:  "안녕하세요! 👋 저는 **PROGREX AI**, 여러분의 지능형 어시스턴트입니다. 서비스, 기술, 가격, 또는 다음 프로젝트에 대해 무엇이든 물어보세요!",
+  VI:  "Xin chào! 👋 Tôi là **PROGREX AI**, trợ lý thông minh của bạn. Hãy hỏi tôi về dịch vụ, công nghệ, bảng giá, hoặc dự án tiếp theo của bạn!",
+  TR:  "Merhaba! 👋 Ben **PROGREX AI**, akıllı asistanınız. Hizmetlerimiz, teknolojilerimiz, fiyatlarımız veya bir sonraki projeniz hakkında her şeyi sorabilirsiniz!",
+  IT:  "Ciao! 👋 Sono **PROGREX AI**, il tuo assistente intelligente. Chiedimi dei nostri servizi, tecnologie, prezzi o come possiamo aiutarti a realizzare la tua prossima idea!",
+  TH:  "สวัสดี! 👋 ฉันคือ **PROGREX AI** ผู้ช่วยอัจฉริยะของคุณ ถามฉันเกี่ยวกับบริการ เทคโนโลยี ราคา หรือโปรเจกต์ถัดไปของคุณได้เลย!",
+  NL:  "Hallo! 👋 Ik ben **PROGREX AI**, uw intelligente assistent. Stel mij vragen over onze diensten, technologieën, prijzen of uw volgende grote idee!",
+  PL:  "Cześć! 👋 Jestem **PROGREX AI**, Twoim inteligentnym asystentem. Zapytaj mnie o nasze usługi, technologie, ceny lub o Twój następny projekt!",
+}
+
+function getWelcomeMessage(lang: string): Message {
+  return {
+    id: 'welcome',
+    role: 'assistant',
+    content: WELCOME_MESSAGES[lang] ?? WELCOME_MESSAGES['EN'],
+    timestamp: new Date(),
+  }
 }
 
 function formatTime(date: Date): string {
@@ -36,11 +63,36 @@ function renderContent(text: string) {
 
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false)
-  const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE])
+  const [messages, setMessages] = useState<Message[]>(() => [getWelcomeMessage(
+    typeof window !== 'undefined' ? (localStorage.getItem('progrex-lang') ?? 'EN') : 'EN'
+  )])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hasNewMessage, setHasNewMessage] = useState(false)
+  const [activeLang, setActiveLangState] = useState('EN')
+
+  // Sync language from Navbar via localStorage + custom event
+  useEffect(() => {
+    const stored = localStorage.getItem('progrex-lang')
+    if (stored) setActiveLangState(stored)
+    const handler = (e: Event) => {
+      const lang = (e as CustomEvent<string>).detail
+      setActiveLangState(lang)
+      // Update welcome message if chat is still fresh
+      setMessages(prev =>
+        prev.length === 1 && prev[0].id === 'welcome' ? [getWelcomeMessage(lang)] : prev
+      )
+    }
+    document.addEventListener('progrex-lang-change', handler)
+    return () => document.removeEventListener('progrex-lang-change', handler)
+  }, [])
+
+  // ── Lead form state ──────────────────────────────────────────────────
+  const [formMode, setFormMode] = useState(false)
+  const [formStep, setFormStep] = useState<FormStep>('name')
+  const [leadForm, setLeadForm] = useState({ name: '', email: '', phone: '', company: '', message: '' })
+  const [formSubmitting, setFormSubmitting] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -77,9 +129,14 @@ export default function Chatbot() {
 
   const sendMessage = async () => {
     const trimmed = input.trim()
-    if (!trimmed || isLoading) return
-
+    if (!trimmed || isLoading || formSubmitting) return
     setError(null)
+
+    // ── Form mode: route input through the step handler ──
+    if (formMode) {
+      await handleFormStep(trimmed)
+      return
+    }
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -99,7 +156,7 @@ export default function Chatbot() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: history }),
+        body: JSON.stringify({ messages: history, lang: activeLang }),
       })
 
       const data = await res.json()
@@ -129,9 +186,96 @@ export default function Chatbot() {
   }
 
   const clearChat = () => {
-    setMessages([WELCOME_MESSAGE])
+    setMessages([getWelcomeMessage(activeLang)])
     setError(null)
     setInput('')
+    setFormMode(false)
+    setFormStep('name')
+    setLeadForm({ name: '', email: '', phone: '', company: '', message: '' })
+  }
+
+  // ── Lead form helpers ─────────────────────────────────────────────────────
+  const addBot = (content: string) => {
+    const msg: Message = { id: `bot-${Date.now()}-${Math.random()}`, role: 'assistant', content, timestamp: new Date() }
+    setMessages((prev) => [...prev, msg])
+  }
+  const addUser = (content: string) => {
+    const msg: Message = { id: `user-${Date.now()}-${Math.random()}`, role: 'user', content, timestamp: new Date() }
+    setMessages((prev) => [...prev, msg])
+  }
+
+  const startLeadForm = () => {
+    setFormMode(true)
+    setFormStep('name')
+    setLeadForm({ name: '', email: '', phone: '', company: '', message: '' })
+    addBot("Sure! Let's put together a project inquiry. 📝\n\nFirst, **what's your full name?**")
+  }
+
+  const handleFormStep = async (value: string) => {
+    const skip = value.toLowerCase() === 'skip' || value === '-'
+
+    if (formStep === 'name') {
+      if (!value.trim()) { addBot('Please enter your name to continue.'); return }
+      addUser(value)
+      setLeadForm((p) => ({ ...p, name: value.trim() }))
+      setFormStep('email')
+      setInput('')
+      addBot(`Nice to meet you, **${value.trim()}**! \n\nWhat's your **email address**?`)
+
+    } else if (formStep === 'email') {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) {
+        addUser(value)
+        setInput('')
+        addBot("Hmm, that doesn't look like a valid email. Please try again.")
+        return
+      }
+      addUser(value)
+      setLeadForm((p) => ({ ...p, email: value.trim() }))
+      setFormStep('phone')
+      setInput('')
+      addBot("Got it! What's your **phone number**? *(type 'skip' to skip)*")
+
+    } else if (formStep === 'phone') {
+      addUser(skip ? '*(skipped)*' : value)
+      setLeadForm((p) => ({ ...p, phone: skip ? '' : value.trim() }))
+      setFormStep('company')
+      setInput('')
+      addBot("What **company or organization** are you from? *(type 'skip' if none)*")
+
+    } else if (formStep === 'company') {
+      addUser(skip ? '*(skipped)*' : value)
+      setLeadForm((p) => ({ ...p, company: skip ? '' : value.trim() }))
+      setFormStep('message')
+      setInput('')
+      addBot("Almost there! 🚀 Please **describe your project** — what do you need help with, what are your goals, any specific requirements?")
+
+    } else if (formStep === 'message') {
+      if (!value.trim()) { addBot('Please describe your project to continue.'); return }
+      addUser(value)
+      const finalForm = { ...leadForm, message: value.trim() }
+      setLeadForm(finalForm)
+      setInput('')
+      setFormSubmitting(true)
+      addBot('Sending your inquiry... ⏳')
+
+      try {
+        const res = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(finalForm),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Failed to send')
+        setFormMode(false)
+        addBot(
+          `✅ **Inquiry sent successfully!** Thank you, **${finalForm.name}** — we've received your message and will get back to you at **${finalForm.email}** within 24 hours.\n\nIn the meantime, you can also browse our [projects](/projects) or [services](/services). Is there anything else I can help you with?`
+        )
+      } catch (err: unknown) {
+        addBot(`⚠️ Something went wrong: ${err instanceof Error ? err.message : 'Please try again or use the Contact page.'}`)
+      } finally {
+        setFormSubmitting(false)
+      }
+    }
   }
 
   return (
@@ -422,11 +566,38 @@ export default function Chatbot() {
               <div ref={messagesEndRef} />
             </div>
 
+            {/* Quick-action: Get a Quote (shown when not in form mode and chat is fresh) */}
+            {!formMode && messages.length <= 2 && !isLoading && (
+              <div className="px-4 pb-2 relative z-10">
+                <button
+                  onClick={startLeadForm}
+                  className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-mono transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                  style={{
+                    background: 'rgba(14,165,233,0.08)',
+                    border: '1px solid rgba(14,165,233,0.25)',
+                    color: 'rgba(103,232,249,0.85)',
+                  }}
+                >
+                  📝 Start a Project Inquiry
+                </button>
+              </div>
+            )}
+
             {/* Input area */}
             <div
               className="px-3 py-3 shrink-0 relative z-10"
               style={{ borderTop: '1px solid rgba(103,232,249,0.1)', background: 'rgba(2,2,12,0.9)' }}
             >
+              {/* Skip button for optional steps */}
+              {formMode && (formStep === 'phone' || formStep === 'company') && (
+                <button
+                  onClick={() => handleFormStep('skip')}
+                  className="w-full mb-2 py-1.5 rounded-lg text-xs font-mono transition-all duration-150 hover:opacity-80"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.35)' }}
+                >
+                  Skip (optional)
+                </button>
+              )}
               <div
                 className="flex items-end gap-2 px-3 py-2 rounded-lg transition-all duration-200"
                 style={{
@@ -443,9 +614,17 @@ export default function Chatbot() {
                     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
                   }}
                   onKeyDown={handleKeyDown}
-                  placeholder="> Ask me anything…"
+                  placeholder={
+                    formMode
+                      ? formStep === 'name' ? 'Your full name...'
+                      : formStep === 'email' ? 'you@example.com'
+                      : formStep === 'phone' ? 'Your phone number...'
+                      : formStep === 'company' ? 'Company name...'
+                      : 'Describe your project...'
+                      : '> Ask me anything…'
+                  }
                   rows={1}
-                  disabled={isLoading}
+                  disabled={isLoading || formSubmitting}
                   className="flex-1 bg-transparent text-sm text-white/75 resize-none outline-none leading-relaxed min-h-[24px] max-h-[120px] disabled:opacity-40 font-mono placeholder:text-white/20 placeholder:font-mono"
                 />
                 <button
