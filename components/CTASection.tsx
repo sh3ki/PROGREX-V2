@@ -17,41 +17,11 @@ export default function CTASection({
   primaryBtn = { label: 'Start Your Project', href: '/contact' },
   secondaryBtn = { label: 'View Our Work', href: '/projects' },
 }: CTASectionProps) {
-  const rings = [80, 160, 240, 320]
-
   return (
     <section className="relative py-28 overflow-hidden">
       {/* Deep space background — semi-transparent so starfield shows through */}
       <div className="absolute inset-0" style={{ background: 'rgba(3,3,15,0.82)' }} />
       <div className="absolute inset-0 bg-dot-grid opacity-25 pointer-events-none" />
-
-      {/* Concentric circles decoration */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        {rings.map((r, i) => (
-          <motion.div
-            key={r}
-            className="absolute rounded-full border"
-            style={{
-              width: r * 2,
-              height: r * 2,
-              borderColor: `rgba(103,232,249,${0.06 - i * 0.012})`,
-            }}
-            animate={{ rotate: i % 2 === 0 ? 360 : -360 }}
-            transition={{
-              duration: 30 + i * 10,
-              repeat: Infinity,
-              ease: 'linear',
-            }}
-          />
-        ))}
-        {/* Center dot */}
-        <motion.div
-          className="absolute w-3 h-3 rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(103,232,249,0.6), rgba(103,232,249,0.1))' }}
-          animate={{ scale: [1, 1.5, 1], opacity: [0.6, 1, 0.6] }}
-          transition={{ duration: 3, repeat: Infinity }}
-        />
-      </div>
 
       {/* Nebula blobs */}
       <div
