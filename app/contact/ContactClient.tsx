@@ -347,7 +347,7 @@ export default function ContactClient() {
             </a>
 
             {/* Social */}
-            <div className="glass-card rounded-2xl p-5 border border-nebula-700/20">
+            <div className="glass-card rounded-2xl p-5 pr-4 border border-nebula-700/20">
               <h4 className="text-white font-bold text-sm mb-4">Follow Us</h4>
               <div className="flex flex-wrap gap-3">
                 {[
