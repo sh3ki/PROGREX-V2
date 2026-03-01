@@ -3,8 +3,11 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import Hero from '@/components/Hero'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
-import ServiceCard from '@/components/ServiceCard'
+import ConstellationDecor from '@/components/ConstellationDecor'
 import CTASection from '@/components/CTASection'
+import ServicesTechMarquee from '@/components/ServicesTechMarquee'
+import ServiceCarousel from '@/components/ServiceCarousel'
+import { OutcomesSection, QualitySection, ArchitectureSection, GuaranteesSection, ApproachCards } from '@/components/ServicesDetailSections'
 import { services } from '@/lib/mockData'
 
 export const metadata: Metadata = {
@@ -24,38 +27,26 @@ export default function ServicesPage() {
         primaryBtn={{ label: 'Get a Quote', href: '/contact' }}
       />
 
-      <SectionWrapper className="bg-[#050510]">
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="orion" side="right" offsetY="12%" />}>
         <SectionHeader
           badge="Our Capabilities"
-          title="Six Core Service"
+          title="Core Service"
           highlight="Areas"
           subtitle="Specialized expertise across the full technology stack — designed to deliver measurable results."
         />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((service, i) => (
-            <ServiceCard
-              key={service.id}
-              title={service.title}
-              shortDesc={service.shortDesc}
-              icon={service.icon}
-              slug={service.slug}
-              color={service.color}
-              index={i}
-            />
-          ))}
-        </div>
+        <ServiceCarousel services={services} />
       </SectionWrapper>
 
       {/* Approach section */}
-      <SectionWrapper className="bg-[#030308]">
+      <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="bigdipper" side="left" offsetY="20%" />}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass border border-[#560BAD]/30 text-[#CFA3EA] text-xs font-semibold uppercase tracking-widest mb-4">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#831DC6] animate-pulse" />
+            <div className="eyebrow-badge mb-4">
+              <span className="w-1.5 h-1.5 rounded-full bg-nebula-500 animate-pulse" />
               Our Approach
             </div>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-5 leading-tight">
-              We Don&apos;t Just Write Code — <span className="text-gradient">We Solve Problems</span>
+              We Don&apos;t Just Write Code — <span className="text-gradient-nebula">We Solve Problems</span>
             </h2>
             <p className="text-slate-400 leading-relaxed mb-6">
               Every engagement starts with understanding your business goals, not your technical requirements. We then map the right technology to the right problem, ensuring maximum ROI and minimal technical debt.
@@ -65,21 +56,57 @@ export default function ServicesPage() {
               <ArrowRight size={16} />
             </Link>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              { icon: '🎯', title: 'Goal-Oriented', desc: 'We align every technical decision with your business objectives.' },
-              { icon: '⚡', title: 'Agile Delivery', desc: 'Weekly sprints with demos, feedback, and iteration.' },
-              { icon: '🔒', title: 'Secure by Design', desc: 'Security best practices baked into every layer.' },
-              { icon: '📈', title: 'Scalable First', desc: 'Built to handle your growth — today and tomorrow.' },
-            ].map((item, i) => (
-              <div key={i} className="glass-card rounded-xl p-4 border border-[#560BAD]/15 hover:border-[#560BAD]/40 transition-colors">
-                <div className="text-2xl mb-2">{item.icon}</div>
-                <div className="text-sm font-bold text-white mb-1">{item.title}</div>
-                <div className="text-xs text-slate-400 leading-relaxed">{item.desc}</div>
-              </div>
-            ))}
-          </div>
+          <ApproachCards />
         </div>
+      </SectionWrapper>
+
+      {/* Outcomes We Deliver */}
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="pleiades" side="right" offsetY="12%" />}>
+        <SectionHeader
+          badge="Outcomes We Deliver"
+          title="Real Results, Not Just"
+          highlight="Features"
+          subtitle="Every engagement is measured by the tangible impact it creates — for your business, your users, and your bottom line."
+        />
+        <OutcomesSection />
+      </SectionWrapper>
+
+      {/* Quality & Security Standards */}
+      <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="cassiopeia" side="left" offsetY="18%" />}>
+        <SectionHeader
+          badge="Quality & Security"
+          title="Standards We Build"
+          highlight="To"
+          subtitle="Security and quality are not afterthoughts — they are baked into our development process from the very first line of code."
+        />
+        <QualitySection />
+      </SectionWrapper>
+
+      {/* What Makes Our Architecture Different */}
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="orion" side="right" offsetY="20%" />}>
+        <SectionHeader
+          badge="Architecture"
+          title="What Makes Our Architecture"
+          highlight="Different"
+          subtitle="Decisions made at architecture level determine how well your system survives growth, integrations, and change. Here is how we think."
+        />
+        <ArchitectureSection />
+      </SectionWrapper>
+
+      {/* Service Guarantees */}
+      <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="bigdipper" side="left" offsetY="25%" />}>
+        <GuaranteesSection />
+      </SectionWrapper>
+
+      {/* Technologies & Tools */}
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="leo" side="right" offsetY="15%" />}>
+        <SectionHeader
+          badge="Our Stack"
+          title="Technologies &"
+          highlight="Tools"
+          subtitle="A comprehensive, battle-tested stack spanning every layer of the modern software landscape."
+        />
+        <ServicesTechMarquee />
       </SectionWrapper>
 
       <CTASection

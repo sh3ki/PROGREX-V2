@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { Clock, User, ArrowLeft, Share2, Twitter, Linkedin } from 'lucide-react'
 import BlogCard from '@/components/BlogCard'
+import ConstellationDecor from '@/components/ConstellationDecor'
 import CTASection from '@/components/CTASection'
 import SectionWrapper from '@/components/SectionWrapper'
 
@@ -35,19 +36,19 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
   return (
     <>
       {/* Hero */}
-      <section className="relative pt-32 pb-16 overflow-hidden bg-[#050510]">
-        <div className="absolute inset-0 bg-grid opacity-20" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-[#560BAD]/10 rounded-full blur-[100px]" />
+      <section className="relative pt-32 pb-16 overflow-hidden bg-section-a">
+        <div className="absolute inset-0 bg-dot-grid opacity-15" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-nebula-700/10 rounded-full blur-[100px]" />
 
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <Link href="/blogs" className="inline-flex items-center gap-2 text-slate-400 hover:text-[#CFA3EA] text-sm mb-6 transition-colors">
+            <Link href="/blogs" className="inline-flex items-center gap-2 text-white/40 hover:text-nebula-300 text-sm mb-6 transition-colors font-mono">
               <ArrowLeft size={15} />
-              Back to Blog
+              ../blogs
             </Link>
 
-            <span className="px-3 py-1 rounded-full bg-[#560BAD]/80 text-[#CFA3EA] text-xs font-semibold mb-4 inline-block">
-              {blog.category}
+            <span className="font-mono text-xs px-3 py-1 border border-nebula-500/40 text-nebula-300 bg-nebula-400/10 mb-4 inline-block">
+              [{blog.category}]
             </span>
 
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-5 leading-tight">
@@ -68,8 +69,8 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
 
             <div className="flex flex-wrap gap-2 mb-6">
               {blog.tags.map((tag) => (
-                <span key={tag} className="px-2.5 py-1 rounded-lg text-xs font-medium bg-[#3A0CA3]/30 text-[#CFA3EA] border border-[#3A0CA3]/30">
-                  {tag}
+                <span key={tag} className="font-mono text-xs px-2.5 py-1 border border-nebula-700/20 text-nebula-400/70 bg-nebula-400/5">
+                  [{tag}]
                 </span>
               ))}
             </div>
@@ -77,13 +78,13 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
             {/* Share */}
             <div className="flex items-center gap-3">
               <span className="text-xs text-slate-500 uppercase tracking-wide">Share:</span>
-              <a href="#" className="w-8 h-8 rounded-lg glass border border-[#560BAD]/20 flex items-center justify-center text-slate-400 hover:text-[#CFA3EA] transition-colors">
+              <a href="#" className="w-8 h-8 rounded-lg glass border border-nebula-700/20 flex items-center justify-center text-white/40 hover:text-nebula-300 transition-colors">
                 <Twitter size={14} />
               </a>
-              <a href="#" className="w-8 h-8 rounded-lg glass border border-[#560BAD]/20 flex items-center justify-center text-slate-400 hover:text-[#CFA3EA] transition-colors">
+              <a href="#" className="w-8 h-8 rounded-lg glass border border-nebula-700/20 flex items-center justify-center text-white/40 hover:text-nebula-300 transition-colors">
                 <Linkedin size={14} />
               </a>
-              <a href="#" className="w-8 h-8 rounded-lg glass border border-[#560BAD]/20 flex items-center justify-center text-slate-400 hover:text-[#CFA3EA] transition-colors">
+              <a href="#" className="w-8 h-8 rounded-lg glass border border-nebula-700/20 flex items-center justify-center text-white/40 hover:text-nebula-300 transition-colors">
                 <Share2 size={14} />
               </a>
             </div>
@@ -93,8 +94,9 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
 
       {/* Hero image placeholder */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 -mt-4 mb-8">
-        <div className="h-64 rounded-2xl bg-gradient-to-br from-[#3A0CA3]/30 to-[#4361EE]/20 border border-[#560BAD]/20 flex items-center justify-center">
-          <div className="text-slate-600 text-sm">Hero Image — {blog.title}</div>
+        <div className="h-64 rounded-2xl bg-space-800 border border-nebula-700/20 flex items-center justify-center overflow-hidden relative">
+          <div className="absolute inset-0 bg-dot-grid opacity-20" />
+          <div className="text-white/20 text-sm font-mono relative">// {blog.title}</div>
         </div>
       </div>
 
@@ -106,22 +108,22 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
           transition={{ duration: 0.6, delay: 0.2 }}
           className="glass-card rounded-2xl p-8 sm:p-10 prose prose-invert prose-sm max-w-none
             prose-headings:text-white prose-headings:font-extrabold
-            prose-h2:text-xl prose-h2:text-gradient prose-h2:mt-8 prose-h2:mb-3
-            prose-p:text-slate-400 prose-p:leading-relaxed
-            prose-strong:text-[#CFA3EA]
-            prose-li:text-slate-400
-            prose-a:text-[#831DC6] prose-a:no-underline hover:prose-a:text-[#CFA3EA]"
+            prose-h2:text-xl prose-h2:text-gradient-nebula prose-h2:mt-8 prose-h2:mb-3
+            prose-p:text-white/55 prose-p:leading-relaxed
+            prose-strong:text-nebula-300
+            prose-li:text-white/55
+            prose-a:text-nebula-500 prose-a:no-underline hover:prose-a:text-nebula-300"
           dangerouslySetInnerHTML={{ __html: renderMarkdown(blog.content) }}
         />
 
         {/* Author card */}
-        <div className="glass-card rounded-2xl p-6 mt-8 border border-[#560BAD]/20 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#560BAD] to-[#4361EE] flex items-center justify-center text-white font-bold text-lg shrink-0">
+        <div className="glass-card rounded-2xl p-6 mt-8 border border-nebula-700/20 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-nebula-700 to-aurora-600 flex items-center justify-center text-white font-bold text-lg shrink-0">
             {blog.author.name.charAt(0)}
           </div>
           <div>
             <div className="font-bold text-white">{blog.author.name}</div>
-            <div className="text-[#CFA3EA] text-xs font-medium mb-1">{blog.author.role}</div>
+            <div className="text-nebula-300/80 text-xs font-mono mb-1">{blog.author.role}</div>
             <div className="text-slate-500 text-xs">Expert contributor at PROGREX. Building and writing about technology that drives business success.</div>
           </div>
         </div>
@@ -129,8 +131,8 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
 
       {/* Related posts */}
       {relatedPosts.length > 0 && (
-        <SectionWrapper className="bg-[#030308]">
-          <div className="text-xs font-semibold text-[#CFA3EA] uppercase tracking-widest mb-6">Related Articles</div>
+        <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="leo" side="right" offsetY="15%" />}>
+          <div className="font-mono text-xs text-nebula-400/60 uppercase tracking-widest mb-6">// related_articles</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {relatedPosts.map((post, i) => (
               <BlogCard

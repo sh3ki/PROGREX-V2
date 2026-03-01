@@ -2,8 +2,21 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Mail, Phone, MapPin, Send, CheckCircle, Github, Twitter, Linkedin, Facebook } from 'lucide-react'
+import { Mail, Phone, MapPin, Send, CheckCircle, Github, Twitter, Linkedin, Facebook, Instagram, Youtube } from 'lucide-react'
+
+const TikTokIcon = ({ size = 16 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.31 6.31 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.51a8.18 8.18 0 004.78 1.53V7.59a4.85 4.85 0 01-1.01-.9z" />
+  </svg>
+)
+
+const WhatsAppIcon = ({ size = 16 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+  </svg>
+)
 import SectionWrapper from '@/components/SectionWrapper'
+import ConstellationDecor from '@/components/ConstellationDecor'
 
 const services = [
   'Custom Software Development',
@@ -67,18 +80,18 @@ export default function ContactClient() {
   return (
     <>
       {/* Hero */}
-      <section className="relative pt-32 pb-16 overflow-hidden bg-[#050510]">
-        <div className="absolute inset-0 bg-grid opacity-20" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-[#560BAD]/15 rounded-full blur-[100px]" />
+      <section className="relative pt-32 pb-16 overflow-hidden bg-section-a">
+        <div className="absolute inset-0 bg-dot-grid opacity-15" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-nebula-700/10 rounded-full blur-[100px]" />
 
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass border border-[#560BAD]/30 text-[#CFA3EA] text-xs font-semibold uppercase tracking-widest mb-4">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#831DC6] animate-pulse" />
+            <div className="eyebrow-badge mb-4 justify-center">
+              <span className="w-1.5 h-1.5 rounded-full bg-nebula-500 animate-pulse" />
               Let&apos;s Work Together
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white mb-4 leading-tight">
-              Start Your <span className="text-gradient">Project</span>
+              Start Your <span className="text-gradient-nebula">Project</span>
             </h1>
             <p className="text-slate-300 text-lg max-w-xl mx-auto leading-relaxed">
               Tell us about your project and we&apos;ll get back to you within 24 hours with a plan.
@@ -86,10 +99,10 @@ export default function ContactClient() {
           </motion.div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#050510] to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[rgba(5,5,16,0.7)] to-transparent" />
       </section>
 
-      <SectionWrapper className="bg-[#050510]">
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="gemini" side="right" offsetY="15%" />}>
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
           {/* Form */}
           <div className="lg:col-span-3">
@@ -100,13 +113,13 @@ export default function ContactClient() {
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.5, type: 'spring' }}
-                  className="glass-card rounded-2xl p-12 text-center border border-[#560BAD]/30"
+                  className="glass-card rounded-2xl p-12 text-center border border-nebula-700/30"
                 >
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
-                    className="w-16 h-16 rounded-full bg-gradient-to-br from-[#560BAD] to-[#4361EE] flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(86,11,173,0.5)]"
+                    className="w-16 h-16 rounded-full bg-gradient-to-br from-nebula-700 to-aurora-600 flex items-center justify-center mx-auto mb-6 shadow-nebula"
                   >
                     <CheckCircle size={28} className="text-white" />
                   </motion.div>
@@ -128,7 +141,7 @@ export default function ContactClient() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5 }}
                   onSubmit={handleSubmit}
-                  className="glass-card rounded-2xl p-6 sm:p-8 border border-[#560BAD]/20 space-y-5"
+                  className="glass-card rounded-2xl p-6 sm:p-8 border border-nebula-700/20 space-y-5"
                 >
                   <h2 className="text-xl font-bold text-white mb-2">Get a Free Quote</h2>
 
@@ -169,7 +182,7 @@ export default function ContactClient() {
                     <select
                       value={form.service}
                       onChange={(e) => handleChange('service', e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl glass border border-[#560BAD]/20 bg-[#050510] text-slate-200 text-sm focus:outline-none focus:border-[#831DC6]/60 focus:shadow-[0_0_15px_rgba(131,29,198,0.2)] transition-all"
+                      className="w-full px-4 py-2.5 rounded-xl glass border border-nebula-700/20 bg-[#050510] text-white/80 text-sm focus:outline-none focus:border-nebula-500/60 focus:shadow-nebula-sm transition-all"
                     >
                       <option value="">Select a service...</option>
                       {services.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -182,7 +195,7 @@ export default function ContactClient() {
                     <select
                       value={form.budget}
                       onChange={(e) => handleChange('budget', e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl glass border border-[#560BAD]/20 bg-[#050510] text-slate-200 text-sm focus:outline-none focus:border-[#831DC6]/60 transition-all"
+                      className="w-full px-4 py-2.5 rounded-xl glass border border-nebula-700/20 bg-[#050510] text-white/80 text-sm focus:outline-none focus:border-nebula-500/60 transition-all"
                     >
                       <option value="">Select budget range...</option>
                       <option>Below ₱10,000</option>
@@ -205,7 +218,7 @@ export default function ContactClient() {
                       className={`w-full px-4 py-2.5 rounded-xl glass border bg-transparent text-slate-200 text-sm placeholder-slate-500 focus:outline-none transition-all resize-none ${
                         errors.message
                           ? 'border-red-500/60'
-                          : 'border-[#560BAD]/20 focus:border-[#831DC6]/60 focus:shadow-[0_0_15px_rgba(131,29,198,0.15)]'
+                          : 'border-nebula-700/20 focus:border-nebula-500/60 focus:shadow-nebula-sm'
                       }`}
                     />
                     {errors.message && <p className="text-red-400 text-xs mt-1">{errors.message}</p>}
@@ -236,7 +249,8 @@ export default function ContactClient() {
 
           {/* Contact Info */}
           <div className="lg:col-span-2 space-y-5">
-            <div className="glass-card rounded-2xl p-6 border border-[#560BAD]/20">
+            <div
+              className="glass-card rounded-2xl p-6 border border-nebula-700/20">
               <h3 className="text-white font-bold mb-5">Contact Information</h3>
               <div className="space-y-4">
                 {[
@@ -245,12 +259,12 @@ export default function ContactClient() {
                   { icon: <MapPin size={16} />, label: 'Office', value: 'Manila, Philippines', href: '#' },
                 ].map((item) => (
                   <a key={item.label} href={item.href} className="flex items-start gap-3 group">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#560BAD] to-[#4361EE] flex items-center justify-center text-white shrink-0 group-hover:shadow-[0_0_15px_rgba(86,11,173,0.5)] transition-all">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-nebula-700 to-aurora-600 flex items-center justify-center text-white shrink-0 group-hover:shadow-nebula-sm transition-all">
                       {item.icon}
                     </div>
                     <div>
                       <div className="text-xs text-slate-500 font-medium uppercase tracking-wide">{item.label}</div>
-                      <div className="text-sm text-slate-200 group-hover:text-[#CFA3EA] transition-colors">{item.value}</div>
+                      <div className="text-sm text-white/70 group-hover:text-nebula-300 transition-colors">{item.value}</div>
                     </div>
                   </a>
                 ))}
@@ -258,32 +272,37 @@ export default function ContactClient() {
             </div>
 
             {/* Map Placeholder */}
-            <div className="glass-card rounded-2xl p-1 border border-[#560BAD]/20 overflow-hidden">
-              <div className="h-44 rounded-xl bg-gradient-to-br from-[#3A0CA3]/30 to-[#4361EE]/20 flex items-center justify-center relative">
-                <div className="absolute inset-0 bg-grid opacity-30 rounded-xl" />
+            <div className="glass-card rounded-2xl p-1 border border-nebula-700/20 overflow-hidden">
+              <div className="h-44 rounded-xl bg-space-900 flex items-center justify-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-dot-grid opacity-20 rounded-xl" />
                 <div className="text-center relative">
-                  <MapPin size={24} className="text-[#831DC6] mx-auto mb-2" />
-                  <div className="text-slate-500 text-xs">Manila, Philippines</div>
-                  <div className="text-slate-600 text-xs">Google Maps Embed</div>
+                  <MapPin size={24} className="text-nebula-500 mx-auto mb-2" />
+                  <div className="text-white/40 text-xs font-mono">// Manila, Philippines</div>
                 </div>
               </div>
             </div>
 
             {/* Social */}
-            <div className="glass-card rounded-2xl p-5 border border-[#560BAD]/20">
+            <div
+              className="glass-card rounded-2xl p-5 border border-nebula-700/20">
               <h4 className="text-white font-bold text-sm mb-4">Follow Us</h4>
               <div className="flex gap-3">
                 {[
-                  { icon: <Github size={16} />, label: 'GitHub', href: '#' },
-                  { icon: <Twitter size={16} />, label: 'Twitter', href: '#' },
-                  { icon: <Linkedin size={16} />, label: 'LinkedIn', href: '#' },
                   { icon: <Facebook size={16} />, label: 'Facebook', href: '#' },
+                  { icon: <Instagram size={16} />, label: 'Instagram', href: '#' },
+                  { icon: <Twitter size={16} />, label: 'X', href: '#' },
+                  { icon: <TikTokIcon size={16} />, label: 'TikTok', href: '#' },
+                  { icon: <Linkedin size={16} />, label: 'LinkedIn', href: '#' },
+                  { icon: <Youtube size={16} />, label: 'YouTube', href: '#' },
+                  { icon: <WhatsAppIcon size={16} />, label: 'WhatsApp', href: '#' },
+                  { icon: <Github size={16} />, label: 'GitHub', href: '#' },
+                  { icon: <MapPin size={16} />, label: 'Maps', href: '#' },
                 ].map((social) => (
                   <a
                     key={social.label}
                     href={social.href}
                     aria-label={social.label}
-                    className="w-9 h-9 rounded-lg glass border border-[#560BAD]/20 flex items-center justify-center text-slate-400 hover:text-[#CFA3EA] hover:border-[#831DC6]/50 hover:shadow-[0_0_10px_rgba(131,29,198,0.3)] transition-all duration-200"
+                    className="w-9 h-9 rounded-lg glass border border-nebula-700/20 flex items-center justify-center text-white/40 hover:text-nebula-300 hover:border-nebula-500/50 hover:shadow-nebula-sm transition-all duration-200"
                   >
                     {social.icon}
                   </a>
@@ -292,10 +311,11 @@ export default function ContactClient() {
             </div>
 
             {/* Response time */}
-            <div className="glass-card rounded-2xl p-5 border border-[#560BAD]/20">
+            <div
+              className="glass-card rounded-2xl p-5 border border-nebula-700/20">
               <div className="flex items-center gap-2 mb-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-emerald-400 text-sm font-semibold">We&apos;re Available</span>
+                <span className="text-emerald-400 text-sm font-mono">// ONLINE — Available</span>
               </div>
               <p className="text-slate-400 text-xs leading-relaxed">
                 Mon–Fri, 9AM–6PM PHT. We typically respond within <strong className="text-white">24 hours</strong>. For urgent projects, call us directly.
@@ -326,16 +346,16 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-slate-300 mb-1.5">{label}</label>
+      <label className="block text-sm font-medium text-white/60 mb-1.5">{label}</label>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className={`w-full px-4 py-2.5 rounded-xl glass border bg-transparent text-slate-200 text-sm placeholder-slate-500 focus:outline-none transition-all ${
+        className={`w-full px-4 py-2.5 rounded-xl glass border bg-transparent text-white/80 text-sm placeholder-white/25 focus:outline-none transition-all ${
           error
             ? 'border-red-500/60'
-            : 'border-[#560BAD]/20 focus:border-[#831DC6]/60 focus:shadow-[0_0_15px_rgba(131,29,198,0.15)]'
+            : 'border-nebula-700/20 focus:border-nebula-500/60 focus:shadow-nebula-sm'
         }`}
       />
       {error && <p className="text-red-400 text-xs mt-1">{error}</p>}

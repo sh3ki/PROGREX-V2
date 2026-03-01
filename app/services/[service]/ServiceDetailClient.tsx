@@ -3,9 +3,37 @@
 import { motion } from 'framer-motion'
 import { useState } from 'react'
 import Link from 'next/link'
-import { ChevronDown, ArrowRight } from 'lucide-react'
+import {
+  ChevronDown, ArrowRight, CheckCircle,
+  Search, Map, Code2, Rocket, TrendingUp,
+  Layers, ShieldCheck, RefreshCw, Headphones,
+  Gauge, Globe, Smartphone, Lock,
+  WifiOff, BellRing, BarChart2,
+  Plug, Activity, Clock, BookOpen, GraduationCap,
+  Cloud, Shield, Users, Cpu, Brain,
+  Zap, Database, PieChart, GitMerge, Bell,
+  Palette, MousePointer, FileSearch, Eye,
+} from 'lucide-react'
+import type { LucideProps } from 'lucide-react'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
+import ConstellationDecor from '@/components/ConstellationDecor'
 import CTASection from '@/components/CTASection'
+
+type IconComponent = React.FC<LucideProps>
+
+const ICON_MAP: Record<string, IconComponent> = {
+  Layers, ShieldCheck, RefreshCw, Headphones,
+  Gauge, Globe, Smartphone, Lock,
+  WifiOff, BellRing, BarChart2,
+  Plug, Activity, Clock, BookOpen, GraduationCap,
+  Map, Cloud, Shield, Users, Cpu, Brain,
+  Zap, Database, TrendingUp, PieChart, GitMerge, Bell,
+  Rocket, Palette, MousePointer, Code2, FileSearch, Eye,
+  Search, CheckCircle,
+}
+
+// Generic icon per step position (works for all services whose steps follow Discovery→Plan→Build→Test→Deploy→Support)
+const STEP_ICONS: IconComponent[] = [Search, Map, Code2, CheckCircle, Rocket, TrendingUp]
 
 interface Service {
   title: string
@@ -15,6 +43,9 @@ interface Service {
   color: string
   process: { step: number; title: string; desc: string }[]
   technologies: string[]
+  deliverables: string[]
+  idealFor: { title: string; desc: string }[]
+  highlights: { icon: string; label: string; desc: string }[]
   faqs: { q: string; a: string }[]
 }
 
@@ -24,10 +55,10 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
   return (
     <>
       {/* Service Hero */}
-      <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden bg-[#050510] pt-20">
-        <div className="absolute inset-0 bg-grid opacity-20" />
-        <div className="absolute inset-0 bg-gradient-to-br from-[#3A0CA3]/20 to-[#4361EE]/10" />
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-[#560BAD]/15 rounded-full blur-[100px]" />
+      <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden bg-section-a pt-20">
+        <div className="absolute inset-0 bg-dot-grid opacity-15" />
+        <div className="absolute inset-0 bg-gradient-to-br from-aurora-700/10 to-nebula-700/5" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-nebula-700/10 rounded-full blur-[100px]" />
 
         <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="absolute inset-0 pointer-events-none" />
@@ -36,10 +67,7 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7 }}
           >
-            <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br ${service.color} text-3xl mb-6 shadow-[0_0_30px_rgba(86,11,173,0.5)]`}>
-              {service.icon}
-            </div>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass border border-[#560BAD]/30 text-[#CFA3EA] text-xs font-semibold uppercase tracking-widest mb-4 block">
+            <div className="eyebrow-badge mb-4 justify-center">
               PROGREX Services
             </div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-4 leading-tight">
@@ -55,64 +83,235 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
           </motion.div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#050510] to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[rgba(5,5,16,0.7)] to-transparent" />
       </section>
 
-      {/* Process */}
-      <SectionWrapper className="bg-[#050510]">
+      {/* Process — zigzag timeline */}
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="gemini" side="right" offsetY="15%" />}>
         <SectionHeader
-          badge="How We Deliver"
-          title="Our"
+          badge="How We Work"
+          title="Our Proven"
           highlight="Process"
-          subtitle="A structured, transparent process designed to deliver exceptional results with zero surprises."
+          subtitle="A structured, transparent process that delivers great results — every time."
         />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {service.process.map((step, i) => (
+
+        <div className="relative max-w-4xl mx-auto">
+          {/* Central vertical line */}
+          <div
+            className="absolute left-6 sm:left-1/2 top-0 bottom-0 w-px -translate-x-1/2 pointer-events-none"
+            style={{ background: 'linear-gradient(to bottom, transparent, rgba(14,165,233,0.5) 10%, rgba(124,58,237,0.5) 90%, transparent)' }}
+          />
+
+          <div className="space-y-10 sm:space-y-0">
+            {service.process.map((step, i) => {
+              const Icon = STEP_ICONS[i % STEP_ICONS.length]
+              const isEven = i % 2 === 0
+              const stepLabel = String(step.step).padStart(2, '0')
+
+              return (
+                <motion.div
+                  key={step.step}
+                  initial={{ opacity: 0, y: 32 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.55, delay: i * 0.1 }}
+                  className={`relative flex items-center gap-0 sm:gap-6 ${isEven ? 'sm:flex-row' : 'sm:flex-row-reverse'} flex-row sm:mb-10`}
+                >
+                  {/* Card */}
+                  <div className={`w-full sm:w-[calc(50%-2.5rem)] pl-14 sm:pl-0 ${isEven ? 'sm:pr-6 sm:text-right' : 'sm:pl-6 sm:text-left'}`}>
+                    <motion.div
+                      className="relative rounded-xl overflow-hidden group"
+                      style={{ background: 'rgba(8,8,28,0.92)', border: '1px solid rgba(103,232,249,0.12)' }}
+                      whileHover={{
+                        y: -4,
+                        boxShadow: '0 0 28px rgba(14,165,233,0.14), 0 0 56px rgba(124,58,237,0.08), 0 12px 36px rgba(0,0,0,0.5)',
+                        borderColor: 'rgba(14,165,233,0.35)',
+                      }}
+                      transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+                    >
+                      {/* Circuit texture */}
+                      <div
+                        className="absolute inset-0 pointer-events-none opacity-60"
+                        style={{
+                          backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cline x1='0' y1='22' x2='16' y2='22' stroke='rgba(103,232,249,0.07)' stroke-width='0.7'/%3E%3Cline x1='28' y1='22' x2='44' y2='22' stroke='rgba(103,232,249,0.07)' stroke-width='0.7'/%3E%3Cline x1='22' y1='0' x2='22' y2='16' stroke='rgba(103,232,249,0.07)' stroke-width='0.7'/%3E%3Cline x1='22' y1='28' x2='22' y2='44' stroke='rgba(103,232,249,0.07)' stroke-width='0.7'/%3E%3Ccircle cx='22' cy='22' r='4' fill='none' stroke='rgba(103,232,249,0.09)' stroke-width='0.8'/%3E%3Ccircle cx='22' cy='22' r='1.2' fill='rgba(103,232,249,0.11)'/%3E%3Ccircle cx='0' cy='0' r='1.2' fill='rgba(103,232,249,0.05)'/%3E%3Ccircle cx='44' cy='0' r='1.2' fill='rgba(103,232,249,0.05)'/%3E%3Ccircle cx='0' cy='44' r='1.2' fill='rgba(103,232,249,0.05)'/%3E%3Ccircle cx='44' cy='44' r='1.2' fill='rgba(103,232,249,0.05)'/%3E%3C/svg%3E\")",
+                          backgroundSize: '44px 44px',
+                          maskImage: 'radial-gradient(ellipse 120% 100% at 50% 0%, black 30%, transparent 100%)',
+                          WebkitMaskImage: 'radial-gradient(ellipse 120% 100% at 50% 0%, black 30%, transparent 100%)',
+                        } as React.CSSProperties}
+                      />
+                      {/* Top scan line on hover */}
+                      <div
+                        className="absolute inset-x-0 top-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                        style={{ background: 'linear-gradient(to right, transparent, rgba(14,165,233,0.8), rgba(124,58,237,0.8), transparent)' }}
+                      />
+                      <div className={`p-5 flex gap-4 items-start ${isEven ? 'sm:flex-row-reverse sm:text-right' : 'flex-row'}`}>
+                        {/* Icon box */}
+                        <div
+                          className="shrink-0 w-11 h-11 rounded-lg flex items-center justify-center"
+                          style={{ background: 'rgba(14,165,233,0.1)', border: '1px solid rgba(14,165,233,0.22)' }}
+                        >
+                          <Icon size={20} className="text-nebula-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-mono text-[10px] text-nebula-500 tracking-widest mb-0.5">{'// STEP_'}{stepLabel}</div>
+                          <h3 className="text-base font-bold text-white mb-1.5 group-hover:text-nebula-300 transition-colors duration-200">{step.title}</h3>
+                          <p className="text-slate-400 text-sm leading-relaxed">{step.desc}</p>
+                        </div>
+                      </div>
+                      {/* Connector arrow */}
+                      <div
+                        className={`hidden sm:block absolute top-1/2 -translate-y-1/2 w-3 h-px ${isEven ? '-right-3' : '-left-3'}`}
+                        style={{ background: 'rgba(103,232,249,0.3)' }}
+                      />
+                    </motion.div>
+                  </div>
+
+                  {/* Node */}
+                  <div className="absolute left-6 sm:left-1/2 sm:-translate-x-1/2 top-1/2 -translate-y-1/2 z-10 flex flex-col items-center">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      whileInView={{ scale: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.35, delay: i * 0.1 + 0.15, type: 'spring', stiffness: 300 }}
+                      className="relative flex items-center justify-center w-10 h-10 rounded-full"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(14,165,233,0.25), rgba(124,58,237,0.25))',
+                        border: '2px solid rgba(14,165,233,0.6)',
+                        boxShadow: '0 0 18px rgba(14,165,233,0.35), 0 0 40px rgba(14,165,233,0.1)',
+                      }}
+                    >
+                      <span className="font-mono text-[11px] font-bold text-nebula-300">{stepLabel}</span>
+                      <span
+                        className="absolute inset-0 rounded-full animate-ping"
+                        style={{ background: 'rgba(14,165,233,0.12)', animationDuration: '2.5s' }}
+                      />
+                    </motion.div>
+                  </div>
+
+                  {/* Empty spacer — desktop only */}
+                  <div className="hidden sm:block sm:w-[calc(50%-2.5rem)]" />
+                </motion.div>
+              )
+            })}
+          </div>
+        </div>
+      </SectionWrapper>
+
+      {/* Key Deliverables */}
+      <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="crux" side="left" offsetY="20%" />}>
+        <SectionHeader
+          badge="What You Get"
+          title="Key"
+          highlight="Deliverables"
+          subtitle="Every engagement ends with tangible, documented assets you own completely."
+        />
+        <div className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {service.deliverables.map((item, i) => (
             <motion.div
-              key={step.step}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              key={i}
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="glass-card rounded-2xl p-6 border border-[#560BAD]/15 hover:border-[#560BAD]/40 hover:shadow-[0_0_20px_rgba(86,11,173,0.15)] transition-all duration-300"
+              transition={{ duration: 0.4, delay: i * 0.07 }}
+              className="flex items-start gap-3 rounded-xl p-4"
+              style={{ background: 'rgba(14,165,233,0.05)', border: '1px solid rgba(14,165,233,0.12)' }}
             >
-              <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br ${service.color} text-white font-black text-sm mb-4`}>
-                {step.step}
-              </div>
-              <h3 className="text-base font-bold text-white mb-2">{step.title}</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">{step.desc}</p>
+              <CheckCircle size={16} className="text-nebula-400 shrink-0 mt-0.5" />
+              <span className="text-slate-300 text-sm">{item}</span>
             </motion.div>
           ))}
         </div>
       </SectionWrapper>
 
-      {/* Technologies */}
-      <SectionWrapper className="bg-[#030308]">
+      {/* Best Suited For */}
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="leo" side="right" offsetY="20%" />}>
         <SectionHeader
-          badge="Tech Stack"
-          title="Technologies"
-          highlight="We Use"
-          subtitle="We use the best tools for each job — modern, scalable, and battle-tested."
+          badge="Ideal For"
+          title="Who This"
+          highlight="Service Fits"
+          subtitle="This service is tailored for teams and businesses with these specific needs."
         />
-        <div className="flex flex-wrap gap-3 justify-center">
-          {service.technologies.map((tech, i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          {service.idealFor.map((item, i) => (
             <motion.div
-              key={tech}
-              initial={{ opacity: 0, scale: 0.8 }}
-              whileInView={{ opacity: 1, scale: 1 }}
+              key={i}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.3, delay: i * 0.06 }}
-              whileHover={{ scale: 1.08, y: -3 }}
-              className="px-4 py-2.5 rounded-xl glass-card text-sm font-semibold text-[#CFA3EA] border border-[#560BAD]/20 hover:border-[#560BAD]/60 hover:shadow-[0_0_15px_rgba(86,11,173,0.3)] transition-all cursor-default"
+              transition={{ duration: 0.5, delay: i * 0.1 }}
+              className="relative rounded-xl overflow-hidden group"
+              style={{ background: 'rgba(8,8,28,0.92)', border: '1px solid rgba(103,232,249,0.12)' }}
             >
-              {tech}
+              <motion.div
+                whileHover={{ y: -4, borderColor: 'rgba(14,165,233,0.35)', boxShadow: '0 0 28px rgba(14,165,233,0.12), 0 12px 36px rgba(0,0,0,0.5)' }}
+                transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+                className="h-full p-6"
+              >
+                <div
+                  className="absolute inset-x-0 top-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  style={{ background: 'linear-gradient(to right, transparent, rgba(14,165,233,0.8), rgba(124,58,237,0.8), transparent)' }}
+                />
+                <div
+                  className="w-2 h-2 rounded-full mb-4"
+                  style={{ background: 'linear-gradient(135deg, #0EA5E9, #7C3AED)', boxShadow: '0 0 10px rgba(14,165,233,0.5)' }}
+                />
+                <h3 className="text-white font-bold text-base mb-2 group-hover:text-nebula-300 transition-colors duration-200">{item.title}</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">{item.desc}</p>
+              </motion.div>
             </motion.div>
           ))}
+        </div>
+      </SectionWrapper>
+
+      {/* Service Highlights */}
+      <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="scorpius" side="left" offsetY="15%" />}>
+        <SectionHeader
+          badge="Why Choose This"
+          title="Service"
+          highlight="Highlights"
+          subtitle="The defining strengths that set our delivery apart for this specific discipline."
+        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {service.highlights.map((item, i) => {
+            const Icon = ICON_MAP[item.icon] ?? CheckCircle
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.08 }}
+                className="relative rounded-xl overflow-hidden group"
+                style={{ background: 'rgba(8,8,28,0.92)', border: '1px solid rgba(103,232,249,0.12)' }}
+              >
+                <motion.div
+                  whileHover={{ y: -4, boxShadow: '0 0 28px rgba(14,165,233,0.14), 0 12px 36px rgba(0,0,0,0.5)', borderColor: 'rgba(14,165,233,0.35)' }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+                  className="h-full p-5 flex gap-4 items-start"
+                >
+                  <div
+                    className="absolute inset-x-0 top-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    style={{ background: 'linear-gradient(to right, transparent, rgba(14,165,233,0.8), rgba(124,58,237,0.8), transparent)' }}
+                  />
+                  <div
+                    className="shrink-0 w-11 h-11 rounded-lg flex items-center justify-center"
+                    style={{ background: 'rgba(14,165,233,0.1)', border: '1px solid rgba(14,165,233,0.22)' }}
+                  >
+                    <Icon size={20} className="text-nebula-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-bold text-sm mb-1.5 group-hover:text-nebula-300 transition-colors duration-200">{item.label}</h3>
+                    <p className="text-slate-400 text-sm leading-relaxed">{item.desc}</p>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )
+          })}
         </div>
       </SectionWrapper>
 
       {/* FAQs */}
-      <SectionWrapper className="bg-[#050510]">
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="scorpius" side="right" offsetY="10%" />}>
         <SectionHeader
           badge="Common Questions"
           title="Frequently Asked"
@@ -126,7 +325,7 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: i * 0.1 }}
-              className="glass-card rounded-xl border border-[#560BAD]/20 overflow-hidden"
+              className="glass-card rounded-xl border border-nebula-700/20 overflow-hidden"
             >
               <button
                 onClick={() => setOpenFaq(openFaq === i ? null : i)}
@@ -136,7 +335,7 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
                 <motion.span
                   animate={{ rotate: openFaq === i ? 180 : 0 }}
                   transition={{ duration: 0.2 }}
-                  className="shrink-0 ml-4 text-[#831DC6]"
+                  className="shrink-0 ml-4 text-nebula-500"
                 >
                   <ChevronDown size={18} />
                 </motion.span>

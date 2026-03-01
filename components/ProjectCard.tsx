@@ -2,7 +2,8 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Tag } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
+import ProjectCardVisual from './ProjectCardVisual'
 
 interface ProjectCardProps {
   title: string
@@ -14,32 +15,31 @@ interface ProjectCardProps {
   index?: number
 }
 
-export default function ProjectCard({ title, category, industry, shortDesc, slug, tags, index = 0 }: ProjectCardProps) {
+export default function ProjectCard({
+  title, category, industry, shortDesc, slug, tags, index = 0,
+}: ProjectCardProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
-      whileHover={{ y: -6 }}
-      className="group glass-card rounded-2xl overflow-hidden hover-glow-card"
+      transition={{ duration: 0.5, delay: index * 0.08 }}
+      className="group relative rounded-xl overflow-hidden hover-glow-card transition-all duration-300"
+      style={{
+        background: 'rgba(6,6,22,0.95)',
+        border: '1px solid rgba(103,232,249,0.1)',
+      }}
     >
-      {/* Image Placeholder */}
-      <div className="relative h-48 bg-gradient-to-br from-[#3A0CA3]/40 to-[#4361EE]/20 overflow-hidden">
-        <div className="absolute inset-0 bg-grid opacity-40" />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#560BAD] to-[#4361EE] flex items-center justify-center opacity-60 group-hover:opacity-80 transition-opacity">
-            <Tag size={24} className="text-white" />
-          </div>
-        </div>
+      {/* Visual area */}
+      <div className="relative h-44 overflow-hidden">
+        <ProjectCardVisual category={category} title={title} />
+
         {/* Category badge */}
-        <div className="absolute top-3 left-3">
-          <span className="px-2.5 py-1 rounded-full bg-[#560BAD]/80 backdrop-blur-sm text-[#CFA3EA] text-xs font-semibold">
-            {category}
-          </span>
+        <div className="absolute top-3 left-3 z-10">
+          <span className="bracket-tag">{category}</span>
         </div>
-        <div className="absolute top-3 right-3">
-          <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-sm text-slate-300 text-xs">
+        <div className="absolute top-3 right-3 z-10">
+          <span className="font-mono text-[9px] text-white/40 bg-black/50 backdrop-blur-sm px-2 py-0.5 rounded">
             {industry}
           </span>
         </div>
@@ -47,10 +47,10 @@ export default function ProjectCard({ title, category, industry, shortDesc, slug
 
       {/* Content */}
       <div className="p-5">
-        <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#CFA3EA] transition-colors">
+        <h3 className="font-display font-bold text-white text-base mb-2 group-hover:text-nebula-300 transition-colors duration-200">
           {title}
         </h3>
-        <p className="text-slate-400 text-sm leading-relaxed mb-4 line-clamp-2">
+        <p className="text-white/45 text-sm leading-relaxed mb-4 line-clamp-2">
           {shortDesc}
         </p>
 
@@ -59,7 +59,12 @@ export default function ProjectCard({ title, category, industry, shortDesc, slug
           {tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className="px-2 py-0.5 rounded text-xs bg-[#3A0CA3]/30 text-[#CFA3EA] border border-[#3A0CA3]/30"
+              className="font-mono text-[10px] px-2 py-0.5 rounded"
+              style={{
+                background: 'rgba(103,232,249,0.07)',
+                border: '1px solid rgba(103,232,249,0.18)',
+                color: 'rgba(103,232,249,0.7)',
+              }}
             >
               {tag}
             </span>
@@ -68,11 +73,21 @@ export default function ProjectCard({ title, category, industry, shortDesc, slug
 
         <Link
           href={`/projects/${slug}`}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-[#831DC6] group-hover:text-[#CFA3EA] transition-colors"
+          className="inline-flex items-center gap-2 text-sm font-mono text-nebula-400/70 hover:text-nebula-300 transition-colors duration-200 group/link"
         >
-          View Case Study <ArrowRight size={14} />
+          View Case Study
+          <ArrowRight
+            size={14}
+            className="translate-x-0 group-hover/link:translate-x-1 transition-transform duration-200"
+          />
         </Link>
       </div>
+
+      {/* Bottom glow on hover */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        style={{ background: 'linear-gradient(to right, transparent, rgba(103,232,249,0.5), transparent)' }}
+      />
     </motion.div>
   )
 }

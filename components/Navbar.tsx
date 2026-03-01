@@ -1,10 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Zap } from 'lucide-react'
+import { Menu, X, Globe, ChevronDown } from 'lucide-react'
+
+const LANGUAGES = [
+  { code: 'EN', label: 'English',  flag: '🇺🇸' },
+  { code: 'FIL', label: 'Filipino', flag: '🇵🇭' },
+  { code: 'JA', label: '日本語',   flag: '🇯🇵' },
+  { code: 'ES', label: 'Español',  flag: '🇪🇸' },
+  { code: 'FR', label: 'Français', flag: '🇫🇷' },
+]
 
 const navLinks = [
   { label: 'Home', href: '/' },
@@ -17,14 +26,28 @@ const navLinks = [
 ]
 
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
+  const [scrolled, setScrolled]       = useState(false)
+  const [mobileOpen, setMobileOpen]   = useState(false)
+  const [langOpen, setLangOpen]       = useState(false)
+  const [activeLang, setActiveLang]   = useState(LANGUAGES[0])
+  const langRef                        = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // Close language dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) {
+        setLangOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
   }, [])
 
   useEffect(() => {
@@ -39,47 +62,77 @@ export default function Navbar() {
         transition={{ duration: 0.6, ease: 'easeOut' }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled
-            ? 'bg-[#050510]/90 backdrop-blur-xl border-b border-[#560BAD]/20 shadow-[0_4px_30px_rgba(86,11,173,0.15)]'
+            ? 'bg-[rgba(3,3,15,0.88)] backdrop-blur-xl border-b border-[rgba(103,232,249,0.12)] shadow-[0_4px_30px_rgba(0,0,0,0.4)]'
             : 'bg-transparent'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 lg:h-20">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#560BAD] to-[#4361EE] flex items-center justify-center shadow-[0_0_15px_rgba(86,11,173,0.5)] group-hover:shadow-[0_0_25px_rgba(131,29,198,0.7)] transition-all duration-300">
-                <Zap size={16} className="text-white" />
+          <div className="flex items-center justify-between h-16 lg:h-18">
+
+            {/* Logo + Status indicator group */}
+            <div className="flex items-center gap-3 shrink-0">
+              <Link
+                href="/"
+                className="flex items-center group"
+                aria-label="PROGREX Home"
+                onClick={(e) => {
+                  if (window.location.pathname === '/') {
+                    e.preventDefault()
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }
+                }}
+              >
+                <Image
+                  src="/Progrex Logo White Transparent.png"
+                  alt="PROGREX"
+                  width={140}
+                  height={40}
+                  className="h-22 w-auto object-contain group-hover:opacity-80 transition-opacity duration-200"
+                  priority
+                />
+              </Link>
+              {/* Status pill — only on very wide screens, inline (no absolute, no overlap) */}
+              <div className="hidden 2xl:flex items-center gap-1.5 font-mono text-[9px] text-nebula-400/35 tracking-widest select-none border border-nebula-400/15 rounded-full px-2 py-0.5">
+                <span className="w-1 h-1 rounded-full bg-emerald-400/70 animate-pulse" />
+                <span>SYS_LIVE</span>
+                <span className="text-nebula-400/20 animate-blink-dot">▮</span>
               </div>
-              <span className="text-xl font-extrabold tracking-tight text-gradient">
-                PROGREX
-              </span>
-            </Link>
+            </div>
 
             {/* Desktop Nav */}
-            <nav className="hidden lg:flex items-center gap-1">
+            <nav className="hidden lg:flex items-center gap-0.5">
               {navLinks.map((link) => {
-                const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href))
+                const isActive = pathname === link.href ||
+                  (link.href !== '/' && pathname.startsWith(link.href))
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
                     className={`relative px-3 py-2 text-sm font-medium transition-colors duration-200 group ${
-                      isActive ? 'text-[#CFA3EA]' : 'text-slate-300 hover:text-white'
+                      isActive ? 'text-white' : 'text-white/55 hover:text-white'
                     }`}
                   >
                     {link.label}
+                    {/* Sliding underline — scaleX from left on hover, always visible when active */}
                     <span
-                      className={`absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-[#560BAD] to-[#4361EE] transition-all duration-300 ${
-                        isActive ? 'w-full' : 'w-0 group-hover:w-full'
+                      className={`absolute bottom-0 left-3 right-3 h-[1.5px] origin-left transition-transform duration-300 ${
+                        isActive
+                          ? 'scale-x-100'
+                          : 'scale-x-0 group-hover:scale-x-100'
                       }`}
+                      style={{
+                        background: 'linear-gradient(90deg, #0EA5E9 0%, #7C3AED 100%)',
+                        boxShadow: isActive ? '0 0 8px rgba(14,165,233,0.7)' : undefined,
+                      }}
                     />
                   </Link>
                 )
               })}
             </nav>
 
-            {/* CTA + Hamburger */}
+            {/* CTA + Hamburger + Language (language always far-right) */}
             <div className="flex items-center gap-3">
+
               <Link
                 href="/contact"
                 className="hidden sm:inline-flex btn-primary text-sm"
@@ -89,21 +142,99 @@ export default function Navbar() {
 
               <button
                 onClick={() => setMobileOpen(!mobileOpen)}
-                className="lg:hidden p-2 rounded-lg glass border border-[#560BAD]/30 text-slate-300 hover:text-white transition-colors"
+                className="lg:hidden p-2 rounded-lg border border-nebula-400/20 text-white/60 hover:text-white hover:border-nebula-400/50 transition-all duration-200"
                 aria-label="Toggle menu"
               >
                 <AnimatePresence mode="wait">
                   {mobileOpen ? (
-                    <motion.div key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }}>
+                    <motion.div
+                      key="close"
+                      initial={{ rotate: -90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: 90, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
                       <X size={20} />
                     </motion.div>
                   ) : (
-                    <motion.div key="open" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.2 }}>
+                    <motion.div
+                      key="open"
+                      initial={{ rotate: 90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: -90, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
                       <Menu size={20} />
                     </motion.div>
                   )}
                 </AnimatePresence>
               </button>
+
+              {/* Language selector — always far right */}
+              <div className="relative" ref={langRef}>
+                <button
+                  onClick={() => setLangOpen((o) => !o)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-mono text-[11px] tracking-wider transition-all duration-200 border"
+                  style={{
+                    background: langOpen ? 'rgba(14,165,233,0.12)' : 'rgba(103,232,249,0.05)',
+                    borderColor: langOpen ? 'rgba(14,165,233,0.45)' : 'rgba(103,232,249,0.18)',
+                    color: langOpen ? '#93E6FB' : 'rgba(255,255,255,0.5)',
+                  }}
+                  aria-label="Select language"
+                >
+                  <Globe size={12} className="shrink-0" />
+                  <span className="hidden sm:inline">{activeLang.code}</span>
+                  <ChevronDown
+                    size={10}
+                    className="shrink-0 transition-transform duration-200"
+                    style={{ transform: langOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                  />
+                </button>
+
+                <AnimatePresence>
+                  {langOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                      transition={{ duration: 0.18, ease: 'easeOut' }}
+                      className="absolute right-0 top-full mt-2 w-40 rounded-xl overflow-hidden z-50"
+                      style={{
+                        background: 'rgba(3,3,15,0.97)',
+                        border: '1px solid rgba(103,232,249,0.15)',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(14,165,233,0.08)',
+                        backdropFilter: 'blur(20px)',
+                      }}
+                    >
+                      <div className="h-[1px] w-full" style={{ background: 'linear-gradient(90deg, transparent, #0EA5E9, #7C3AED, transparent)' }} />
+                      <div className="py-1.5">
+                        {LANGUAGES.map((lang) => {
+                          const isSelected = lang.code === activeLang.code
+                          return (
+                            <button
+                              key={lang.code}
+                              onClick={() => { setActiveLang(lang); setLangOpen(false) }}
+                              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left transition-all duration-150"
+                              style={{
+                                background: isSelected ? 'rgba(14,165,233,0.10)' : 'transparent',
+                                color: isSelected ? '#93E6FB' : 'rgba(255,255,255,0.55)',
+                              }}
+                              onMouseEnter={(e) => { if (!isSelected) { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' } }}
+                              onMouseLeave={(e) => { if (!isSelected) { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.55)' } }}
+                            >
+                              <span className="text-base leading-none">{lang.flag}</span>
+                              <span className="font-mono text-[11px] tracking-wide">{lang.label}</span>
+                              {isSelected && (
+                                <span className="ml-auto w-1 h-1 rounded-full bg-nebula-400 shrink-0" />
+                              )}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           </div>
         </div>
@@ -113,30 +244,37 @@ export default function Navbar() {
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="fixed top-16 left-0 right-0 z-40 bg-[#070714]/95 backdrop-blur-xl border-b border-[#560BAD]/20 lg:hidden"
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="fixed top-16 left-0 right-0 z-40 bg-[rgba(3,3,15,0.97)] backdrop-blur-xl border-b border-nebula-400/10 lg:hidden"
           >
-            <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col gap-1">
+            {/* Scanline decoration */}
+            <div className="absolute inset-0 bg-scanlines opacity-20 pointer-events-none" />
+
+            <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col gap-1 relative">
               {navLinks.map((link, i) => {
-                const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href))
+                const isActive = pathname === link.href ||
+                  (link.href !== '/' && pathname.startsWith(link.href))
                 return (
                   <motion.div
                     key={link.href}
-                    initial={{ opacity: 0, x: -20 }}
+                    initial={{ opacity: 0, x: -16 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.05 }}
+                    transition={{ delay: i * 0.04 }}
                   >
                     <Link
                       href={link.href}
-                      className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                         isActive
-                          ? 'bg-gradient-to-r from-[#560BAD]/30 to-[#4361EE]/20 text-[#CFA3EA] border border-[#560BAD]/40'
-                          : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                          ? 'bg-nebula-400/10 text-nebula-300 border border-nebula-400/25'
+                          : 'text-white/60 hover:bg-white/5 hover:text-white'
                       }`}
                     >
+                      {isActive && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-nebula-400 shrink-0" />
+                      )}
                       {link.label}
                     </Link>
                   </motion.div>
@@ -146,6 +284,10 @@ export default function Navbar() {
                 <Link href="/contact" className="btn-primary w-full justify-center text-sm">
                   <span>Get a Quote</span>
                 </Link>
+              </div>
+              {/* Footer hint */}
+              <div className="pt-1 pb-2 font-mono text-[9px] text-white/20 text-center tracking-widest">
+                PROGREX // MISSION CONTROL v4
               </div>
             </div>
           </motion.div>

@@ -3,14 +3,7 @@
 import { useState, useRef, useEffect, KeyboardEvent } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  MessageCircle,
-  X,
-  Send,
-  Bot,
-  User,
-  Zap,
-  Loader2,
-  RotateCcw,
+  X, Send, Bot, User, Loader2, RotateCcw, Sparkles, ChevronsUp,
 } from 'lucide-react'
 
 interface Message {
@@ -23,8 +16,7 @@ interface Message {
 const WELCOME_MESSAGE: Message = {
   id: 'welcome',
   role: 'assistant',
-  content:
-    "Hi there! 👋 I'm **PROGREX AI**, your intelligent assistant. Ask me anything about our services, tech stack, pricing, or how we can help build your next big idea!",
+  content: "Hi there! 👋 I'm **PROGREX AI**, your intelligent assistant. Ask me anything about our services, tech stack, pricing, or how we can help build your next big idea!",
   timestamp: new Date(),
 }
 
@@ -33,11 +25,10 @@ function formatTime(date: Date): string {
 }
 
 function renderContent(text: string) {
-  // Bold: **text**
   const parts = text.split(/(\*\*[^*]+\*\*)/g)
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={i}>{part.slice(2, -2)}</strong>
+      return <strong key={i} className="text-nebula-300">{part.slice(2, -2)}</strong>
     }
     return <span key={i}>{part}</span>
   })
@@ -53,6 +44,22 @@ export default function Chatbot() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  // Show scroll-to-top only when not at top
+  const [showScrollTop, setShowScrollTop] = useState(false)
+  useEffect(() => {
+    const onScroll = () => setShowScrollTop(window.scrollY > 200)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // Allow external trigger (e.g. FAQ section "Chat with our AI" button)
+  useEffect(() => {
+    const handler = () => setIsOpen(true)
+    document.addEventListener('open-chatbot', handler)
+    return () => document.removeEventListener('open-chatbot', handler)
+  }, [])
 
   useEffect(() => {
     if (isOpen) {
@@ -97,9 +104,7 @@ export default function Chatbot() {
 
       const data = await res.json()
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Something went wrong.')
-      }
+      if (!res.ok) throw new Error(data.error || 'Something went wrong.')
 
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
@@ -131,7 +136,7 @@ export default function Chatbot() {
 
   return (
     <>
-      {/* Floating Toggle Button */}
+      {/* ── Floating Toggle Button ── */}
       <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3">
         <AnimatePresence>
           {!isOpen && hasNewMessage && (
@@ -139,57 +144,125 @@ export default function Chatbot() {
               initial={{ opacity: 0, scale: 0.8, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.8, y: 8 }}
-              className="bg-[#560BAD] text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-lg whitespace-nowrap"
+              className="font-mono text-[10px] text-nebula-300 px-3 py-1.5 rounded whitespace-nowrap"
+              style={{ background: 'rgba(103,232,249,0.12)', border: '1px solid rgba(103,232,249,0.3)' }}
             >
-              New message!
+              // NEW_MSG
             </motion.div>
           )}
         </AnimatePresence>
 
-        <motion.button
-          onClick={() => setIsOpen((v) => !v)}
-          whileTap={{ scale: 0.9 }}
-          whileHover={{ scale: 1.08 }}
-          aria-label={isOpen ? 'Close chat' : 'Open chat'}
-          className="relative w-14 h-14 rounded-full bg-gradient-to-br from-[#560BAD] to-[#4361EE] text-white shadow-[0_0_25px_rgba(86,11,173,0.6)] hover:shadow-[0_0_40px_rgba(131,29,198,0.8)] transition-shadow duration-300 flex items-center justify-center"
-        >
-          <AnimatePresence mode="wait">
-            {isOpen ? (
-              <motion.div
-                key="close"
-                initial={{ rotate: -90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: 90, opacity: 0 }}
+        {/* Pulsing label — above the button row, hidden when chat is open */}
+        <AnimatePresence>
+          {!isOpen && (
+            <motion.button
+              key="chat-label"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: [0.7, 1, 0.7], y: 0 }}
+              exit={{ opacity: 0, y: 6 }}
+              transition={{ opacity: { duration: 2.2, repeat: Infinity }, y: { duration: 0.25 } }}
+              onClick={() => setIsOpen(true)}
+              className="flex items-center gap-1.5 font-mono text-[11px] text-nebula-300 px-3 py-1.5 rounded-lg whitespace-nowrap cursor-pointer hover:text-white transition-colors"
+              style={{ background: 'rgba(103,232,249,0.08)', border: '1px solid rgba(103,232,249,0.22)' }}
+            >
+              <Sparkles size={11} />
+              Chat with our AI
+            </motion.button>
+          )}
+        </AnimatePresence>
+
+        {/* Bottom row: scroll-to-top + chat button */}
+        <div className="flex items-center gap-3">
+          {/* Scroll to top — only visible when scrolled down */}
+          <AnimatePresence>
+            {showScrollTop && (
+              <motion.button
+                key="scroll-top"
+                initial={{ opacity: 0, scale: 0.7 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.7 }}
                 transition={{ duration: 0.2 }}
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.9 }}
+                aria-label="Scroll to top"
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200"
+                style={{
+                  background: 'rgba(6,6,22,0.88)',
+                  border: '1px solid rgba(103,232,249,0.25)',
+                  boxShadow: '0 0 12px rgba(103,232,249,0.1)',
+                }}
               >
-                <X size={22} />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="open"
-                initial={{ rotate: 90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: -90, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <MessageCircle size={22} />
-              </motion.div>
+                <motion.div
+                  animate={{ y: [0, -4, 0, -4, 0, -4, 0, 0] }}
+                  transition={{
+                    duration: 1.6,
+                    times: [0, 0.1, 0.2, 0.35, 0.45, 0.6, 0.7, 1],
+                    repeat: Infinity,
+                    repeatDelay: 1,
+                    ease: 'easeInOut',
+                  }}
+                >
+                  <ChevronsUp size={17} className="text-nebula-300" />
+                </motion.div>
+              </motion.button>
             )}
           </AnimatePresence>
 
-          {/* Pulse ring */}
-          {!isOpen && (
-            <span className="absolute inset-0 rounded-full animate-ping bg-[#560BAD]/30 pointer-events-none" />
-          )}
+          <div className="relative flex items-center justify-center">
+            <motion.button
+              onClick={() => setIsOpen((v) => !v)}
+              whileTap={{ scale: 0.9 }}
+              whileHover={{ scale: 1.08 }}
+              aria-label={isOpen ? 'Close chat' : 'Open chat'}
+              className="relative w-14 h-14 rounded-full flex items-center justify-center text-white transition-all duration-300"
+              style={{
+                background: 'linear-gradient(135deg, #0EA5E9, #7C3AED)',
+                boxShadow: '0 0 25px rgba(103,232,249,0.35)',
+              }}
+            >
+              <AnimatePresence mode="wait">
+                {isOpen ? (
+                  <motion.div
+                    key="close"
+                    initial={{ rotate: -90, opacity: 0 }}
+                    animate={{ rotate: 0, opacity: 1 }}
+                    exit={{ rotate: 90, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <X size={22} />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="open"
+                    initial={{ rotate: 90, opacity: 0 }}
+                    animate={{ rotate: 0, opacity: 1 }}
+                    exit={{ rotate: -90, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Bot size={22} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-          {/* Notification dot */}
-          {!isOpen && hasNewMessage && (
-            <span className="absolute top-0.5 right-0.5 w-3 h-3 bg-red-500 rounded-full border-2 border-[#050510]" />
-          )}
-        </motion.button>
+              {/* Pulse ring */}
+              {!isOpen && (
+                <span
+                  className="absolute inset-0 rounded-full animate-ping pointer-events-none"
+                  style={{ background: 'rgba(103,232,249,0.15)' }}
+                />
+              )}
+
+              {/* Notification dot */}
+              {!isOpen && hasNewMessage && (
+                <span className="absolute top-0.5 right-0.5 w-3 h-3 bg-red-500 rounded-full border-2 border-[#03030F]" />
+              )}
+            </motion.button>
+          </div>
+        </div>
       </div>
 
-      {/* Chat Window */}
+      {/* ── Chat Window ── */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -197,92 +270,138 @@ export default function Chatbot() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 260, damping: 24 }}
-            className="fixed bottom-24 right-6 z-[9998] w-[360px] max-w-[calc(100vw-3rem)] flex flex-col rounded-2xl overflow-hidden shadow-[0_8px_60px_rgba(86,11,173,0.45)] border border-[#560BAD]/30 bg-[#0a0a1f]"
-            style={{ height: 'min(560px, calc(100vh - 140px))' }}
+            className="fixed bottom-24 right-6 z-[9998] w-[360px] max-w-[calc(100vw-3rem)] flex flex-col rounded-xl overflow-hidden"
+            style={{
+              height: 'min(560px, calc(100vh - 140px))',
+              background: 'rgba(4,4,20,0.97)',
+              border: '1px solid rgba(103,232,249,0.2)',
+              boxShadow: '0 8px 60px rgba(0,0,0,0.6), 0 0 40px rgba(103,232,249,0.06)',
+            }}
           >
+            {/* Dot grid background */}
+            <div className="absolute inset-0 bg-dot-grid opacity-30 pointer-events-none" />
+
             {/* Header */}
-            <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-[#3A0CA3] to-[#560BAD] border-b border-[#560BAD]/40 shrink-0">
-              <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center shadow-inner">
-                <Zap size={18} className="text-[#CFA3EA]" />
+            <div
+              className="flex items-center gap-3 px-4 py-3 shrink-0 relative z-10"
+              style={{ borderBottom: '1px solid rgba(103,232,249,0.12)', background: 'rgba(2,2,15,0.8)' }}
+            >
+              {/* AI indicator */}
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                style={{ background: 'rgba(103,232,249,0.1)', border: '1px solid rgba(103,232,249,0.2)' }}
+              >
+                <Bot size={16} className="text-nebula-300" />
               </div>
+
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-white leading-tight">PROGREX AI</p>
-                <p className="text-[11px] text-[#CFA3EA]/80 font-medium flex items-center gap-1">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Online · Powered by Groq
-                </p>
+                <p className="font-mono text-[11px] text-nebula-400/70 tracking-widest">// AI ASSISTANT</p>
+                <p className="font-display font-bold text-sm text-white leading-tight">PROGREX AI</p>
               </div>
-              <button
-                onClick={clearChat}
-                title="Clear chat"
-                className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
-              >
-                <RotateCcw size={14} />
-              </button>
-              <button
-                onClick={() => setIsOpen(false)}
-                title="Close chat"
-                className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
-              >
-                <X size={16} />
-              </button>
+
+              <div className="flex items-center gap-1">
+                {/* Online dot */}
+                <span
+                  className="w-1.5 h-1.5 rounded-full animate-pulse mr-2"
+                  style={{ background: '#34D399' }}
+                />
+                <button
+                  onClick={clearChat}
+                  title="Clear chat"
+                  className="p-1.5 rounded text-white/30 hover:text-white/70 transition-colors"
+                >
+                  <RotateCcw size={13} />
+                </button>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  title="Close"
+                  className="p-1.5 rounded text-white/30 hover:text-white/70 transition-colors"
+                >
+                  <X size={15} />
+                </button>
+              </div>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 scrollbar-thin scrollbar-thumb-[#560BAD]/40 scrollbar-track-transparent">
+            <div
+              className="flex-1 overflow-y-auto px-4 py-4 space-y-4 relative z-10"
+              style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(103,232,249,0.2) transparent' }}
+            >
               {messages.map((msg) => (
                 <motion.div
                   key={msg.id}
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.25 }}
                   className={`flex gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
                 >
                   {/* Avatar */}
                   <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                    className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
+                    style={
                       msg.role === 'assistant'
-                        ? 'bg-gradient-to-br from-[#560BAD] to-[#4361EE]'
-                        : 'bg-gradient-to-br from-[#831DC6] to-[#CFA3EA]'
-                    }`}
+                        ? { background: 'rgba(103,232,249,0.1)', border: '1px solid rgba(103,232,249,0.2)' }
+                        : { background: 'linear-gradient(135deg, #0EA5E9, #7C3AED)' }
+                    }
                   >
                     {msg.role === 'assistant' ? (
-                      <Bot size={14} className="text-white" />
+                      <Bot size={13} className="text-nebula-300" />
                     ) : (
-                      <User size={14} className="text-white" />
+                      <User size={13} className="text-white" />
                     )}
                   </div>
 
                   {/* Bubble */}
                   <div className={`flex flex-col gap-1 max-w-[80%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                     <div
-                      className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                      className="px-3.5 py-2.5 rounded-xl text-sm leading-relaxed"
+                      style={
                         msg.role === 'assistant'
-                          ? 'bg-[#13132a] border border-[#560BAD]/20 text-slate-200 rounded-tl-sm'
-                          : 'bg-gradient-to-br from-[#560BAD] to-[#4361EE] text-white rounded-tr-sm'
-                      }`}
+                          ? {
+                              background: 'rgba(10,10,35,0.9)',
+                              border: '1px solid rgba(103,232,249,0.12)',
+                              color: 'rgba(255,255,255,0.8)',
+                            }
+                          : {
+                              background: 'linear-gradient(135deg, rgba(14,165,233,0.9), rgba(124,58,237,0.9))',
+                              color: '#fff',
+                            }
+                      }
                     >
                       {renderContent(msg.content)}
                     </div>
-                    <span className="text-[10px] text-slate-600 px-1">{formatTime(msg.timestamp)}</span>
+                    <span className="font-mono text-[9px] text-white/20 px-1">{formatTime(msg.timestamp)}</span>
                   </div>
                 </motion.div>
               ))}
 
-              {/* Loading indicator */}
+              {/* Loading dots */}
               {isLoading && (
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex gap-2.5 flex-row"
+                  className="flex gap-2.5"
                 >
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#560BAD] to-[#4361EE] flex items-center justify-center shrink-0 mt-0.5">
-                    <Bot size={14} className="text-white" />
+                  <div
+                    className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
+                    style={{ background: 'rgba(103,232,249,0.1)', border: '1px solid rgba(103,232,249,0.2)' }}
+                  >
+                    <Bot size={13} className="text-nebula-300" />
                   </div>
-                  <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-[#13132a] border border-[#560BAD]/20 flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#560BAD] animate-bounce [animation-delay:0ms]" />
-                    <span className="w-2 h-2 rounded-full bg-[#560BAD] animate-bounce [animation-delay:150ms]" />
-                    <span className="w-2 h-2 rounded-full bg-[#560BAD] animate-bounce [animation-delay:300ms]" />
+                  <div
+                    className="px-4 py-3 rounded-xl flex items-center gap-1.5"
+                    style={{ background: 'rgba(10,10,35,0.9)', border: '1px solid rgba(103,232,249,0.12)' }}
+                  >
+                    {[0, 150, 300].map((delay) => (
+                      <span
+                        key={delay}
+                        className="w-2 h-2 rounded-full animate-bounce"
+                        style={{
+                          background: '#67E8F9',
+                          animationDelay: `${delay}ms`,
+                        }}
+                      />
+                    ))}
                   </div>
                 </motion.div>
               )}
@@ -292,9 +411,10 @@ export default function Chatbot() {
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2 flex items-start gap-2"
+                  className="text-xs text-red-400 rounded-xl px-3 py-2 flex items-start gap-2"
+                  style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}
                 >
-                  <span className="shrink-0 mt-0.5">⚠️</span>
+                  <span className="shrink-0 mt-0.5">⚠</span>
                   <span>{error}</span>
                 </motion.div>
               )}
@@ -302,9 +422,18 @@ export default function Chatbot() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area */}
-            <div className="px-3 py-3 border-t border-[#560BAD]/20 bg-[#0d0d22] shrink-0">
-              <div className="flex items-end gap-2 bg-[#13132a] border border-[#560BAD]/30 rounded-xl px-3 py-2 focus-within:border-[#560BAD]/70 focus-within:shadow-[0_0_15px_rgba(86,11,173,0.15)] transition-all duration-200">
+            {/* Input area */}
+            <div
+              className="px-3 py-3 shrink-0 relative z-10"
+              style={{ borderTop: '1px solid rgba(103,232,249,0.1)', background: 'rgba(2,2,12,0.9)' }}
+            >
+              <div
+                className="flex items-end gap-2 px-3 py-2 rounded-lg transition-all duration-200"
+                style={{
+                  background: 'rgba(10,10,30,0.8)',
+                  border: '1px solid rgba(103,232,249,0.15)',
+                }}
+              >
                 <textarea
                   ref={inputRef}
                   value={input}
@@ -314,15 +443,16 @@ export default function Chatbot() {
                     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
                   }}
                   onKeyDown={handleKeyDown}
-                  placeholder="Ask me anything…"
+                  placeholder="> Ask me anything…"
                   rows={1}
                   disabled={isLoading}
-                  className="flex-1 bg-transparent text-sm text-slate-200 placeholder-slate-600 resize-none outline-none leading-relaxed min-h-[24px] max-h-[120px] disabled:opacity-50"
+                  className="flex-1 bg-transparent text-sm text-white/75 resize-none outline-none leading-relaxed min-h-[24px] max-h-[120px] disabled:opacity-40 font-mono placeholder:text-white/20 placeholder:font-mono"
                 />
                 <button
                   onClick={sendMessage}
                   disabled={!input.trim() || isLoading}
-                  className="shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-[#560BAD] to-[#4361EE] text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_0_12px_rgba(86,11,173,0.6)] transition-all duration-200 active:scale-95"
+                  className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-white transition-all duration-200 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{ background: 'linear-gradient(135deg, #0EA5E9, #7C3AED)' }}
                 >
                   {isLoading ? (
                     <Loader2 size={14} className="animate-spin" />
@@ -331,8 +461,8 @@ export default function Chatbot() {
                   )}
                 </button>
               </div>
-              <p className="text-center text-[10px] text-slate-700 mt-2">
-                Powered by <span className="text-[#831DC6] font-medium">Groq × LLaMA 3.3</span>
+              <p className="text-center font-mono text-[9px] text-white/20 mt-2 tracking-wider">
+                PROGREX AI
               </p>
             </div>
           </motion.div>
