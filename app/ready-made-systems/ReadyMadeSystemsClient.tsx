@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { CheckCircle, ChevronDown, Monitor, ArrowRight, Users, LifeBuoy, PlayCircle } from 'lucide-react'
+import Image from 'next/image'
 import Hero from '@/components/Hero'
 import ConstellationDecor from '@/components/ConstellationDecor'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
@@ -106,15 +107,43 @@ export default function ReadyMadeSystemsClient() {
               transition={{ duration: 0.7 }}
               className={`space-y-4 ${si % 2 === 1 ? 'lg:order-1' : ''}`}
             >
-              {/* Screenshot placeholder */}
-              <div className="relative h-52 rounded-2xl bg-space-800 border border-nebula-700/20 overflow-hidden mb-4">
-                <div className="absolute inset-0 bg-dot-grid opacity-20" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <Monitor size={32} className="text-nebula-600/60 mx-auto mb-2" />
-                    <div className="text-white/30 text-xs font-mono">{sys.name} // preview</div>
-                  </div>
-                </div>
+              {/* Screenshot — 16:9 */}
+              <div className="relative aspect-[16/9] rounded-2xl overflow-hidden mb-4 border border-nebula-700/20"
+                style={{ boxShadow: '0 0 40px rgba(14,165,233,0.08), 0 16px 48px rgba(0,0,0,0.5)' }}
+              >
+                {sys.image ? (
+                  <>
+                    <Image
+                      src={sys.image}
+                      alt={sys.name}
+                      fill
+                      className="object-cover object-center"
+                      sizes="(max-width: 1024px) 100vw, 50vw"
+                    />
+                    {/* dark overlay for readability */}
+                    <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(3,3,15,0.08) 0%, rgba(3,3,15,0.55) 100%)' }} />
+                    {/* top accent line */}
+                    <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: 'linear-gradient(to right, transparent, #0EA5E9, #7C3AED, transparent)' }} />
+                    {/* label badge */}
+                    <div className="absolute bottom-3 left-3">
+                      <span className="font-mono text-[10px] px-2.5 py-1 rounded-full backdrop-blur-sm"
+                        style={{ background: 'rgba(14,165,233,0.22)', border: '1px solid rgba(14,165,233,0.45)', color: '#93E6FB' }}
+                      >
+                        {sys.name.split('—')[0].trim()}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="absolute inset-0 bg-dot-grid opacity-20" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center">
+                        <Monitor size={32} className="text-nebula-600/60 mx-auto mb-2" />
+                        <div className="text-white/30 text-xs font-mono">{sys.name} // preview</div>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               <h3 className="text-white font-bold text-sm uppercase tracking-wide mb-3">Pricing Plans</h3>
