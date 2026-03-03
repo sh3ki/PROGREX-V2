@@ -1,7 +1,9 @@
 ﻿'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import type { BlogPost } from '@/lib/blogData'
 import Hero from '@/components/Hero'
 import BlogCard from '@/components/BlogCard'
 import CTASection from '@/components/CTASection'
@@ -9,11 +11,71 @@ import ConstellationDecor from '@/components/ConstellationDecor'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
 import { blogs, blogCategories } from '@/lib/mockData'
 
+// Sort blogs latest → oldest
+function parseBlogDate(dateStr: string): number {
+  return new Date(dateStr).getTime() || 0
+}
+
+const sortedBlogs = [...blogs].sort((a, b) => parseBlogDate(b.date) - parseBlogDate(a.date))
+
 export default function BlogsClient() {
   const [activeCategory, setActiveCategory] = useState('All')
   const [search, setSearch] = useState('')
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const dragMoved = useRef(0)
 
-  const filtered = blogs.filter((b) => {
+  // Native drag-to-scroll (passive:false lets preventDefault work)
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+
+    let isDown = false
+    let startX = 0
+    let scrollStart = 0
+    let moved = 0
+
+    const onMouseDown = (e: MouseEvent) => {
+      isDown = true
+      moved = 0
+      dragMoved.current = 0
+      startX = e.clientX
+      scrollStart = el.scrollLeft
+      el.style.cursor = 'grabbing'
+      e.preventDefault()
+    }
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDown) return
+      e.preventDefault()
+      const delta = startX - e.clientX
+      moved = Math.abs(delta)
+      dragMoved.current = moved
+      el.scrollLeft = scrollStart + delta
+    }
+
+    const onMouseUp = () => {
+      isDown = false
+      el.style.cursor = 'grab'
+    }
+
+    const onClickCapture = (e: MouseEvent) => {
+      if (dragMoved.current > 6) e.stopPropagation()
+    }
+
+    el.addEventListener('mousedown', onMouseDown, { passive: false })
+    window.addEventListener('mousemove', onMouseMove, { passive: false })
+    window.addEventListener('mouseup', onMouseUp)
+    el.addEventListener('click', onClickCapture, true)
+
+    return () => {
+      el.removeEventListener('mousedown', onMouseDown)
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+      el.removeEventListener('click', onClickCapture, true)
+    }
+  }, [])
+
+  const filtered = sortedBlogs.filter((b) => {
     const matchCat = activeCategory === 'All' || b.category === activeCategory
     const matchSearch =
       !search ||
@@ -24,6 +86,12 @@ export default function BlogsClient() {
 
   const featured = filtered[0]
   const rest = filtered.slice(1)
+
+  const scrollBy = (dir: 'left' | 'right') => {
+    const el = scrollRef.current
+    if (!el) return
+    el.scrollBy({ left: dir === 'right' ? 340 : -340, behavior: 'smooth' })
+  }
 
   return (
     <>
@@ -44,7 +112,6 @@ export default function BlogsClient() {
 
         {/* Search + Filter */}
         <div className="flex flex-col sm:flex-row gap-4 mb-10">
-          {/* Search */}
           <div className="relative flex-1">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-nebula-500 text-sm select-none">{'>'}</span>
             <input
@@ -55,8 +122,6 @@ export default function BlogsClient() {
               className="w-full pl-8 pr-4 py-2.5 rounded-none border-0 border-b border-nebula-600/30 bg-transparent text-white/80 text-sm font-mono placeholder-nebula-600/50 focus:outline-none focus:border-nebula-400/60 transition-colors"
             />
           </div>
-
-          {/* Category filter */}
           <div className="flex flex-wrap gap-2">
             {blogCategories.map((cat) => (
               <button
@@ -81,7 +146,7 @@ export default function BlogsClient() {
             {/* Featured post */}
             {featured && (
               <div className="mb-8">
-                <div className="font-mono text-xs text-nebula-400 mb-3">// FEATURED_ARTICLE</div>
+                <div className="font-mono text-xs text-nebula-400 mb-3">{`// FEATURED_ARTICLE`}</div>
                 <BlogCard
                   title={featured.title}
                   category={featured.category}
@@ -91,23 +156,66 @@ export default function BlogsClient() {
                   excerpt={featured.excerpt}
                   slug={featured.slug}
                   tags={featured.tags}
+                  image={(featured as BlogPost).image}
                   featured
                 />
               </div>
             )}
 
-            {/* Blog grid */}
+            {/* Horizontal draggable strip */}
             {rest.length > 0 && (
-              <>
-                <div className="font-mono text-xs text-white/30 uppercase tracking-wider mb-4">// more_articles</div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div>
+                {/* Header row with nav buttons */}
+                <div className="flex items-center justify-between mb-5">
+                  <div className="font-mono text-xs text-white/30 uppercase tracking-wider">{`// more_articles (${rest.length})`}</div>
+                  <div className="flex gap-3">
+                    <motion.button
+                      onClick={() => scrollBy('left')}
+                      whileHover={{ scale: 1.1, background: 'rgba(14,165,233,0.18)', borderColor: 'rgba(14,165,233,0.6)' }}
+                      whileTap={{ scale: 0.93 }}
+                      aria-label="Scroll left"
+                      className="flex items-center justify-center w-10 h-10 rounded-full transition-colors duration-200"
+                      style={{
+                        background: 'rgba(103,232,249,0.06)',
+                        border: '1px solid rgba(103,232,249,0.22)',
+                        color: 'rgba(103,232,249,0.7)',
+                      }}
+                    >
+                      <ChevronLeft size={18} />
+                    </motion.button>
+                    <motion.button
+                      onClick={() => scrollBy('right')}
+                      whileHover={{ scale: 1.1, background: 'rgba(14,165,233,0.18)', borderColor: 'rgba(14,165,233,0.6)' }}
+                      whileTap={{ scale: 0.93 }}
+                      aria-label="Scroll right"
+                      className="flex items-center justify-center w-10 h-10 rounded-full transition-colors duration-200"
+                      style={{
+                        background: 'rgba(103,232,249,0.06)',
+                        border: '1px solid rgba(103,232,249,0.22)',
+                        color: 'rgba(103,232,249,0.7)',
+                      }}
+                    >
+                      <ChevronRight size={18} />
+                    </motion.button>
+                  </div>
+                </div>
+
+                {/* Scrollable + draggable container */}
+                <div
+                  ref={scrollRef}
+                  className="flex gap-5 overflow-x-auto select-none"
+                  style={{
+                    cursor: 'grab',
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none',
+                    touchAction: 'pan-y',
+                    paddingBottom: '4px',
+                  } as React.CSSProperties}
+                >
                   {rest.map((blog, i) => (
-                    <motion.div
+                    <div
                       key={blog.id}
-                      layout
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.08 }}
+                      className="shrink-0 w-75 sm:w-80"
                     >
                       <BlogCard
                         title={blog.title}
@@ -118,12 +226,17 @@ export default function BlogsClient() {
                         excerpt={blog.excerpt}
                         slug={blog.slug}
                         tags={blog.tags}
+                        image={(blog as BlogPost).image}
                         index={i}
                       />
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
-              </>
+
+                <p className="text-center font-mono text-[10px] text-white/18 mt-4 tracking-widest select-none">
+                  ← DRAG OR SWIPE TO EXPLORE →
+                </p>
+              </div>
             )}
           </>
         )}
