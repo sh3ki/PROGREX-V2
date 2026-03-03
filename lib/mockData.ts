@@ -523,7 +523,7 @@ export const services = [
 // ─── PROJECTS ───────────────────────────────────────────────────────────────
 export const projects = [
   {
-    id: 'nexus-erp',
+    id: '-erp',
     slug: 'nexus-erp',
     title: 'Nexus ERP Platform',
     category: 'Enterprise',
