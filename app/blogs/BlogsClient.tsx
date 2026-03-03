@@ -56,21 +56,36 @@ export default function BlogsClient() {
     const onMouseUp = () => {
       isDown = false
       el.style.cursor = 'grab'
+      // keep dragMoved alive briefly so the click event (which fires right after mouseup) can read it
+      setTimeout(() => { dragMoved.current = 0 }, 100)
     }
 
+    // Vertical wheel → horizontal scroll
+    const onWheel = (e: WheelEvent) => {
+      if (e.deltaY === 0) return
+      e.preventDefault()
+      el.scrollLeft += e.deltaY * 1.5
+    }
+
+    // Block link/card clicks if the user was dragging
     const onClickCapture = (e: MouseEvent) => {
-      if (dragMoved.current > 6) e.stopPropagation()
+      if (dragMoved.current > 6) {
+        e.preventDefault()
+        e.stopPropagation()
+      }
     }
 
     el.addEventListener('mousedown', onMouseDown, { passive: false })
     window.addEventListener('mousemove', onMouseMove, { passive: false })
     window.addEventListener('mouseup', onMouseUp)
+    el.addEventListener('wheel', onWheel, { passive: false })
     el.addEventListener('click', onClickCapture, true)
 
     return () => {
       el.removeEventListener('mousedown', onMouseDown)
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseup', onMouseUp)
+      el.removeEventListener('wheel', onWheel)
       el.removeEventListener('click', onClickCapture, true)
     }
   }, [])
