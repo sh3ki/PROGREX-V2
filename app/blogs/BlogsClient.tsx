@@ -92,10 +92,23 @@ export default function BlogsClient() {
 
   const filtered = sortedBlogs.filter((b) => {
     const matchCat = activeCategory === 'All' || b.category === activeCategory
-    const matchSearch =
-      !search ||
-      b.title.toLowerCase().includes(search.toLowerCase()) ||
-      b.excerpt.toLowerCase().includes(search.toLowerCase())
+    const matchSearch = (() => {
+      const q = search.trim()
+      if (!q) return true
+      // Split into tokens → every token must match (AND logic)
+      const tokens = q.toLowerCase().split(/\s+/).filter(Boolean)
+      // Haystack: all searchable fields joined
+      const haystack = [
+        b.title,
+        b.excerpt,
+        b.category,
+        b.tags.join(' '),
+        b.keywords.join(' '),
+      ].join(' ').toLowerCase()
+      // Each token is tested as a substring — so "rea" matches "react", "node" matches "nodejs"
+      // All tokens must hit somewhere in the haystack (multi-word AND)
+      return tokens.every((token) => haystack.includes(token))
+    })()
     return matchCat && matchSearch
   })
 
