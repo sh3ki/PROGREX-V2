@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -49,6 +50,7 @@ export default function BlogCard({
   const style = categoryStyle[category] ?? categoryStyle.Default
   const tagColor = categoryTagColor[category] ?? categoryTagColor.Default
   const readMins = parseInt(readTime) || 5
+  const [imgError, setImgError] = useState(false)
 
   return (
     <motion.div
@@ -83,7 +85,7 @@ export default function BlogCard({
           className={`relative overflow-hidden shrink-0 ${featured ? 'md:w-[42%] h-52 md:h-auto' : 'h-44'}`}
           style={{ background: fallbackGradient[category] ?? fallbackGradient.Default }}
         >
-          {image ? (
+          {image && !imgError ? (
             <Image
               src={image}
               alt={title}
@@ -91,6 +93,7 @@ export default function BlogCard({
               sizes={featured ? '(max-width:768px) 100vw, 42vw' : '(max-width:768px) 100vw, 33vw'}
               className="object-cover transition-transform duration-500 group-hover:scale-105"
               unoptimized
+              onError={() => setImgError(true)}
             />
           ) : (
             <>
