@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import Image from 'next/image'
 import { ArrowRight, Clock } from 'lucide-react'
 
 interface BlogCardProps {
@@ -86,13 +85,12 @@ export default function BlogCard({
           style={{ background: fallbackGradient[category] ?? fallbackGradient.Default }}
         >
           {image && !imgError ? (
-            <Image
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
               src={image}
               alt={title}
-              fill
-              sizes={featured ? '(max-width:768px) 100vw, 42vw' : '(max-width:768px) 100vw, 33vw'}
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
-              unoptimized
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
               onError={() => setImgError(true)}
             />
           ) : (
