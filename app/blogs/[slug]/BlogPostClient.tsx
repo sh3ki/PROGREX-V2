@@ -83,9 +83,9 @@ function HeroBanner({ image, title, category }: { image: string; title: string; 
         </div>
       )}
 
-      <div className="absolute bottom-5 left-6 flex items-center gap-2 z-10">
-        <BookOpen size={13} style={{ color: cs.text, opacity: 0.6 }} />
-        <span className="font-mono text-[11px]" style={{ color: cs.text, opacity: 0.55 }}>{'// '}{category}</span>
+      <div className="absolute bottom-5 left-6 top-3 flex items-center gap-2 z-10">
+        <BookOpen size={13} style={{ color: cs.text, opacity: 1 }} />
+        <span className="font-mono text-[11px]" style={{ color: cs.text, opacity: 1 }}>{'// '}{category}</span>
       </div>
     </div>
   )
@@ -98,7 +98,7 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
     <>
       {/* ─── Hero header ─────────────────────────────────────────────── */}
       <section className="relative pt-28 pb-10 overflow-hidden" style={{ background: 'rgba(6,6,22,1)' }}>
-        <div className="absolute inset-0 bg-dot-grid opacity-10" />
+        <div className="absolute inset-0 bg-dot-grid opacity-5" />
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 w-175 h-70 blur-[120px] pointer-events-none"
           style={{ background: cs.glow, opacity: 0.55 }}
@@ -134,12 +134,12 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
             </h1>
 
             {/* Excerpt */}
-            <p className="text-white/45 text-lg leading-relaxed mb-8 ">
+            <p className="text-white/45 text-lg leading-relaxed mb-6 ">
               {blog.excerpt}
             </p>
 
             {/* Meta row */}
-            <div className="flex flex-wrap items-center gap-x-8 gap-y-4 mb-2 pb-8 ">
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-4 mb-4 pb-8 ">
               <div className="flex items-center gap-2.5">
                 {blog.author.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -162,16 +162,16 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
                   <div className="font-mono text-[10px] mt-0.5" style={{ color: cs.text + 'aa' }}>{blog.author.role}</div>
                 </div>
               </div>
-              <span className="h-5 w-px bg-white/10 hidden sm:block" />
-              <div className="flex items-center gap-5">
-              <span className="flex items-center gap-1.5 pl-5 text-white/35 text-sm font-mono">
-                <User size={12} />
-                {blog.date}
-              </span>
-              <span className="flex items-center gap-1.5 text-white/35 text-sm font-mono">
-                <Clock size={12} />
-                {blog.readTime}
-              </span>
+              <span className="h-5 w-px pl-5 bg-white/10 hidden sm:block" />
+              <div className="flex items-center gap-5 pl-5">
+                <span className="flex items-center gap-1.5 text-white/35 text-sm font-mono">
+                  <User size={12} />
+                  {blog.date}
+                </span>
+                <span className="flex items-center gap-1.5 text-white/35 text-sm font-mono">
+                  <Clock size={12} />
+                  {blog.readTime}
+                </span>
               </div>
             </div>
 
@@ -246,11 +246,11 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
 
           {/* Article prose */}
           <article
-            className="prose prose-invert prose-base max-w-none
+            className="prose prose-invert prose-base max-w-none mt-12
               prose-headings:font-extrabold prose-headings:tracking-tight
               prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-5 prose-h2:pb-3 prose-h2:text-white prose-h2:border-b prose-h2:border-white/8
               prose-h3:text-lg prose-h3:mt-8 prose-h3:mb-3 prose-h3:text-white/90
-              prose-p:text-white/60 prose-p:leading-[1.9] prose-p:mb-5
+              prose-p:text-white/60 prose-p:leading-[1.9]
               prose-strong:text-white prose-strong:font-semibold
               prose-li:text-white/60 prose-li:leading-relaxed prose-li:mb-1.5
               prose-ul:my-5 prose-ul:pl-6
@@ -358,22 +358,24 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
 }
 
 // Minimal markdown renderer
+const P_STYLE = 'style="text-align:justify;text-indent:2em;margin-bottom:2rem;line-height:1.9;"'
+
 function renderMarkdown(content: string): string {
-  return content
-    .trim()
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/^- (.+)$/gm, '<li>$1</li>')
-    .replace(/(<li>[\s\S]+?<\/li>)/g, '<ul>$1</ul>')
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/^(?!<[hul])/gm, '')
-    .replace(/^<\/p><p>(<[hul])/gm, '$1')
-    .split('\n')
-    .map((line) => {
-      if (line.match(/^<[h123ul]/)) return line
-      if (line.trim() === '') return ''
-      return `<p>${line}</p>`
+  const blocks = content.trim().split(/\n{2,}/)
+  return blocks
+    .map((block) => {
+      const b = block.trim()
+      if (!b) return ''
+      // Apply inline formatting everywhere
+      const inline = b.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      if (/^## (.+)/.test(b))  return `<h2>${b.replace(/^## /, '')}</h2>`
+      if (/^### (.+)/.test(b)) return `<h3>${b.replace(/^### /, '')}</h3>`
+      // Bullet list block
+      if (/^- /.test(b)) {
+        const items = inline.split('\n').map(l => l.replace(/^- /, '').trim()).filter(Boolean)
+        return `<ul>${items.map(i => `<li>${i}</li>`).join('')}</ul>`
+      }
+      return `<p ${P_STYLE}>${inline.replace(/\n/g, ' ')}</p>`
     })
     .filter(Boolean)
     .join('')
