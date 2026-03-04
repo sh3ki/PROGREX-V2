@@ -52,7 +52,7 @@ export default function AboutClient() {
 
       {/* Company Story */}
       <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="gemini" side="left" offsetY="15%" />}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
           <motion.div
             initial={{ opacity: 0, x: -40 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -157,7 +157,7 @@ export default function AboutClient() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: i * 0.15 }}
-              className="relative rounded-2xl p-8 overflow-hidden group transition-all duration-300"
+              className="relative rounded-2xl p-5 sm:p-8 overflow-hidden group transition-all duration-300"
               style={{
                 background: 'rgba(4,4,20,0.7)',
                 border: `1px solid ${item.border}`,
