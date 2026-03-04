@@ -281,7 +281,7 @@ export default function Chatbot() {
   return (
     <>
       {/* ── Floating Toggle Button ── */}
-      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3">
+      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9999] flex flex-col items-end gap-2 sm:gap-3">
         <AnimatePresence>
           {!isOpen && hasNewMessage && (
             <motion.div
@@ -291,7 +291,7 @@ export default function Chatbot() {
               className="font-mono text-[10px] text-nebula-300 px-3 py-1.5 rounded whitespace-nowrap"
               style={{ background: 'rgba(103,232,249,0.12)', border: '1px solid rgba(103,232,249,0.3)' }}
             >
-              // NEW_MSG
+              <span>{'//'} NEW_MSG</span>
             </motion.div>
           )}
         </AnimatePresence>
@@ -359,7 +359,7 @@ export default function Chatbot() {
               whileTap={{ scale: 0.9 }}
               whileHover={{ scale: 1.08 }}
               aria-label={isOpen ? 'Close chat' : 'Open chat'}
-              className="relative w-14 h-14 rounded-full flex items-center justify-center text-white transition-all duration-300"
+              className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-white transition-all duration-300"
               style={{
                 background: 'linear-gradient(135deg, #0EA5E9, #7C3AED)',
                 boxShadow: '0 0 25px rgba(103,232,249,0.35)',
@@ -414,9 +414,11 @@ export default function Chatbot() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 260, damping: 24 }}
-            className="fixed bottom-24 right-6 z-[9998] w-[360px] max-w-[calc(100vw-3rem)] flex flex-col rounded-xl overflow-hidden"
+            className="fixed z-[9998] flex flex-col rounded-xl overflow-hidden
+              inset-3 sm:inset-auto sm:bottom-24 sm:right-6 sm:w-[360px] sm:max-w-[calc(100vw-3rem)]"
             style={{
-              height: 'min(560px, calc(100vh - 140px))',
+              height: 'auto',
+              maxHeight: 'calc(100vh - 24px)',
               background: 'rgba(4,4,20,0.97)',
               border: '1px solid rgba(103,232,249,0.2)',
               boxShadow: '0 8px 60px rgba(0,0,0,0.6), 0 0 40px rgba(103,232,249,0.06)',
@@ -439,7 +441,7 @@ export default function Chatbot() {
               </div>
 
               <div className="flex-1 min-w-0">
-                <p className="font-mono text-[11px] text-nebula-400/70 tracking-widest">// AI ASSISTANT</p>
+                <p className="font-mono text-[11px] text-nebula-400/70 tracking-widest"><span>{'//'}</span> AI ASSISTANT</p>
                 <p className="font-display font-bold text-sm text-white leading-tight">PROGREX AI</p>
               </div>
 
