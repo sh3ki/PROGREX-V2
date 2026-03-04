@@ -5,6 +5,7 @@ import Footer from '@/components/Footer'
 import CustomCursor from '@/components/CustomCursor'
 import Chatbot from '@/components/Chatbot'
 import StarfieldCanvas from '@/components/StarfieldCanvas'
+import TranslationProvider from '@/components/TranslationProvider'
 
 export const metadata: Metadata = {
   title: {
@@ -62,6 +63,7 @@ export default function RootLayout({
         {/* Global starfield — fixed, behind everything */}
         <StarfieldCanvas />
         <CustomCursor />
+        <TranslationProvider />
         <Navbar />
         <main>{children}</main>
         <Footer />
