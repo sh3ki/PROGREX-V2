@@ -243,7 +243,7 @@ export default function BlogsClient() {
                   {rest.map((blog, i) => (
                     <div
                       key={blog.id}
-                      className="shrink-0 w-75 sm:w-80"
+                      className="shrink-0 w-[280px] sm:w-80"
                     >
                       <BlogCard
                         title={blog.title}
