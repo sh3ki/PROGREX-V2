@@ -58,8 +58,8 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
       <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-section-a pt-2">
         <div className="absolute inset-0 bg-dot-grid opacity-15" />
         <div className="absolute inset-0 bg-gradient-to-br from-aurora-700/10 to-nebula-700/5" />
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-nebula-700/10 rounded-full blur-[120px]" />
-        <div className="absolute top-1/4 left-1/4 w-[300px] h-[300px] bg-aurora-700/5 rounded-full blur-[100px]" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-full max-w-[600px] h-[300px] sm:h-[400px] bg-nebula-700/10 rounded-full blur-[120px]" />
+        <div className="absolute top-1/4 left-1/4 w-[200px] h-[200px] sm:w-[300px] sm:h-[300px] bg-aurora-700/5 rounded-full blur-[100px]" />
 
         <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
