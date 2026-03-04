@@ -126,7 +126,7 @@ export default function ContactClient() {
       {/* Hero */}
       <section className="relative pt-28 pb-4 overflow-hidden bg-section-a">
         <div className="absolute inset-0 bg-dot-grid opacity-15" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-125 h-75 bg-nebula-700/10 rounded-full blur-[100px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[500px] h-[300px] sm:h-[400px] bg-nebula-700/10 rounded-full blur-[100px]" />
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
             <div className="eyebrow-badge mb-4 justify-center">
@@ -154,7 +154,7 @@ export default function ContactClient() {
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.5, type: 'spring' }}
-                  className="glass-card rounded-2xl p-12 text-center border border-nebula-700/30"
+                  className="glass-card rounded-2xl p-6 sm:p-12 text-center border border-nebula-700/30"
                 >
                   <motion.div
                     initial={{ scale: 0 }}
