@@ -415,7 +415,7 @@ export default function HomeClient() {
 
         <div className="max-w-3xl mx-auto">
           {/* Card */}
-          <div className="relative overflow-hidden rounded-2xl" style={{ minHeight: 320 }}>
+          <div className="relative overflow-hidden rounded-2xl min-h-[280px] sm:min-h-[320px]">
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
                 key={activeTestimonial}
