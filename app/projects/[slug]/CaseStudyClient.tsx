@@ -147,9 +147,9 @@ export default function CaseStudyClient({ project }: { project: Project }) {
   return (
     <>
       {/* ─── Hero ──────────────────────────────────────────────────── */}
-      <section className="relative pt-28 pb-14 overflow-hidden" style={{ background: 'rgba(6,6,22,1)' }}>
+      <section className="relative pt-28 pb-14 overflow-hidden" style={{ background: 'rgba(6,6,22,0)' }}>
         <div className="absolute inset-0 bg-dot-grid opacity-10" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-175 h-80 rounded-full blur-[130px] pointer-events-none" style={{ background: 'rgba(124,58,237,0.14)' }} />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[700px] h-60 sm:h-80 rounded-full blur-[130px] pointer-events-none" style={{ background: 'rgba(124,58,237,0.14)' }} />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }}>
             <Link href="/projects" className="inline-flex items-center gap-2 font-mono text-xs text-white/35 hover:text-nebula-300 transition-colors mb-4 group">
