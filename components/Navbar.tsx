@@ -6,8 +6,10 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, Globe, ChevronDown } from 'lucide-react'
+import { SUPPORTED_LANG_CODES } from '@/lib/translator'
 
-const LANGUAGES = [
+// All possible languages — only those present in SUPPORTED_LANG_CODES will be shown
+const ALL_LANGUAGES = [
   { code: 'EN',  label: 'English',    flag: '🇺🇸' },
   { code: 'FIL', label: 'Filipino',   flag: '🇵🇭' },
   { code: 'ZH',  label: '中文',       flag: '🇨🇳' },
@@ -28,7 +30,11 @@ const LANGUAGES = [
   { code: 'TH',  label: 'ภาษาไทย',   flag: '🇹🇭' },
   { code: 'NL',  label: 'Nederlands', flag: '🇳🇱' },
   { code: 'PL',  label: 'Polski',     flag: '🇵🇱' },
+  // Add future languages here — they will only show if added to LANG_MAP in lib/translator.ts
 ]
+
+// Only show languages the translation engine actually supports
+const LANGUAGES = ALL_LANGUAGES.filter(l => SUPPORTED_LANG_CODES.has(l.code))
 
 const navLinks = [
   { label: 'Home', href: '/' },
@@ -56,6 +62,24 @@ export default function Navbar() {
     } catch { /* ignore SSR */ }
   }
 
+  // Restore previously selected language from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('progrex-lang')
+      if (saved && saved !== 'EN') {
+        const found = LANGUAGES.find(l => l.code === saved)
+        if (found) setTimeout(() => setActiveLang(found), 0)
+      }
+    } catch { /* ignore */ }
+  }, [])
+
+  // Reset dropdown to English when TranslationProvider falls back due to error
+  useEffect(() => {
+    const handler = () => setActiveLang(LANGUAGES[0])
+    document.addEventListener('progrex-lang-reset', handler)
+    return () => document.removeEventListener('progrex-lang-reset', handler)
+  }, [])
+
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handleScroll)
@@ -73,8 +97,13 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  // Close mobile menu on route change - using ref to track previous pathname
+  const prevPathnameRef = useRef(pathname)
   useEffect(() => {
-    setMobileOpen(false)
+    if (prevPathnameRef.current !== pathname) {
+      prevPathnameRef.current = pathname
+      setTimeout(() => setMobileOpen(false), 0)
+    }
   }, [pathname])
 
   return (
@@ -154,12 +183,9 @@ export default function Navbar() {
             </nav>
 
             {/* CTA + Hamburger + Language (language always far-right) */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-3">
 
-              <Link
-                href="/contact"
-                className="hidden sm:inline-flex btn-primary text-sm"
-              >
+              <Link href="/contact" className="navbar-cta btn-primary text-sm">
                 <span>Get a Quote</span>
               </Link>
 
@@ -194,7 +220,7 @@ export default function Navbar() {
               </button>
 
               {/* Language selector — always far right */}
-              <div className="relative" ref={langRef}>
+              <div className="relative" ref={langRef} data-notranslate>
                 <button
                   onClick={() => setLangOpen((o) => !o)}
                   className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-mono text-[11px] tracking-wider transition-all duration-200 border"
@@ -229,8 +255,9 @@ export default function Navbar() {
                         backdropFilter: 'blur(20px)',
                       }}
                     >
-                      <div className="h-[1px] w-full" style={{ background: 'linear-gradient(90deg, transparent, #0EA5E9, #7C3AED, transparent)' }} />
+                      <div className="h-px w-full" style={{ background: 'linear-gradient(90deg, transparent, #0EA5E9, #7C3AED, transparent)' }} />
                       <div className="py-1.5 overflow-y-auto max-h-64 scrollbar-thin"
+                        data-notranslate
                         style={{
                           scrollbarWidth: 'thin',
                           scrollbarColor: 'rgba(14,165,233,0.3) transparent',
