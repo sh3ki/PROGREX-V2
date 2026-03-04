@@ -57,7 +57,7 @@ function HeroBanner({ image, title, category }: { image: string; title: string; 
   const fg = fallbackGradient[category] ?? fallbackGradient.Default
 
   return (
-    <div className="relative w-full overflow-hidden rounded-2xl" style={{ height: '420px' }}>
+    <div className="relative w-full overflow-hidden rounded-2xl h-[280px] sm:h-[350px] lg:h-[420px]">
       <div className="absolute inset-0" style={{ background: fg }} />
       <div className="absolute inset-0 bg-dot-grid opacity-20" />
 
@@ -77,7 +77,7 @@ function HeroBanner({ image, title, category }: { image: string; title: string; 
       {(!image || imgError) && (
         <div
           className="absolute inset-0 flex items-center justify-center font-display font-black uppercase select-none pointer-events-none"
-          style={{ fontSize: '110px', color: cs.glow, letterSpacing: '-0.04em', opacity: 0.22 }}
+          style={{ fontSize: 'clamp(40px, 15vw, 110px)', color: cs.glow, letterSpacing: '-0.04em', opacity: 0.22 }}
         >
           {category}
         </div>
@@ -97,7 +97,7 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
   return (
     <>
       {/* ─── Hero header ─────────────────────────────────────────────── */}
-      <section className="relative pt-28 pb-10 overflow-hidden" style={{ background: 'rgba(6,6,22,1)' }}>
+      <section className="relative pt-28 pb-10 overflow-hidden" style={{ background: 'rgba(6,6,22,0)' }}>
         <div className="absolute inset-0 bg-dot-grid opacity-5" />
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 w-175 h-70 blur-[120px] pointer-events-none"
@@ -134,12 +134,12 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
             </h1>
 
             {/* Excerpt */}
-            <p className="text-white/45 text-lg leading-relaxed mb-6 ">
+            <p className="text-white/45 text-lg w-4xl leading-relaxed mb-6 ">
               {blog.excerpt}
             </p>
 
             {/* Meta row */}
-            <div className="flex flex-wrap items-center gap-x-8 gap-y-4 mb-4 pb-8 ">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-4 mb-4">
               <div className="flex items-center gap-2.5">
                 {blog.author.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -162,8 +162,8 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
                   <div className="font-mono text-[10px] mt-0.5" style={{ color: cs.text + 'aa' }}>{blog.author.role}</div>
                 </div>
               </div>
-              <span className="h-5 w-px pl-5 bg-white/10 hidden sm:block" />
-              <div className="flex items-center gap-5 pl-5">
+              <span className="h-5 w-px hidden sm:block" />
+              <div className="flex items-center gap-5">
                 <span className="flex items-center gap-1.5 text-white/35 text-sm font-mono">
                   <User size={12} />
                   {blog.date}
@@ -176,7 +176,7 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
             </div>
 
             {/* Tags */}
-            <div className="flex flex-wrap gap-2 mb-2">
+            <div className="flex flex-wrap gap-2 mb-4">
               {blog.tags.map((tag) => (
                 <span
                   key={tag}
@@ -189,7 +189,7 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
             </div>
 
             {/* Share */}
-            <div className="flex items-center gap-3 mb-8">
+            <div className="flex items-center gap-3 mb-4">
               <span className="text-white/25 text-[10px] font-mono uppercase tracking-widest">{'// share'}</span>
               {[
                 { icon: <Twitter size={13} />, href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(blog.title)}` },
