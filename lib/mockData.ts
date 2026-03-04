@@ -969,7 +969,7 @@ export const team = [
     id: 3,
     name: 'Bheberlyn O. Eugenio',
     role: 'Project Manager',
-    bio: 'Responsible for driving projects from concept to completion, ensuring timelines, budgets, and goals stay on track. Works closely with cross-functional teams to align priorities, remove blockers, and keep communication clear and actionable. Has a sharp eye for detail and zero tolerance for scope creep or missed deadlines. Committed to delivering strategic, high-impact outcomes that create real value for stakeholders and clients alike.',
+    bio: 'Responsible for driving projects from concept to completion, ensuring timelines, budgets, and goals stay on track. Works closely with the team to align priorities and keep communication clear and actionable. Committed to delivering strategic, high-impact outcomes that create real value for clients.',
     avatar: 'https://res.cloudinary.com/dlu2bqrda/image/upload/v1772377390/berlyn_ykjlnw.png',
     linkedin: '#',
     github: '#',
