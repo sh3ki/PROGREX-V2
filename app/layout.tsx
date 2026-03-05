@@ -32,15 +32,28 @@ export const metadata: Metadata = {
     title: 'PROGREX — Technology Solutions That Drives Success',
     description:
       'Build faster. Scale smarter. Win with PROGREX — your technology partner for custom software, web, mobile, and enterprise solutions.',
+    images: [
+      {
+        url: '/ProgreX Logo Black.png',
+        width: 1200,
+        height: 630,
+        alt: 'PROGREX',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'PROGREX — Technology Solutions That Drives Success',
     description: 'Build faster. Scale smarter. Win with PROGREX.',
+    images: ['/ProgreX Logo Black.png'],
   },
   robots: {
     index: true,
     follow: true,
+  },
+  icons: {
+    icon: '/ProgreX Icon Logo Rounded.png',
+    apple: '/ProgreX Icon Logo Rounded.png',
   },
 }
 
