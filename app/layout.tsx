@@ -8,6 +8,7 @@ import StarfieldCanvas from '@/components/StarfieldCanvas'
 import TranslationProvider from '@/components/TranslationProvider'
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://progrex-lilac.vercel.app'),
   title: {
     default: 'PROGREX — Technology Solutions That Drives Success',
     template: '%s | PROGREX',
