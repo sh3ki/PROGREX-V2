@@ -74,11 +74,9 @@ export default function TeamCarousel() {
         {/* Edge-fade overlays */}
         <div
           className="pointer-events-none absolute inset-y-0 left-0 w-24 z-20"
-          style={{ background: 'linear-gradient(to right, var(--bg, #03030f), transparent)' }}
         />
         <div
           className="pointer-events-none absolute inset-y-0 right-0 w-24 z-20"
-          style={{ background: 'linear-gradient(to left, var(--bg, #03030f), transparent)' }}
         />
 
         <div
@@ -173,7 +171,7 @@ export default function TeamCarousel() {
                       <span
                         className="font-mono text-[10px] px-2.5 py-1 rounded-full backdrop-blur-sm"
                         style={{
-                          background: 'rgba(14,165,233,0.22)',
+                          background: 'rgba(14,165,233,0.52)',
                           border: '1px solid rgba(14,165,233,0.5)',
                           color: '#93E6FB',
                         }}

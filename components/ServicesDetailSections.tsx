@@ -282,12 +282,12 @@ export function GuaranteesSection() {
           </div>
           <div className="w-px h-10 bg-nebula-700/30" />
           <div className="text-center">
-            <div className="font-display font-black text-3xl text-nebula-300">80+</div>
+            <div className="font-display font-black text-3xl text-nebula-300">38+</div>
             <div className="font-mono text-[10px] text-white/40 uppercase tracking-widest mt-0.5">Happy Clients</div>
           </div>
           <div className="w-px h-10 bg-nebula-700/30" />
           <div className="text-center">
-            <div className="font-display font-black text-3xl text-nebula-300">6+</div>
+            <div className="font-display font-black text-3xl text-nebula-300">4+</div>
             <div className="font-mono text-[10px] text-white/40 uppercase tracking-widest mt-0.5">Years Running</div>
           </div>
         </div>

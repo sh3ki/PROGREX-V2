@@ -5,6 +5,7 @@ import type { JSX } from 'react'
 interface ProjectCardVisualProps {
   category: string
   title: string
+  image?: string
 }
 
 const patterns: Record<string, JSX.Element> = {
@@ -45,7 +46,6 @@ const patterns: Record<string, JSX.Element> = {
   ),
   Academic: (
     <svg viewBox="0 0 200 120" className="w-full h-full opacity-60">
-      {/* Circuit board */}
       <line x1="20" y1="60" x2="60" y2="60" stroke="rgba(103,232,249,0.3)" strokeWidth="1"/>
       <line x1="60" y1="60" x2="60" y2="30" stroke="rgba(103,232,249,0.3)" strokeWidth="1"/>
       <line x1="60" y1="30" x2="140" y2="30" stroke="rgba(103,232,249,0.3)" strokeWidth="1"/>
@@ -65,7 +65,6 @@ const patterns: Record<string, JSX.Element> = {
   ),
   SaaS: (
     <svg viewBox="0 0 200 120" className="w-full h-full opacity-60">
-      {/* Halftone-ish dots */}
       {Array.from({ length: 6 }).map((_, row) =>
         Array.from({ length: 10 }).map((_, col) => {
           const x = 15 + col * 18
@@ -89,16 +88,55 @@ const patterns: Record<string, JSX.Element> = {
       <rect x="90" y="30" width="14" height="2" rx="1" fill="rgba(167,139,250,0.3)"/>
       <rect x="90" y="35" width="18" height="2" rx="1" fill="rgba(167,139,250,0.2)"/>
       <circle cx="100" cy="100" r="3" fill="none" stroke="rgba(103,232,249,0.5)" strokeWidth="1"/>
-      {/* Signal lines */}
       {[28, 22, 16].map((r, i) => (
         <path key={i} d={`M ${100 - r} ${80 - r * 0.6} Q 100 ${80 - r * 0.8} ${100 + r} ${80 - r * 0.6}`}
           fill="none" stroke={`rgba(103,232,249,${0.15 + i * 0.1})`} strokeWidth="1"/>
       ))}
     </svg>
   ),
+  Hardware: (
+    <svg viewBox="0 0 200 120" className="w-full h-full opacity-60">
+      {/* Circuit board grid */}
+      {[20, 50, 80].map((y, ri) =>
+        [30, 70, 110, 150].map((x, ci) => (
+          <rect key={`${ri}-${ci}`} x={x - 6} y={y - 6} width="12" height="12" rx="2"
+            fill="rgba(3,3,15,0.8)" stroke="rgba(251,191,36,0.45)" strokeWidth="1"/>
+        ))
+      )}
+      {/* horizontal traces */}
+      {[20, 50, 80].map((y, i) => (
+        <line key={`h${i}`} x1="36" y1={y} x2="156" y2={y} stroke="rgba(251,191,36,0.25)" strokeWidth="0.8"/>
+      ))}
+      {/* vertical traces */}
+      {[30, 70, 110, 150].map((x, i) => (
+        <line key={`v${i}`} x1={x} y1="14" x2={x} y2="86" stroke="rgba(251,191,36,0.18)" strokeWidth="0.8"/>
+      ))}
+      {/* IC chip center */}
+      <rect x="76" y="44" width="48" height="30" rx="3" fill="rgba(3,3,15,0.9)" stroke="rgba(251,191,36,0.6)" strokeWidth="1"/>
+      {[50,58,66].map((y, i) => <line key={`lp${i}`} x1="76" y1={y} x2="64" y2={y} stroke="rgba(251,191,36,0.4)" strokeWidth="0.8"/>)}
+      {[50,58,66].map((y, i) => <line key={`rp${i}`} x1="124" y1={y} x2="136" y2={y} stroke="rgba(251,191,36,0.4)" strokeWidth="0.8"/>)}
+      <text x="100" y="63" textAnchor="middle" fontSize="7" fill="rgba(251,191,36,0.7)" fontFamily="monospace">MCU</text>
+      {/* bottom vias */}
+      {[40,80,120,160].map((x, i) => (
+        <circle key={`via${i}`} cx={x} cy="106" r="3" fill="none" stroke="rgba(103,232,249,0.4)" strokeWidth="1"/>
+      ))}
+    </svg>
+  ),
+  'E-commerce': (
+    <svg viewBox="0 0 200 120" className="w-full h-full opacity-60">
+      {[20, 40, 60, 80, 100].map((y, i) => (
+        <path key={i} d={`M 0 ${y} Q 50 ${y - 12} 100 ${y} Q 150 ${y + 12} 200 ${y}`}
+          fill="none" stroke="rgba(103,232,249,0.18)" strokeWidth="0.8"/>
+      ))}
+      <rect x="70" y="30" width="60" height="60" rx="3" fill="none" stroke="rgba(103,232,249,0.45)" strokeWidth="1"/>
+      <rect x="78" y="38" width="44" height="8" rx="2" fill="rgba(103,232,249,0.2)"/>
+      <rect x="78" y="52" width="28" height="4" rx="1" fill="rgba(167,139,250,0.3)"/>
+      <rect x="78" y="60" width="36" height="4" rx="1" fill="rgba(167,139,250,0.2)"/>
+    </svg>
+  ),
 }
 
-export default function ProjectCardVisual({ category, title }: ProjectCardVisualProps) {
+export default function ProjectCardVisual({ category, title, image }: ProjectCardVisualProps) {
   const key = Object.keys(patterns).find(k => category?.toLowerCase().includes(k.toLowerCase())) ?? 'Web'
 
   return (
@@ -106,15 +144,24 @@ export default function ProjectCardVisual({ category, title }: ProjectCardVisual
       className="w-full h-full relative overflow-hidden"
       style={{ background: 'linear-gradient(135deg, rgba(5,5,25,0.9), rgba(10,10,40,0.7))' }}
     >
-      {/* Pattern */}
-      <div className="absolute inset-0">
-        {patterns[key] ?? patterns['Web']}
-      </div>
+      {image ? (
+        /* Real photo */
+        <img
+          src={image}
+          alt={title}
+          className="absolute inset-0 w-full h-full object-cover opacity-75 group-hover:opacity-90 scale-105 group-hover:scale-110 transition-all duration-500"
+        />
+      ) : (
+        /* SVG pattern fallback */
+        <div className="absolute inset-0">
+          {patterns[key] ?? patterns['Web']}
+        </div>
+      )}
 
-      {/* Gradient overlay */}
+      {/* Bottom fade */}
       <div
         className="absolute inset-0"
-        style={{ background: 'linear-gradient(to top, rgba(3,3,15,0.8) 0%, transparent 60%)' }}
+        style={{ background: 'linear-gradient(to top, rgba(3,3,15,0.92) 0%, rgba(3,3,15,0.3) 50%, transparent 100%)' }}
       />
 
       {/* Category tag bottom-left */}
@@ -124,3 +171,5 @@ export default function ProjectCardVisual({ category, title }: ProjectCardVisual
     </div>
   )
 }
+
+

@@ -19,9 +19,9 @@ interface HeroProps {
 }
 
 const stats = [
-  { value: 150, suffix: '+', label: 'Projects' },
-  { value: 80,  suffix: '+', label: 'Clients' },
-  { value: 6,   suffix: '+', label: 'Years' },
+  { value: 52, suffix: '+', label: 'Projects' },
+  { value: 38,  suffix: '+', label: 'Clients' },
+  { value: 4,   suffix: '+', label: 'Years' },
   { value: 25,  suffix: '+', label: 'Experts' },
 ]
 
@@ -81,7 +81,7 @@ export default function Hero({
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
 
           {/* LEFT — Text + Buttons */}
-          <div className="order-2 lg:order-1 lg:pt-8">
+          <div className="order-1 lg:pt-8">
             {/* Eyebrow badge */}
             {badge && (
               <motion.div
@@ -152,7 +152,7 @@ export default function Hero({
           </div>
 
           {/* RIGHT — Orbit Orb on top, Stats below it */}
-          <div className="order-1 lg:order-2 flex flex-col items-center gap-6">
+          <div className="order-2 flex flex-col items-center gap-6">
             <motion.div
               initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}

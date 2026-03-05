@@ -6,14 +6,35 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, Globe, ChevronDown } from 'lucide-react'
+import { SUPPORTED_LANG_CODES } from '@/lib/translator'
 
-const LANGUAGES = [
-  { code: 'EN', label: 'English',  flag: '🇺🇸' },
-  { code: 'FIL', label: 'Filipino', flag: '🇵🇭' },
-  { code: 'JA', label: '日本語',   flag: '🇯🇵' },
-  { code: 'ES', label: 'Español',  flag: '🇪🇸' },
-  { code: 'FR', label: 'Français', flag: '🇫🇷' },
+// All possible languages — only those present in SUPPORTED_LANG_CODES will be shown
+const ALL_LANGUAGES = [
+  { code: 'EN',  label: 'English',    flag: '🇺🇸' },
+  { code: 'FIL', label: 'Filipino',   flag: '🇵🇭' },
+  { code: 'ZH',  label: '中文',       flag: '🇨🇳' },
+  { code: 'ES',  label: 'Español',    flag: '🇪🇸' },
+  { code: 'AR',  label: 'العربية',    flag: '🇸🇦' },
+  { code: 'HI',  label: 'हिन्दी',      flag: '🇮🇳' },
+  { code: 'FR',  label: 'Français',   flag: '🇫🇷' },
+  { code: 'BN',  label: 'বাংলা',      flag: '🇧🇩' },
+  { code: 'RU',  label: 'Русский',    flag: '🇷🇺' },
+  { code: 'PT',  label: 'Português',  flag: '🇧🇷' },
+  { code: 'ID',  label: 'Indonesia',  flag: '🇮🇩' },
+  { code: 'DE',  label: 'Deutsch',    flag: '🇩🇪' },
+  { code: 'JA',  label: '日本語',     flag: '🇯🇵' },
+  { code: 'KO',  label: '한국어',     flag: '🇰🇷' },
+  { code: 'VI',  label: 'Tiếng Việt', flag: '🇻🇳' },
+  { code: 'TR',  label: 'Türkçe',     flag: '🇹🇷' },
+  { code: 'IT',  label: 'Italiano',   flag: '🇮🇹' },
+  { code: 'TH',  label: 'ภาษาไทย',   flag: '🇹🇭' },
+  { code: 'NL',  label: 'Nederlands', flag: '🇳🇱' },
+  { code: 'PL',  label: 'Polski',     flag: '🇵🇱' },
+  // Add future languages here — they will only show if added to LANG_MAP in lib/translator.ts
 ]
+
+// Only show languages the translation engine actually supports
+const LANGUAGES = ALL_LANGUAGES.filter(l => SUPPORTED_LANG_CODES.has(l.code))
 
 const navLinks = [
   { label: 'Home', href: '/' },
@@ -33,6 +54,32 @@ export default function Navbar() {
   const langRef                        = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
 
+  const changeLang = (lang: typeof LANGUAGES[0]) => {
+    setActiveLang(lang)
+    try {
+      localStorage.setItem('progrex-lang', lang.code)
+      document.dispatchEvent(new CustomEvent('progrex-lang-change', { detail: lang.code }))
+    } catch { /* ignore SSR */ }
+  }
+
+  // Restore previously selected language from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('progrex-lang')
+      if (saved && saved !== 'EN') {
+        const found = LANGUAGES.find(l => l.code === saved)
+        if (found) setTimeout(() => setActiveLang(found), 0)
+      }
+    } catch { /* ignore */ }
+  }, [])
+
+  // Reset dropdown to English when TranslationProvider falls back due to error
+  useEffect(() => {
+    const handler = () => setActiveLang(LANGUAGES[0])
+    document.addEventListener('progrex-lang-reset', handler)
+    return () => document.removeEventListener('progrex-lang-reset', handler)
+  }, [])
+
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handleScroll)
@@ -50,8 +97,13 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  // Close mobile menu on route change - using ref to track previous pathname
+  const prevPathnameRef = useRef(pathname)
   useEffect(() => {
-    setMobileOpen(false)
+    if (prevPathnameRef.current !== pathname) {
+      prevPathnameRef.current = pathname
+      setTimeout(() => setMobileOpen(false), 0)
+    }
   }, [pathname])
 
   return (
@@ -131,12 +183,9 @@ export default function Navbar() {
             </nav>
 
             {/* CTA + Hamburger + Language (language always far-right) */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-3">
 
-              <Link
-                href="/contact"
-                className="hidden sm:inline-flex btn-primary text-sm"
-              >
+              <Link href="/contact" className="navbar-cta btn-primary text-sm">
                 <span>Get a Quote</span>
               </Link>
 
@@ -171,7 +220,7 @@ export default function Navbar() {
               </button>
 
               {/* Language selector — always far right */}
-              <div className="relative" ref={langRef}>
+              <div className="relative" ref={langRef} data-notranslate>
                 <button
                   onClick={() => setLangOpen((o) => !o)}
                   className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-mono text-[11px] tracking-wider transition-all duration-200 border"
@@ -206,14 +255,19 @@ export default function Navbar() {
                         backdropFilter: 'blur(20px)',
                       }}
                     >
-                      <div className="h-[1px] w-full" style={{ background: 'linear-gradient(90deg, transparent, #0EA5E9, #7C3AED, transparent)' }} />
-                      <div className="py-1.5">
+                      <div className="h-px w-full" style={{ background: 'linear-gradient(90deg, transparent, #0EA5E9, #7C3AED, transparent)' }} />
+                      <div className="py-1.5 overflow-y-auto max-h-64 scrollbar-thin"
+                        data-notranslate
+                        style={{
+                          scrollbarWidth: 'thin',
+                          scrollbarColor: 'rgba(14,165,233,0.3) transparent',
+                        }}>
                         {LANGUAGES.map((lang) => {
                           const isSelected = lang.code === activeLang.code
                           return (
                             <button
                               key={lang.code}
-                              onClick={() => { setActiveLang(lang); setLangOpen(false) }}
+                              onClick={() => { changeLang(lang); setLangOpen(false) }}
                               className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left transition-all duration-150"
                               style={{
                                 background: isSelected ? 'rgba(14,165,233,0.10)' : 'transparent',

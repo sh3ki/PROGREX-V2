@@ -1,8 +1,12 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { motion, AnimatePresence, type TargetAndTransition } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Star, CheckCircle, TrendingUp, AlignLeft, AlertTriangle, Lightbulb } from 'lucide-react'
+import {
+  ArrowLeft, Star, CheckCircle, TrendingUp,
+  AlignLeft, AlertTriangle, Lightbulb, ChevronLeft, ChevronRight, Quote,
+} from 'lucide-react'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
 import ConstellationDecor from '@/components/ConstellationDecor'
 import CTASection from '@/components/CTASection'
@@ -12,6 +16,8 @@ interface Project {
   category: string
   industry: string
   shortDesc: string
+  image: string
+  images?: string[]
   overview: string
   problem: string
   solution: string
@@ -21,172 +27,312 @@ interface Project {
   testimonial: { quote: string; author: string; role: string }
 }
 
+const CIRCUIT_BG = {
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cline x1='0' y1='22' x2='16' y2='22' stroke='rgba(103,232,249,0.05)' stroke-width='0.7'/%3E%3Cline x1='28' y1='22' x2='44' y2='22' stroke='rgba(103,232,249,0.05)' stroke-width='0.7'/%3E%3Cline x1='22' y1='0' x2='22' y2='16' stroke='rgba(103,232,249,0.05)' stroke-width='0.7'/%3E%3Cline x1='22' y1='28' x2='22' y2='44' stroke='rgba(103,232,249,0.05)' stroke-width='0.7'/%3E%3Ccircle cx='22' cy='22' r='4' fill='none' stroke='rgba(103,232,249,0.09)' stroke-width='0.8'/%3E%3Ccircle cx='22' cy='22' r='1.2' fill='rgba(103,232,249,0.11)'/%3E%3Ccircle cx='0' cy='0' r='1.2' fill='rgba(103,232,249,0.05)'/%3E%3Ccircle cx='44' cy='0' r='1.2' fill='rgba(103,232,249,0.05)'/%3E%3Ccircle cx='0' cy='44' r='1.2' fill='rgba(103,232,249,0.05)'/%3E%3Ccircle cx='44' cy='44' r='1.2' fill='rgba(103,232,249,0.05)'/%3E%3C/svg%3E")`,
+  backgroundSize: '44px 44px',
+  maskImage: 'radial-gradient(ellipse 110% 80% at 50% 10%, black 20%, transparent 90%)',
+  WebkitMaskImage: 'radial-gradient(ellipse 110% 80% at 50% 10%, black 20%, transparent 90%)',
+} as React.CSSProperties
+
+const INTERVAL_MS = 3000
+
+// ─── Image Carousel ──────────────────────────────────────────────────────────
+function ImageCarousel({ images }: { images: string[] }) {
+  const [current, setCurrent] = useState(0)
+  const [direction, setDirection] = useState(1)
+  const [imgErrors, setImgErrors] = useState<Record<number, boolean>>({})
+  const [paused, setPaused] = useState(false)
+
+  // Track remaining time so hover-resume continues from where it left off
+  const remainingRef = useRef(INTERVAL_MS)
+  const startRef = useRef<number>(0)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const goTo = useCallback((idx: number, dir: number) => {
+    setDirection(dir)
+    setCurrent(idx)
+  }, [])
+
+  const next = useCallback(() => goTo((current + 1) % images.length, 1), [current, images.length, goTo])
+  const prev = () => goTo((current - 1 + images.length) % images.length, -1)
+
+  const startTimer = useCallback((delay: number) => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    startRef.current = Date.now()
+    timerRef.current = setTimeout(() => {
+      remainingRef.current = INTERVAL_MS
+      setCurrent((c) => {
+        setDirection(1)
+        return (c + 1) % images.length
+      })
+    }, delay)
+  }, [images.length])
+
+  // Auto-advance
+  useEffect(() => {
+    if (images.length <= 1 || paused) return
+    startTimer(remainingRef.current)
+    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
+  }, [current, paused, images.length, startTimer])
+
+  const handleMouseEnter = () => {
+    remainingRef.current = Math.max(0, remainingRef.current - (Date.now() - startRef.current))
+    if (timerRef.current) clearTimeout(timerRef.current)
+    setPaused(true)
+  }
+  const handleMouseLeave = () => setPaused(false)
+
+  const slideVariants = {
+    enter: (d: number) => ({ x: d > 0 ? '100%' : '-100%', opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (d: number) => ({ x: d > 0 ? '-100%' : '100%', opacity: 0 }),
+  }
+
+  return (
+    <div
+      className="relative w-full overflow-hidden rounded-2xl border border-white/8"
+      style={{ aspectRatio: '16/9' }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      <AnimatePresence initial={false} custom={direction} mode="popLayout">
+        <motion.div
+          key={current}
+          custom={direction}
+          variants={slideVariants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={{ type: 'tween', duration: 0.45, ease: 'easeInOut' }}
+          className="absolute inset-0"
+        >
+          {images[current] && !imgErrors[current] ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={images[current]} alt={`Screenshot ${current + 1}`} className="w-full h-full object-cover" onError={() => setImgErrors((e) => ({ ...e, [current]: true }))} />
+          ) : (
+            <div className="w-full h-full bg-space-800 flex items-center justify-center"><span className="font-mono text-white/15 text-sm">screenshot {current + 1}</span></div>
+          )}
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(5,5,16,0.7) 0%, transparent 50%)' }} />
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Prev / Next */}
+      {images.length > 1 && (<>
+        <button onClick={prev} className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full flex items-center justify-center text-white/60 hover:text-white transition-all" style={{ background: 'rgba(5,5,16,0.6)', border: '1px solid rgba(255,255,255,0.12)' }}><ChevronLeft size={18} /></button>
+        <button onClick={next} className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full flex items-center justify-center text-white/60 hover:text-white transition-all" style={{ background: 'rgba(5,5,16,0.6)', border: '1px solid rgba(255,255,255,0.12)' }}><ChevronRight size={18} /></button>
+      </>)}
+
+      {/* Dots */}
+      {images.length > 1 && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+          {images.map((_, i) => (
+            <button key={i} onClick={() => { setDirection(i > current ? 1 : -1); setCurrent(i) }} className="rounded-full transition-all duration-300" style={{ width: i === current ? '24px' : '8px', height: '8px', background: i === current ? '#a78bfa' : 'rgba(255,255,255,0.25)' }} />
+          ))}
+        </div>
+      )}
+
+      {/* Counter + pause indicator */}
+      <div className="absolute top-4 right-4 z-10 flex items-center gap-1.5 font-mono text-[11px] px-2.5 py-1 rounded-full text-white/50" style={{ background: 'rgba(5,5,16,0.55)', border: '1px solid rgba(255,255,255,0.1)' }}>
+        {paused && <span className="w-1.5 h-1.5 rounded-full bg-nebula-400 animate-pulse" />}
+        {current + 1} / {images.length}
+      </div>
+    </div>
+  )
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function CaseStudyClient({ project }: { project: Project }) {
+  const images = project.images ?? (project.image ? [project.image] : [])
+
   return (
     <>
-      {/* Hero */}
-      <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden bg-section-a pt-20">
-        <div className="absolute inset-0 bg-dot-grid opacity-15" />
-        <div className="absolute inset-0 bg-gradient-to-br from-aurora-700/10 to-nebula-700/5" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-nebula-700/10 rounded-full blur-[100px]" />
-
-        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <span className="font-mono text-xs px-3 py-1 border border-nebula-500/40 text-nebula-300 bg-nebula-400/10">[{project.category}]</span>
-              <span className="font-mono text-xs px-3 py-1 border border-white/10 text-white/40">[{project.industry}]</span>
+      {/* ─── Hero ──────────────────────────────────────────────────── */}
+      <section className="relative pt-28 pb-14 overflow-hidden" style={{ background: 'rgba(6,6,22,0)' }}>
+        <div className="absolute inset-0 bg-dot-grid opacity-10" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[700px] h-60 sm:h-80 rounded-full blur-[130px] pointer-events-none" style={{ background: 'rgba(124,58,237,0.14)' }} />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }}>
+            <Link href="/projects" className="inline-flex items-center gap-2 font-mono text-xs text-white/35 hover:text-nebula-300 transition-colors mb-4 group">
+              <ArrowLeft size={13} className="group-hover:-translate-x-0.5 transition-transform" />../projects
+            </Link>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.06 }}>
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <span className="font-mono text-[11px] px-3 py-1 rounded font-semibold tracking-wide" style={{ background: 'rgba(167,139,250,0.15)', color: '#c4b5fd', border: '1px solid rgba(167,139,250,0.35)' }}>{project.category}</span>
+              <span className="font-mono text-[11px] px-3 py-1 rounded font-semibold tracking-wide" style={{ background: 'rgba(14,165,233,0.10)', color: '#7dd3fc', border: '1px solid rgba(14,165,233,0.25)' }}>{project.industry}</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-4 leading-tight">
-              {project.title}
-            </h1>
-            <p className="text-slate-300 text-lg leading-relaxed max-w-2xl mx-auto">{project.shortDesc}</p>
+            <h1 className="font-display font-extrabold text-white leading-tight" style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', letterSpacing: '-0.02em' }}>{project.title}</h1>
+            <p className="text-white/50 text-lg leading-relaxed mb-4 max-w-3xl">{project.shortDesc}</p>
+            <div className="flex flex-wrap gap-2 mb-6">
+              {project.technologies.map((tech) => (<span key={tech} className="font-mono text-[11px] px-3 py-1 rounded" style={{ background: 'rgba(103,232,249,0.06)', border: '1px solid rgba(103,232,249,0.15)', color: 'rgba(103,232,249,0.65)' }}>{tech}</span>))}
+            </div>
           </motion.div>
         </div>
-
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[rgba(5,5,16,0.7)] to-transparent" />
       </section>
 
-      {/* Image placeholder carousel */}
-      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="orion" side="left" offsetY="15%" />}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[1, 2, 3].map((n) => (
+      {/* ─── Image Carousel ────────────────────────────────────────── */}
+      {images.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-2 mb-4">
+          <div className="max-w-4xl mx-auto">
+            <ImageCarousel images={images} />
+          </div>
+        </motion.div>
+      )}
+
+      {/* ─── Overview / Problem / Solution ─────────────────────────── */}
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="orion" side="right" offsetY="10%" />}>
+        <SectionHeader badge="Case Study" title="Project" highlight="Breakdown" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {[
+            { label: 'Project Overview', content: project.overview, icon: <AlignLeft size={20} className="text-nebula-400" />, accentColor: 'rgba(167,139,250,0.18)', borderColor: 'rgba(167,139,250,0.25)', textColor: '#c4b5fd', hoverBorder: 'rgba(167,139,250,0.5)', hoverGlow: 'rgba(167,139,250,0.12)' },
+            { label: 'The Challenge', content: project.problem, icon: <AlertTriangle size={20} className="text-amber-400" />, accentColor: 'rgba(251,191,36,0.12)', borderColor: 'rgba(251,191,36,0.22)', textColor: '#fcd34d', hoverBorder: 'rgba(251,191,36,0.45)', hoverGlow: 'rgba(251,191,36,0.10)' },
+            { label: 'Our Solution', content: project.solution, icon: <Lightbulb size={20} className="text-aurora-400" />, accentColor: 'rgba(34,211,153,0.12)', borderColor: 'rgba(34,211,153,0.22)', textColor: '#6ee7b7', hoverBorder: 'rgba(34,211,153,0.45)', hoverGlow: 'rgba(34,211,153,0.10)' },
+          ].map((item, i) => (
             <motion.div
-              key={n}
-              initial={{ opacity: 0, y: 20 }}
+              key={i}
+              initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: n * 0.1 }}
-              className="relative h-48 bg-space-800 rounded-xl overflow-hidden border border-nebula-700/20"
+              transition={{ delay: i * 0.12 }}
+              className="group relative rounded-xl overflow-hidden"
+              style={{ background: 'rgba(8,8,28,0.92)', border: `1px solid ${item.borderColor}` }}
+              whileHover={{ y: -6, boxShadow: `0 0 32px ${item.hoverGlow}, 0 16px 40px rgba(0,0,0,0.5)`, borderColor: item.hoverBorder } as TargetAndTransition}
             >
-              <div className="absolute inset-0 bg-dot-grid opacity-20" />
-              <div className="absolute inset-0 flex items-center justify-center text-white/20 text-sm font-mono">
-                // screenshot_{n}
+              {/* Circuit texture */}
+              <div className="absolute inset-0 pointer-events-none rounded-xl opacity-60" style={CIRCUIT_BG} />
+              {/* Top scan line */}
+              <div className="absolute inset-x-0 top-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: `linear-gradient(to right, transparent, ${item.textColor}, transparent)` }} />
+              <div className="relative p-6">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4" style={{ background: item.accentColor, border: `1px solid ${item.borderColor}` }}>{item.icon}</div>
+                <div className="font-mono text-[10px] mb-1 uppercase tracking-widest" style={{ color: item.textColor + 'aa' }}>{'// '}{item.label}</div>
+                <h3 className="text-base font-bold text-white mb-3 group-hover:text-nebula-300 transition-colors duration-200">{item.label}</h3>
+                <p className="text-white/50 text-sm leading-relaxed">{item.content}</p>
               </div>
             </motion.div>
           ))}
         </div>
       </SectionWrapper>
 
-      {/* Overview + Problem + Solution */}
-      <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="scorpius" side="right" offsetY="10%" />}>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {[
-            { label: 'Project Overview', content: project.overview, icon: <AlignLeft size={22} className="text-nebula-400" /> },
-            { label: 'The Challenge', content: project.problem, icon: <AlertTriangle size={22} className="text-pulsar-400" /> },
-            { label: 'Our Solution', content: project.solution, icon: <Lightbulb size={22} className="text-aurora-400" /> },
-          ].map((item, i) => (
+      {/* ─── Features ──────────────────────────────────────────────── */}
+      <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="bigdipper" side="left" offsetY="20%" />}>
+        <SectionHeader badge="What We Built" title="Full" highlight="Feature Set" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-4xl mx-auto">
+          {project.features.map((feature, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, x: -16 }}
+              whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.15 }}
-              className="glass-card rounded-2xl p-6 border border-nebula-700/20"
+              transition={{ delay: i * 0.05 }}
+              className="group relative flex items-center gap-3 rounded-xl px-5 py-4 overflow-hidden"
+              style={{ background: 'rgba(12,12,32,0.7)', border: '1px solid rgba(167,139,250,0.14)' }}
+              whileHover={{ y: -3, background: 'rgba(16,16,44,0.95)', borderColor: 'rgba(167,139,250,0.4)', boxShadow: '0 0 20px rgba(167,139,250,0.1), 0 8px 24px rgba(0,0,0,0.4)' } as TargetAndTransition}
             >
-              <div className="mb-3">{item.icon}</div>
-              <h3 className="text-base font-bold text-white mb-3">{item.label}</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">{item.content}</p>
+              <div className="absolute inset-x-0 top-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: 'linear-gradient(to right, transparent, rgba(167,139,250,0.7), transparent)' }} />
+              <CheckCircle size={16} className="text-nebula-400 shrink-0" />
+              <span className="text-white/70 text-sm font-medium group-hover:text-white/90 transition-colors duration-200">{feature}</span>
             </motion.div>
           ))}
         </div>
       </SectionWrapper>
 
-      {/* Features */}
-      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="bigdipper" side="left" offsetY="20%" />}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div>
-            <SectionHeader badge="What We Built" title="Key" highlight="Features" center={false} />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {project.features.map((feature, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.06 }}
-                  className="flex items-center gap-3 text-sm text-white/60"
-                >
-                  <CheckCircle size={15} className="text-nebula-500 shrink-0" />
-                  {feature}
-                </motion.div>
-              ))}
-            </div>
-          </div>
-          <div>
-            <SectionHeader badge="Stack" title="Technologies" highlight="Used" center={false} />
-            <div className="flex flex-wrap gap-2">
-              {project.technologies.map((tech, i) => (
-                <motion.span
-                  key={tech}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.05 }}
-                  className="font-mono text-xs px-3 py-1.5 border border-nebula-700/20 text-nebula-300/70 bg-nebula-400/5"
-                >
-                  {tech}
-                </motion.span>
-              ))}
-            </div>
-          </div>
-        </div>
-      </SectionWrapper>
-
-      {/* Results */}
-      <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="crux" side="right" offsetY="25%" />}>
+      {/* ─── Results Metrics ───────────────────────────────────────── */}
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="crux" side="right" offsetY="25%" />}>
         <SectionHeader badge="Measurable Impact" title="Results &" highlight="Metrics" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {project.results.map((result, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="glass-card rounded-2xl p-6 text-center border border-nebula-700/20 hover:border-nebula-500/50 hover:shadow-nebula-sm transition-all"
+              transition={{ duration: 0.5, delay: i * 0.08 }}
+              className="group relative rounded-xl overflow-hidden cursor-default"
+              style={{ background: 'rgba(8,8,28,0.92)', border: '1px solid rgba(103,232,249,0.12)' }}
+              whileHover={{
+                y: -6,
+                background: 'rgba(14,14,40,0.97)',
+                boxShadow: '0 0 32px rgba(14,165,233,0.18), 0 0 64px rgba(124,58,237,0.12), 0 16px 40px rgba(0,0,0,0.5)',
+                borderColor: 'rgba(14,165,233,0.35)',
+              } as TargetAndTransition}
             >
-              <TrendingUp size={20} className="text-nebula-500 mx-auto mb-3" />
-              <div className="text-2xl sm:text-3xl font-extrabold text-gradient-nebula mb-2">{result.value}</div>
-              <div className="text-white/45 text-xs sm:text-sm">{result.metric}</div>
+              {/* Circuit texture */}
+              <div className="absolute inset-0 pointer-events-none rounded-xl opacity-60" style={CIRCUIT_BG} />
+              {/* Hover gradient overlay */}
+              <motion.div className="absolute inset-0 rounded-xl pointer-events-none" initial={{ opacity: 0 }} whileHover={{ opacity: 1 }} transition={{ duration: 0.3 }} style={{ background: 'linear-gradient(135deg, rgba(14,165,233,0.06) 0%, rgba(124,58,237,0.06) 100%)' }} />
+              {/* Top scan line */}
+              <div className="absolute inset-x-0 top-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: 'linear-gradient(to right, transparent, rgba(14,165,233,0.8), rgba(124,58,237,0.8), transparent)' }} />
+              <div className="relative p-5 flex flex-col items-center text-center">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{ background: 'rgba(14,165,233,0.1)', border: '1px solid rgba(14,165,233,0.22)' }}>
+                  <TrendingUp size={18} className="text-nebula-400" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-gradient-nebula mb-1 leading-tight">{result.value}</div>
+                <div className="text-white/45 text-xs font-mono leading-snug">{result.metric}</div>
+              </div>
             </motion.div>
           ))}
         </div>
       </SectionWrapper>
 
-      {/* Testimonial */}
-      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="gemini" side="left" offsetY="30%" />}>
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="max-w-2xl mx-auto glass-card rounded-2xl p-8 sm:p-10 text-center border border-nebula-700/20"
-        >
-          <div className="flex justify-center gap-1 mb-5">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Star key={i} size={16} className="text-yellow-400 fill-yellow-400" />
-            ))}
-          </div>
-          <p className="text-slate-200 text-lg leading-relaxed italic mb-6">
-            &ldquo;{project.testimonial.quote}&rdquo;
-          </p>
-          <div className="flex items-center justify-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-nebula-700 to-aurora-600 flex items-center justify-center text-white font-bold text-sm">
-              {project.testimonial.author.charAt(0)}
+      {/* ─── Testimonial ───────────────────────────────────────────── */}
+      <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="gemini" side="left" offsetY="30%" />}>
+        {/* Ambient glows */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-72" style={{ background: 'radial-gradient(ellipse 70% 50% at 50% 0%, rgba(124,58,237,0.09) 0%, transparent 100%)' }} />
+        <div className="pointer-events-none absolute left-[-10%] top-1/3 w-72 h-72 rounded-full" style={{ background: 'radial-gradient(circle, rgba(14,165,233,0.07) 0%, transparent 70%)', filter: 'blur(40px)' }} />
+        <div className="pointer-events-none absolute right-[-10%] bottom-1/4 w-72 h-72 rounded-full" style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.07) 0%, transparent 70%)', filter: 'blur(40px)' }} />
+        <SectionHeader badge="Client Feedback" title="What They" highlight="Say" />
+        <div className="max-w-3xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ type: 'spring', stiffness: 260, damping: 22, mass: 0.9 }}
+            className="relative rounded-2xl p-8 sm:p-10 overflow-hidden"
+            style={{
+              background: 'rgba(6,6,22,0.97)',
+              border: '1px solid rgba(14,165,233,0.2)',
+              boxShadow: '0 0 60px rgba(14,165,233,0.08), 0 0 100px rgba(124,58,237,0.05), 0 24px 60px rgba(0,0,0,0.5)',
+            }}
+          >
+            {/* Corner glows */}
+            <div className="pointer-events-none absolute -top-10 -left-10 w-48 h-48 rounded-full" style={{ background: 'radial-gradient(circle, rgba(14,165,233,0.12) 0%, transparent 70%)' }} />
+            <div className="pointer-events-none absolute -bottom-10 -right-10 w-48 h-48 rounded-full" style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.10) 0%, transparent 70%)' }} />
+            {/* Top accent line */}
+            <div className="absolute inset-x-0 top-0 h-0.5 rounded-t-2xl" style={{ background: 'linear-gradient(to right, transparent, #0EA5E9, #7C3AED, transparent)' }} />
+            {/* Quote watermark */}
+            <div className="absolute top-5 right-7" style={{ opacity: 0.06 }}>
+              <Quote size={100} className="text-nebula-400" />
             </div>
-            <div className="text-left">
-              <div className="font-semibold text-white text-sm">{project.testimonial.author}</div>
-              <div className="text-slate-400 text-xs">{project.testimonial.role}</div>
+            {/* Stars */}
+            <div className="flex gap-1 mb-5">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <motion.div key={i} initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.07, type: 'spring', stiffness: 400, damping: 14 }}>
+                  <Star size={16} className="text-yellow-400 fill-yellow-400" />
+                </motion.div>
+              ))}
             </div>
-          </div>
-        </motion.div>
+            {/* Quote text */}
+            <p className="text-white/80 text-base sm:text-lg leading-relaxed mb-8 italic relative z-10">
+              &ldquo;{project.testimonial.quote}&rdquo;
+            </p>
+            {/* Author row */}
+            <div className="flex items-center gap-4 relative z-10">
+             
+              <div>
+                <div className="font-bold text-white">{project.testimonial.author}</div>
+                <div className="font-mono text-xs text-nebula-400/70 mt-0.5">{project.testimonial.role}</div>
+              </div>
+              <div className="ml-auto shrink-0">
+                <span className="font-mono text-[10px] px-3 py-1 rounded-full" style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', color: '#a78bfa' }}>
+                  {project.testimonial.role.includes(',') ? project.testimonial.role.split(',').slice(1).join(',').trim() : project.category}
+                </span>
+              </div>
+            </div>
+          </motion.div>
+        </div>
       </SectionWrapper>
 
-      <CTASection
-        title="Ready to Build Your Success Story?"
-        subtitle="Let PROGREX engineer a solution that transforms your business the same way we transformed theirs."
-        primaryBtn={{ label: 'Start Your Project', href: '/contact' }}
-        secondaryBtn={{ label: 'More Projects', href: '/projects' }}
-      />
+      <CTASection title="Ready to Build Your Success Story?" subtitle="Let PROGREX engineer a solution that transforms your business the same way." primaryBtn={{ label: 'Start Your Project', href: '/contact' }} secondaryBtn={{ label: 'More Projects', href: '/projects' }} />
     </>
   )
 }

@@ -46,6 +46,12 @@
     margin: 0;
   }
 
+  html,
+  body {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
   html {
     font-family: 'Inter', system-ui, sans-serif;
     scroll-behavior: smooth;
@@ -182,6 +188,25 @@
     transform: translateY(-4px);
     box-shadow: 0 0 24px rgba(34,211,238,0.12), 0 8px 32px rgba(0,0,0,0.4);
     border-color: rgba(34,211,238,0.3) !important;
+  }
+
+  @keyframes pxt-slide {
+    0%   { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+  }
+
+  @keyframes pxt-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* ── Navbar CTA visibility ── */
+  .navbar-cta {
+    display: none !important;
+  }
+  @media (min-width: 1024px) {
+    .navbar-cta {
+      display: inline-flex !important;
+    }
   }
 
   /* ── Button base styles ── */

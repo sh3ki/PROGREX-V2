@@ -139,8 +139,8 @@ export default function FeaturedProjectsCarousel() {
       {/* Constrained 3-D stage */}
       <div className="relative max-w-7xl mx-auto">
       {/* Edge-fade overlays — replaces overflow-hidden so box-shadow glows can escape */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 w-24 z-20" style={{ background: 'linear-gradient(to right, var(--bg, #03030f), transparent)' }} />
-      <div className="pointer-events-none absolute inset-y-0 right-0 w-24 z-20" style={{ background: 'linear-gradient(to left, var(--bg, #03030f), transparent)' }} />
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-24 z-20"  />
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-24 z-20"  />
       <div
         className="relative w-full h-[580px] sm:h-[620px]"
         style={{ perspective: '1100px' }}

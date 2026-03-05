@@ -1,6 +1,25 @@
 ﻿'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+
+// useSyncExternalStore pattern for SSR-safe client detection
+function subscribe() {
+  return () => {} // No changes to subscribe to
+}
+
+function getSnapshot() {
+  // Returns true if should render (desktop device)
+  return !(
+    window.matchMedia('(hover: none)').matches ||
+    window.matchMedia('(pointer: coarse)').matches ||
+    'ontouchstart' in window ||
+    navigator.maxTouchPoints > 0
+  )
+}
+
+function getServerSnapshot() {
+  return false // Don't render on server
+}
 
 export default function CustomCursor() {
   const dotRef  = useRef<HTMLDivElement>(null)
@@ -8,10 +27,12 @@ export default function CustomCursor() {
   const [isHovering, setIsHovering] = useState(false)
   const [isClicking, setIsClicking] = useState(false)
   const [visible, setVisible] = useState(false)
+  
+  // SSR-safe: returns false on server, actual value on client
+  const shouldRender = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    if (window.matchMedia('(hover: none)').matches) return
+    if (!shouldRender) return
 
     let mx = 0, my = 0
     let rx = 0, ry = 0
@@ -54,16 +75,21 @@ export default function CustomCursor() {
       window.removeEventListener('mousedown', onDown)
       window.removeEventListener('mouseup', onUp)
     }
-  }, [])
+  }, [shouldRender])
 
   const cyan   = '#0EA5E9'
   const cyanHi = '#67E8F9'
   const purp   = 'rgba(124,58,237,0.7)'
 
+  // Don't render anything on touch/mobile devices or before hydration
+  if (!shouldRender) return null
+
   return (
     <>
       <style>{`
-        * { cursor: none !important; }
+        @media (hover: hover) and (pointer: fine) {
+          * { cursor: none !important; }
+        }
         @keyframes reticle-spin { to { transform: rotate(360deg); } }
         @keyframes reticle-spin-rev { to { transform: rotate(-360deg); } }
         .reticle-spin     { animation: reticle-spin     9s linear infinite; transform-origin: 24px 24px; }

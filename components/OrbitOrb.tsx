@@ -10,8 +10,8 @@ interface DataFragment {
 
 const FRAGMENTS: DataFragment[] = [
   { label: 'UPTIME',  value: '99.9%',  color: '#34D399' },
-  { label: 'CLIENTS', value: '80+',    color: '#67E8F9' },
-  { label: 'BUILDS',  value: '150+',   color: '#A78BFA' },
+  { label: 'CLIENTS', value: '38+',    color: '#67E8F9' },
+  { label: 'BUILDS',  value: '52+',   color: '#A78BFA' },
   { label: 'PING',    value: '12ms',   color: '#67E8F9' },
 ]
 
