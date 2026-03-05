@@ -415,9 +415,8 @@ export default function Chatbot() {
             exit={{ opacity: 0, y: 30, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 260, damping: 24 }}
             className="fixed z-[9998] flex flex-col rounded-xl overflow-hidden
-              inset-3 sm:inset-auto sm:bottom-24 sm:right-6 sm:w-[360px] sm:max-w-[calc(100vw-3rem)]"
+              inset-3 sm:inset-auto sm:bottom-24 sm:right-6 sm:w-[360px] sm:max-w-[calc(100vw-3rem)] sm:h-[560px] sm:max-h-[calc(100vh-7rem)]"
             style={{
-              height: 'auto',
               maxHeight: 'calc(100vh - 24px)',
               background: 'rgba(4,4,20,0.97)',
               border: '1px solid rgba(103,232,249,0.2)',
