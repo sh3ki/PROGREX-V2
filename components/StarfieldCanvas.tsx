@@ -32,7 +32,7 @@ export default function StarfieldCanvas() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const isMobile = window.matchMedia('(max-width: 768px)').matches
+    const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0)
     const STAR_COUNT = isMobile ? 150 : 350
 
     let width = window.innerWidth
