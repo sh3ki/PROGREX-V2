@@ -1052,7 +1052,7 @@ export const stats = [
   { label: 'Projects Delivered', value: '52+' },
   { label: 'Happy Clients', value: '38+' },
   { label: 'Years in Experience', value: '4+' },
-  { label: 'Team Members', value: '25+' },
+  { label: 'Team Members', value: '15+' },
 ]
 
 // ─── CORE VALUES ─────────────────────────────────────────────────────────────
