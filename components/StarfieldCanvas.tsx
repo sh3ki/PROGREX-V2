@@ -89,13 +89,29 @@ export default function StarfieldCanvas() {
     // Gyroscope parallax for mobile devices
     const onDeviceOrientation = (e: DeviceOrientationEvent) => {
       if (!isMobile) return
-      const gamma = e.gamma !== null ? Math.max(-45, Math.min(45, e.gamma)) : 0 // left-right tilt
-      const beta  = e.beta  !== null ? Math.max(-30, Math.min(30, e.beta  - 30)) : 0 // front-back tilt, offset for natural phone angle
+      const gamma = e.gamma !== null ? Math.max(-45, Math.min(45, e.gamma)) : 0
+      const beta  = e.beta  !== null ? Math.max(-30, Math.min(30, e.beta  - 30)) : 0
       targetOffsetX = (gamma / 45) * 40
       targetOffsetY = (beta  / 30) * 25
     }
+
+    let gyroTouchCleanup: (() => void) | null = null
     if (isMobile && typeof DeviceOrientationEvent !== 'undefined') {
-      window.addEventListener('deviceorientation', onDeviceOrientation)
+      type DOEWithPerm = typeof DeviceOrientationEvent & { requestPermission?: () => Promise<string> }
+      if (typeof (DeviceOrientationEvent as DOEWithPerm).requestPermission === 'function') {
+        // iOS 13+ — must be triggered by a user gesture
+        const onFirstTouch = () => {
+          ;(DeviceOrientationEvent as DOEWithPerm)
+            .requestPermission!()
+            .then((state) => { if (state === 'granted') window.addEventListener('deviceorientation', onDeviceOrientation) })
+            .catch(() => {})
+        }
+        document.addEventListener('touchstart', onFirstTouch, { once: true })
+        gyroTouchCleanup = () => document.removeEventListener('touchstart', onFirstTouch)
+      } else {
+        // Android & non-iOS — no permission needed
+        window.addEventListener('deviceorientation', onDeviceOrientation)
+      }
     }
 
     const triggerShootingStar = () => {
@@ -229,6 +245,7 @@ export default function StarfieldCanvas() {
       if (isMobile && typeof DeviceOrientationEvent !== 'undefined') {
         window.removeEventListener('deviceorientation', onDeviceOrientation)
       }
+      gyroTouchCleanup?.()
     }
   }, [])
 
