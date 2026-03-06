@@ -27,7 +27,7 @@ export default function IntroLoader() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const isMobile = window.innerWidth < 768
+    const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0)
     const STAR_COUNT = isMobile ? 150 : 350
     const COLORS = ['#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF', '#67E8F9', '#67E8F9', '#A78BFA']
 
