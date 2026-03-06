@@ -71,7 +71,10 @@ export default function AboutClient() {
                 PROGREX was founded in 2025 by two developers with a shared obsession: building software that genuinely solves problems. What started as a two-person operation — fueled by late nights, strong coffee, and an unwillingness to ship mediocre work — quickly earned a reputation for quality and reliability.
               </p>
               <p>
-                As word spread and projects grew in scope, so did the team. We carefully brought in engineers, designers, and specialists who shared the same standards. Today, PROGREX operates as a team of 8 and growing — small enough to move fast, experienced enough to build right.
+                As word spread and projects grew in scope, so did the team. What began as a small group of four quickly expanded as we brought in engineers, designers, and specialists who shared the same standards and passion for building things the right way.
+              </p>
+              <p>
+               Today, PROGREX is a team of 15+ developers and growing — large enough to tackle ambitious projects, yet focused enough to move quickly and maintain the craftsmanship we built our reputation on.
               </p>
               <p>
                 We&apos;re still early in our story, but every project we take on is treated with the same intensity and care as that very first one.

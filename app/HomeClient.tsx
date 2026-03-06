@@ -13,6 +13,7 @@ import FeaturedProjectsCarousel from '@/components/FeaturedProjectsCarousel'
 import TechMarqueeSection from '@/components/TechMarqueeSection'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
 import { services, systems, testimonials, faqs } from '@/lib/mockData'
+import IntroLoader from '@/components/IntroLoader'
 
 function CtaSelect({ value, onChange, options, placeholder }: {
   value: string
@@ -186,6 +187,7 @@ export default function HomeClient() {
 
   return (
     <>
+      <IntroLoader />
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <Hero
         badge="Next-Gen Technology Solutions"
