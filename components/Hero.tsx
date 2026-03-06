@@ -22,7 +22,7 @@ const stats = [
   { value: 52, suffix: '+', label: 'Projects' },
   { value: 38,  suffix: '+', label: 'Clients' },
   { value: 4,   suffix: '+', label: 'Years' },
-  { value: 25,  suffix: '+', label: 'Experts' },
+  { value: 15,  suffix: '+', label: 'Experts' },
 ]
 
 function CountUp({ target, suffix }: { target: number; suffix: string }) {
