@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Mail, Phone, MapPin, Send, CheckCircle, Github, Twitter, Linkedin, Facebook, Instagram, Youtube, ChevronDown, Check, Paperclip, X as XIcon, ExternalLink } from 'lucide-react'
+import { Mail, Phone, MapPin, Send, CheckCircle, Github, Twitter, Facebook, Instagram, Youtube, ChevronDown, Check, Paperclip, X as XIcon, ExternalLink } from 'lucide-react'
 
 const TikTokIcon = ({ size = 16 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -303,9 +303,11 @@ export default function ContactClient() {
               <h3 className="text-white font-bold mb-5">Contact Information</h3>
               <div className="space-y-4">
                 {[
-                  { icon: <Mail size={16} />, label: 'Email', value: 'progrex.tech@gmail.com', href: 'mailto:progrex.tech@gmail.com' },
-                  { icon: <Phone size={16} />, label: 'Phone', value: '+63 912 345 6789', href: 'tel:+639123456789' },
-                  { icon: <MapPin size={16} />, label: 'Office', value: 'Calauan, Laguna', href: 'https://maps.google.com/?q=Calauan,Laguna,Philippines' },
+                  { icon: <Mail size={16} />, label: 'General', value: 'info@progrex.cloud', href: 'mailto:info@progrex.cloud' },
+                  { icon: <Mail size={16} />, label: 'Contact', value: 'contact@progrex.cloud', href: 'mailto:contact@progrex.cloud' },
+                  { icon: <Mail size={16} />, label: 'Support', value: 'support@progrex.cloud', href: 'mailto:support@progrex.cloud' },
+                  { icon: <Phone size={16} />, label: 'Phone / WhatsApp', value: '+63 956 593 4460', href: 'tel:+639565934460' },
+                  { icon: <MapPin size={16} />, label: 'Office', value: 'Calauan, Laguna, Philippines', href: 'https://maps.app.goo.gl/obdsRKxLpNnmu2Bd8' },
                 ].map((item) => (
                   <a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer" className="flex items-start gap-3 group">
                     <div className="w-8 h-8 rounded-lg bg-linear-to-br from-nebula-700 to-aurora-600 flex items-center justify-center text-white shrink-0 group-hover:shadow-nebula-sm transition-all">
@@ -322,14 +324,14 @@ export default function ContactClient() {
 
             {/* Map — Calauan, Laguna (static-like: pointer events disabled on iframe, click opens Google Maps) */}
             <a
-              href="https://maps.google.com/?q=Calauan,Laguna,Philippines"
+              href="https://maps.app.goo.gl/obdsRKxLpNnmu2Bd8"
               target="_blank"
               rel="noopener noreferrer"
               className="block glass-card rounded-2xl p-1 border border-nebula-700/20 overflow-hidden group cursor-pointer"
             >
               <div className="h-48 rounded-xl overflow-hidden relative">
                 <iframe
-                  title="Calauan, Laguna"
+                  title="Calauan, Laguna, Philippines"
                   src="https://maps.google.com/maps?q=Calauan,+Laguna,+Philippines&t=&z=13&ie=UTF8&iwloc=&output=embed"
                   width="100%"
                   height="100%"
@@ -351,15 +353,14 @@ export default function ContactClient() {
               <h4 className="text-white font-bold text-sm mb-4">Follow Us</h4>
               <div className="flex flex-wrap gap-3">
                 {[
-                  { icon: <Facebook size={16} />, label: 'Facebook', href: '#' },
-                  { icon: <Instagram size={16} />, label: 'Instagram', href: '#' },
-                  { icon: <Twitter size={16} />, label: 'X', href: '#' },
-                  { icon: <TikTokIcon size={16} />, label: 'TikTok', href: '#' },
-                  { icon: <Linkedin size={16} />, label: 'LinkedIn', href: '#' },
-                  { icon: <Youtube size={16} />, label: 'YouTube', href: '#' },
-                  { icon: <WhatsAppIcon size={16} />, label: 'WhatsApp', href: '#' },
-                  { icon: <Github size={16} />, label: 'GitHub', href: '#' },
-                  { icon: <MapPin size={16} />, label: 'Maps', href: 'https://maps.google.com/?q=Calauan,Laguna,Philippines' },
+                  { icon: <Facebook size={16} />, label: 'Facebook', href: 'https://www.facebook.com/progrex.tech' },
+                  { icon: <Instagram size={16} />, label: 'Instagram', href: 'https://www.instagram.com/progrex.tech' },
+                  { icon: <Twitter size={16} />, label: 'X / Twitter', href: 'https://x.com/progrex_tech' },
+                  { icon: <TikTokIcon size={16} />, label: 'TikTok', href: 'https://www.tiktok.com/@progrex.tech' },
+                  { icon: <Youtube size={16} />, label: 'YouTube', href: 'https://www.youtube.com/@progrex.technologies' },
+                  { icon: <WhatsAppIcon size={16} />, label: 'WhatsApp', href: 'https://wa.me/639565934460' },
+                  { icon: <Github size={16} />, label: 'GitHub', href: 'https://github.com/progrex-tech' },
+                  { icon: <MapPin size={16} />, label: 'Google Maps', href: 'https://maps.app.goo.gl/obdsRKxLpNnmu2Bd8' },
                 ].map((social) => (
                   <a
                     key={social.label}
