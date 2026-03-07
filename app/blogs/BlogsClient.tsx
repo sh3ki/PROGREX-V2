@@ -10,6 +10,7 @@ import CTASection from '@/components/CTASection'
 import ConstellationDecor from '@/components/ConstellationDecor'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
 import { blogs, blogCategories } from '@/lib/mockData'
+import { useTranslation } from '@/components/TranslationProvider'
 
 // Sort blogs latest → oldest
 function parseBlogDate(dateStr: string): number {
@@ -19,6 +20,7 @@ function parseBlogDate(dateStr: string): number {
 const sortedBlogs = [...blogs].sort((a, b) => parseBlogDate(b.date) - parseBlogDate(a.date))
 
 export default function BlogsClient() {
+  const { t, translations } = useTranslation()
   const [activeCategory, setActiveCategory] = useState('All')
   const [search, setSearch] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -124,18 +126,18 @@ export default function BlogsClient() {
   return (
     <>
       <Hero
-        badge="Insights & Knowledge"
-        title="Tech Insights From the"
-        highlight="PROGREX Team"
-        subtitle="Engineering best practices, business technology strategies, and deep dives from our team of experts."
-        primaryBtn={{ label: 'Work With Us', href: '/contact' }}
+        badge={t('blogs.heroBadge')}
+        title={t('blogs.heroTitle')}
+        highlight={t('blogs.heroHighlight')}
+        subtitle={t('blogs.heroSubtitle')}
+        primaryBtn={{ label: t('blogs.heroPrimaryBtn'), href: '/contact' }}
       />
 
       <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="cassiopeia" side="left" offsetY="15%" />}>
         <SectionHeader
-          badge="Latest Articles"
-          title="Our"
-          highlight="Blog"
+          badge={t('blogs.listingBadge')}
+          title={t('blogs.listingTitle')}
+          highlight={t('blogs.listingHighlight')}
         />
 
         {/* Search + Filter */}
@@ -144,37 +146,40 @@ export default function BlogsClient() {
             <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-nebula-500 text-sm select-none">{'>'}</span>
             <input
               type="text"
-              placeholder="Search articles..."
+              placeholder={t('blogs.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-8 pr-4 py-2.5 rounded-none border-0 border-b border-nebula-600/30 bg-transparent text-white/80 text-sm font-mono placeholder-nebula-600/50 focus:outline-none focus:border-nebula-400/60 transition-colors"
             />
           </div>
           <div className="flex flex-wrap gap-2">
-            {blogCategories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`font-mono text-xs px-3 py-1.5 border transition-all duration-200 ${
-                  activeCategory === cat
-                    ? 'border-nebula-400/60 text-nebula-300 bg-nebula-400/10'
-                    : 'border-white/10 text-white/40 hover:border-nebula-600/40 hover:text-white/70'
-                }`}
-              >
-                [{cat}]
-              </button>
-            ))}
+            {blogCategories.map((cat, catIdx) => {
+              const tCat = (translations.blogs.categories as unknown as string[])[catIdx] ?? cat
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`font-mono text-xs px-3 py-1.5 border transition-all duration-200 ${
+                    activeCategory === cat
+                      ? 'border-nebula-400/60 text-nebula-300 bg-nebula-400/10'
+                      : 'border-white/10 text-white/40 hover:border-nebula-600/40 hover:text-white/70'
+                  }`}
+                >
+                  [{tCat}]
+                </button>
+              )
+            })}
           </div>
         </div>
 
         {filtered.length === 0 ? (
-          <div className="text-center py-20 text-slate-500">No articles found. Try a different search or category.</div>
+          <div className="text-center py-20 text-slate-500">{t('blogs.emptyState')}</div>
         ) : (
           <>
             {/* Featured post */}
             {featured && (
               <div className="mb-8">
-                <div className="font-mono text-xs text-nebula-400 mb-3">{`// FEATURED_ARTICLE`}</div>
+                <div className="font-mono text-xs text-nebula-400 mb-3">{t('blogs.featured')}</div>
                 <BlogCard
                   title={featured.title}
                   category={featured.category}
@@ -262,7 +267,7 @@ export default function BlogsClient() {
                 </div>
 
                 <p className="text-center font-mono text-[10px] text-white/18 mt-4 tracking-widest select-none">
-                  ← DRAG OR SWIPE TO EXPLORE →
+                  {t('blogs.dragHint')}
                 </p>
               </div>
             )}
@@ -271,10 +276,10 @@ export default function BlogsClient() {
       </SectionWrapper>
 
       <CTASection
-        title="Have a Project to Discuss?"
-        subtitle="Our blog shares what we know. Our team delivers what you need. Let's start a conversation."
-        primaryBtn={{ label: 'Contact Us', href: '/contact' }}
-        secondaryBtn={{ label: 'Our Services', href: '/services' }}
+        title={t('blogs.ctaTitle')}
+        subtitle={t('blogs.ctaSubtitle')}
+        primaryBtn={{ label: t('blogs.ctaPrimaryBtn'), href: '/contact' }}
+        secondaryBtn={{ label: t('blogs.ctaSecondaryBtn'), href: '/services' }}
       />
     </>
   )
