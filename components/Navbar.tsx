@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, Globe, ChevronDown } from 'lucide-react'
 import { SUPPORTED_LANG_CODES } from '@/lib/translations/index'
+import { useTranslation } from '@/components/TranslationProvider'
 
 // All possible languages — only those present in SUPPORTED_LANG_CODES will be shown
 const ALL_LANGUAGES = [
@@ -30,23 +31,25 @@ const ALL_LANGUAGES = [
   { code: 'TH',  label: 'ภาษาไทย',   flag: '🇹🇭' },
   { code: 'NL',  label: 'Nederlands', flag: '🇳🇱' },
   { code: 'PL',  label: 'Polski',     flag: '🇵🇱' },
-  // Add future languages here — they will only show if added to LANG_MAP in lib/translator.ts
+  // Add future languages here — only those with translation files will be shown
 ]
 
 // Only show languages the translation engine actually supports
 const LANGUAGES = ALL_LANGUAGES.filter(l => SUPPORTED_LANG_CODES.has(l.code))
 
-const navLinks = [
-  { label: 'Home', href: '/' },
-  { label: 'About Us', href: '/about' },
-  { label: 'Services', href: '/services' },
-  { label: 'Projects', href: '/projects' },
-  { label: 'Ready-Made Systems', href: '/ready-made-systems' },
-  { label: 'Blogs', href: '/blogs' },
-  { label: 'Contact Us', href: '/contact' },
-]
-
 export default function Navbar() {
+  const { t } = useTranslation()
+
+  const navLinks = [
+    { label: t('nav.home'), href: '/' },
+    { label: t('nav.about'), href: '/about' },
+    { label: t('nav.services'), href: '/services' },
+    { label: t('nav.projects'), href: '/projects' },
+    { label: t('nav.systems'), href: '/ready-made-systems' },
+    { label: t('nav.blogs'), href: '/blogs' },
+    { label: t('nav.contact'), href: '/contact' },
+  ]
+
   const [scrolled, setScrolled]       = useState(false)
   const [mobileOpen, setMobileOpen]   = useState(false)
   const [langOpen, setLangOpen]       = useState(false)
@@ -146,7 +149,7 @@ export default function Navbar() {
               {/* Status pill — only on very wide screens, inline (no absolute, no overlap) */}
               <div className="hidden 2xl:flex items-center gap-1.5 font-mono text-[9px] text-nebula-400/35 tracking-widest select-none border border-nebula-400/15 rounded-full px-2 py-0.5">
                 <span className="w-1 h-1 rounded-full bg-emerald-400/70 animate-pulse" />
-                <span>SYS_LIVE</span>
+                <span>{t('nav.sysLive')}</span>
                 <span className="text-nebula-400/20 animate-blink-dot">▮</span>
               </div>
             </div>
@@ -186,7 +189,7 @@ export default function Navbar() {
             <div className="flex items-center gap-1.5 sm:gap-3">
 
               <Link href="/contact" className="navbar-cta btn-primary text-sm">
-                <span>Get a Quote</span>
+                <span>{t('nav.getQuote')}</span>
               </Link>
 
               <button
@@ -336,12 +339,12 @@ export default function Navbar() {
               })}
               <div className="pt-2 pb-1">
                 <Link href="/contact" className="btn-primary w-full justify-center text-sm">
-                  <span>Get a Quote</span>
+                  <span>{t('nav.getQuote')}</span>
                 </Link>
               </div>
               {/* Footer hint */}
               <div className="pt-1 pb-2 font-mono text-[9px] text-white/20 text-center tracking-widest">
-                PROGREX // MISSION CONTROL v4
+                {t('nav.missionControl')}
               </div>
             </div>
           </motion.div>
