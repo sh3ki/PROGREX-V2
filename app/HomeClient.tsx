@@ -14,6 +14,7 @@ import TechMarqueeSection from '@/components/TechMarqueeSection'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
 import { services, systems, testimonials, faqs } from '@/lib/mockData'
 import IntroLoader from '@/components/IntroLoader'
+import { useTranslation } from '@/components/TranslationProvider'
 
 function CtaSelect({ value, onChange, options, placeholder }: {
   value: string
@@ -93,6 +94,7 @@ function CtaSelect({ value, onChange, options, placeholder }: {
 }
 
 export default function HomeClient() {
+  const { t, translations } = useTranslation()
   const [activeTestimonial, setActiveTestimonial] = useState(0)
   const [direction, setDirection] = useState(1)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
@@ -117,19 +119,15 @@ export default function HomeClient() {
     setCtaAttachedFile(file)
   }
 
-  const ctaServices = [
-    'Custom Software Development', 'Web Development', 'Mobile App Development',
-    'System Integration', 'Academic / Capstone System', 'IT Consulting',
-    'Ready-Made System', 'Other',
-  ]
+  const ctaServices = translations.form.ctaServices as unknown as string[]
 
   const handleCtaSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const errs: typeof ctaErrors = {}
-    if (!ctaForm.name.trim()) errs.name = 'Name is required'
-    if (!ctaForm.email.trim()) errs.email = 'Email is required'
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ctaForm.email)) errs.email = 'Invalid email'
-    if (!ctaForm.message.trim()) errs.message = 'Message is required'
+    if (!ctaForm.name.trim()) errs.name = t('form.nameRequired')
+    if (!ctaForm.email.trim()) errs.email = t('form.emailRequired')
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ctaForm.email)) errs.email = t('form.invalidEmail')
+    if (!ctaForm.message.trim()) errs.message = t('form.messageRequired')
     setCtaErrors(errs)
     if (Object.keys(errs).length > 0) return
     setCtaLoading(true)
@@ -151,7 +149,7 @@ export default function HomeClient() {
         body: JSON.stringify({ ...ctaForm, attachment }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to send')
+      if (!res.ok) throw new Error(data.error || t('form.failedToSend'))
       setCtaAttachedFile(null)
       setCtaSubmitted(true)
     } catch (err: unknown) {
@@ -190,14 +188,14 @@ export default function HomeClient() {
       <IntroLoader />
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <Hero
-        badge="Next-Gen Technology Solutions"
-        title="TECHNOLOGY SOLUTIONS"
-        highlight="THAT DRIVES SUCCESS."
+        badge={t('home.heroBadge')}
+        title={t('home.heroTitle')}
+        highlight={t('home.heroHighlight')}
         highlightNewLine
-        subtitleLabel="BUILD FASTER. SCALE SMARTER. WIN WITH PROGREX."
-        subtitle="We engineer custom software, web apps, mobile platforms, and enterprise systems that transform your business."
-        primaryBtn={{ label: 'Get a Quote', href: '/contact' }}
-        secondaryBtn={{ label: 'View Projects', href: '/projects' }}
+        subtitleLabel={t('home.heroSubtitleLabel')}
+        subtitle={t('home.heroSubtitle')}
+        primaryBtn={{ label: t('home.heroPrimaryBtn'), href: '/contact' }}
+        secondaryBtn={{ label: t('home.heroSecondaryBtn'), href: '/projects' }}
         showStats
       />
 
@@ -207,10 +205,10 @@ export default function HomeClient() {
         <div className="absolute inset-x-0 top-0 h-64 pointer-events-none" style={{ background: 'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(14,165,233,0.07) 0%, transparent 100%)' }} />
 
         <SectionHeader
-          badge="What We Build"
-          title="Comprehensive Technology"
-          highlight="Services"
-          subtitle="From custom software to enterprise systems — we deliver efficient solutions that scale with your ambitions."
+          badge={t('home.servicesBadge')}
+          title={t('home.servicesTitle')}
+          highlight={t('home.servicesHighlight')}
+          subtitle={t('home.servicesSubtitle')}
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -239,7 +237,7 @@ export default function HomeClient() {
             ))}
           </div>
           <Link href="/services" className="btn-outline inline-flex">
-            Explore All Services <ArrowRight size={16} />
+            {t('home.servicesExplore')} <ArrowRight size={16} />
           </Link>
         </motion.div>
       </SectionWrapper>
@@ -251,10 +249,10 @@ export default function HomeClient() {
         <div className="absolute inset-x-0 top-0 h-72 pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 40% at 50% 0%, rgba(124,58,237,0.07) 0%, transparent 100%)' }} />
 
         <SectionHeader
-          badge="Our Work"
-          title="Featured"
-          highlight="Projects"
-          subtitle="Real-world solutions with measurable impact that drive efficiency, growth, and lasting value. See what we’ve successfully built and delivered for our clients."
+          badge={t('home.projectsBadge')}
+          title={t('home.projectsTitle')}
+          highlight={t('home.projectsHighlight')}
+          subtitle={t('home.projectsSubtitle')}
         />
 
         <motion.div
@@ -274,7 +272,7 @@ export default function HomeClient() {
           className="text-center mt-10"
         >
           <Link href="/projects" className="btn-outline inline-flex">
-            View All Projects <ArrowRight size={16} />
+            {t('home.projectsViewAll')} <ArrowRight size={16} />
           </Link>
         </motion.div>
       </SectionWrapper>
@@ -284,10 +282,10 @@ export default function HomeClient() {
         {/* Ambient glow */}
         <div className="absolute inset-x-0 top-0 h-64 pointer-events-none" style={{ background: 'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(14,165,233,0.06) 0%, transparent 100%)' }} />
         <SectionHeader
-          badge="Ready-Made Systems"
-          title="Ready-Made"
-          highlight="Business Systems"
-          subtitle="Pre-built, production-ready software systems. Fully customizable to fit your needs and budget - deploy in days, not months."
+          badge={t('home.systemsBadge')}
+          title={t('home.systemsTitle')}
+          highlight={t('home.systemsHighlight')}
+          subtitle={t('home.systemsSubtitle')}
         />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {systems.map((sys, i) => (
@@ -371,7 +369,7 @@ export default function HomeClient() {
                     ))}
                   </ul>
                   <span className="inline-flex items-center gap-1.5 font-mono text-sm text-nebula-400 group-hover:text-nebula-200 transition-colors">
-                    Learn More <ArrowRight size={14} />
+                    {t('home.systemsLearnMore')} <ArrowRight size={14} />
                   </span>
                 </div>
               </Link>
@@ -385,7 +383,7 @@ export default function HomeClient() {
           className="text-center mt-10"
         >
           <Link href="/ready-made-systems" className="btn-primary inline-flex text-sm px-6 py-3">
-            <span>Browse All Systems</span> <ArrowRight size={16} />
+            <span>{t('home.systemsBrowseAll')}</span> <ArrowRight size={16} />
           </Link>
         </motion.div>
       </SectionWrapper>
@@ -393,10 +391,10 @@ export default function HomeClient() {
       {/* ── TECHNOLOGIES ─────────────────────────────────────────────────── */}
       <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="leo" side="left" offsetY="25%" />}>
         <SectionHeader
-          badge="Our Stack"
-          title="Technologies We"
-          highlight="Master"
-          subtitle="From programming languages to cloud platforms — the full stack we use to build scalable, high-performance solutions across web, mobile, and beyond."
+          badge={t('home.techBadge')}
+          title={t('home.techTitle')}
+          highlight={t('home.techHighlight')}
+          subtitle={t('home.techSubtitle')}
         />
         <TechMarqueeSection />
       </SectionWrapper>
@@ -409,10 +407,10 @@ export default function HomeClient() {
         <div className="pointer-events-none absolute right-[-10%] bottom-1/4 w-72 h-72 rounded-full" style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.07) 0%, transparent 70%)', filter: 'blur(40px)' }} />
 
         <SectionHeader
-          badge="Client Stories"
-          title="What Our Clients"
-          highlight="Say"
-          subtitle="Don't take our word for it — hear from the businesses we've transformed."
+          badge={t('home.testimonialsBadge')}
+          title={t('home.testimonialsTitle')}
+          highlight={t('home.testimonialsHighlight')}
+          subtitle={t('home.testimonialsSubtitle')}
         />
 
         <div className="max-w-3xl mx-auto">
@@ -464,21 +462,21 @@ export default function HomeClient() {
 
                 {/* Quote text */}
                 <p className="text-white/80 text-base sm:text-lg leading-relaxed mb-8 italic relative z-10">
-                  &ldquo;{testimonials[activeTestimonial].quote}&rdquo;
+                  &ldquo;{translations.data.testimonials[activeTestimonial]?.quote ?? testimonials[activeTestimonial].quote}&rdquo;
                 </p>
 
                 {/* Author row */}
                 <div className="flex items-center gap-4 relative z-10">
                   <div>
-                    <div className="font-bold text-white">{testimonials[activeTestimonial].name}</div>
-                    <div className="font-mono text-xs text-nebula-400/70 mt-0.5">{testimonials[activeTestimonial].role}</div>
+                    <div className="font-bold text-white">{translations.data.testimonials[activeTestimonial]?.name ?? testimonials[activeTestimonial].name}</div>
+                    <div className="font-mono text-xs text-nebula-400/70 mt-0.5">{translations.data.testimonials[activeTestimonial]?.role ?? testimonials[activeTestimonial].role}</div>
                   </div>
                   <div className="ml-auto shrink-0">
                     <span
                       className="font-mono text-[10px] px-3 py-1 rounded-full"
                       style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', color: '#a78bfa' }}
                     >
-                      {testimonials[activeTestimonial].company}
+                      {translations.data.testimonials[activeTestimonial]?.company ?? testimonials[activeTestimonial].company}
                     </span>
                   </div>
                 </div>
@@ -541,14 +539,17 @@ export default function HomeClient() {
         {/* Ambient glow */}
         <div className="absolute inset-x-0 top-0 h-64 pointer-events-none" style={{ background: 'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(124,58,237,0.08) 0%, transparent 100%)' }} />
         <SectionHeader
-          badge="Got Questions?"
-          title="Frequently Asked"
-          highlight="Questions"
-          subtitle="Everything you need to know before starting your project with PROGREX."
+          badge={t('home.faqsBadge')}
+          title={t('home.faqsTitle')}
+          highlight={t('home.faqsHighlight')}
+          subtitle={t('home.faqsSubtitle')}
         />
         <div className="max-w-3xl mx-auto space-y-3">
           {faqs.map((faq, i) => {
             const isOpen = openFaq === faq.id
+            const tFaq = translations.data.generalFaqs[i] as unknown as string[] | undefined
+            const question = tFaq?.[0] ?? faq.question
+            const answer = tFaq?.[1] ?? faq.answer
             return (
               <motion.div
                 key={faq.id}
@@ -569,7 +570,7 @@ export default function HomeClient() {
                   className="w-full flex items-center justify-between gap-4 px-6 py-5 text-left group"
                 >
                   <span className="font-semibold text-white text-sm sm:text-base group-hover:text-nebula-300 transition-colors">
-                    {faq.question}
+                    {question}
                   </span>
                   <span
                     className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300"
@@ -595,7 +596,7 @@ export default function HomeClient() {
                     >
                       <div className="px-6 pb-5">
                         <div className="h-px mb-4" style={{ background: 'linear-gradient(to right, rgba(14,165,233,0.2), rgba(124,58,237,0.15), transparent)' }} />
-                        <p className="text-slate-400 text-sm leading-relaxed">{faq.answer}</p>
+                        <p className="text-slate-400 text-sm leading-relaxed">{answer}</p>
                       </div>
                     </motion.div>
                   )}
@@ -611,10 +612,10 @@ export default function HomeClient() {
           transition={{ delay: 0.5 }}
           className="text-center mt-10"
         >
-          <p className="text-slate-500 text-sm mb-4">Still have questions?</p>
+          <p className="text-slate-500 text-sm mb-4">{t('home.faqsStillHave')}</p>
           <div className="flex items-center justify-center gap-3 flex-wrap">
             <Link href="/contact" className="btn-outline inline-flex">
-              Contact Us <ArrowRight size={16} />
+              {t('home.faqsContactUs')} <ArrowRight size={16} />
             </Link>
             <button
               onClick={() => document.dispatchEvent(new CustomEvent('open-chatbot'))}
@@ -622,7 +623,7 @@ export default function HomeClient() {
               style={{ background: 'rgba(103,232,249,0.07)', border: '1px solid rgba(103,232,249,0.22)' }}
             >
               <Bot size={15} />
-              Chat with our AI
+              {t('home.faqsChatAI')}
             </button>
           </div>
         </motion.div>
@@ -647,22 +648,22 @@ export default function HomeClient() {
               INITIATE MISSION
             </div>
             <h2 className="font-display font-black text-3xl sm:text-4xl lg:text-5xl text-white mb-5 leading-tight">
-              Ready to Build Something{' '}
-              <span className="text-gradient-nebula">Powerful?</span>
+              {t('home.ctaHeading')}{' '}
+              <span className="text-gradient-nebula">{t('home.ctaHighlight')}</span>
             </h2>
             <p className="text-white/50 text-base sm:text-lg leading-relaxed max-w-xl mx-auto mb-10">
-              Partner with PROGREX and transform your ideas into cutting-edge software solutions that drive real business results.
+              {t('home.ctaSubtitle')}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
                 <Link href="/contact" className="btn-primary text-base px-8 py-4">
-                  <span>Start Your Project</span>
+                  <span>{t('home.ctaPrimaryBtn')}</span>
                   <ArrowRight size={16} />
                 </Link>
               </motion.div>
               <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
                 <Link href="/projects" className="btn-outline text-base px-8 py-4">
-                  View Projects
+                  {t('home.ctaSecondaryBtn')}
                 </Link>
               </motion.div>
             </div>
@@ -671,7 +672,7 @@ export default function HomeClient() {
           {/* Divider */}
           <div className="flex items-center gap-4 mb-10">
             <div className="flex-1 h-px" style={{ background: 'linear-gradient(to right, transparent, rgba(103,232,249,0.2))' }} />
-            <span className="font-mono text-[11px] text-white/30 tracking-widest px-2">OR SEND A MESSAGE</span>
+            <span className="font-mono text-[11px] text-white/30 tracking-widest px-2">{t('home.ctaDivider')}</span>
             <div className="flex-1 h-px" style={{ background: 'linear-gradient(to left, transparent, rgba(103,232,249,0.2))' }} />
           </div>
 
@@ -702,7 +703,7 @@ export default function HomeClient() {
                   >
                     <CheckCircle size={26} className="text-white" />
                   </motion.div>
-                  <h3 className="text-xl font-bold text-white mb-2">Message Sent!</h3>
+                  <h3 className="text-xl font-bold text-white mb-2">{t('form.successTitle')}</h3>
                   <p className="text-slate-400 text-sm leading-relaxed mb-6">
                     Thanks, <strong className="text-white">{ctaForm.name}</strong>! We&apos;ll get back to you within 24 hours.
                   </p>
@@ -710,7 +711,7 @@ export default function HomeClient() {
                     onClick={() => { setCtaSubmitted(false); setCtaForm({ name: '', email: '', phone: '', company: '', service: '', budget: '', message: '' }); setCtaAttachedFile(null); setCtaServerError('') }}
                     className="btn-outline text-sm px-6 py-2.5 inline-flex"
                   >
-                    Send Another Message
+                    {t('form.sendAnother')}
                   </button>
                 </motion.div>
               ) : (
@@ -726,12 +727,12 @@ export default function HomeClient() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     {/* Name */}
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-1.5">Full Name <span className="text-nebula-400">*</span></label>
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('form.fullName')} <span className="text-nebula-400">{t('form.required')}</span></label>
                       <input
                         type="text"
                         value={ctaForm.name}
                         onChange={(e) => { setCtaForm((p) => ({ ...p, name: e.target.value })); setCtaErrors((p) => ({ ...p, name: undefined })) }}
-                        placeholder="Your name"
+                        placeholder={t('form.namePlaceholder')}
                         className="w-full px-4 py-2.5 rounded-xl bg-white/4 border text-white/90 text-sm placeholder-slate-500 focus:outline-none transition-all"
                         style={{ borderColor: ctaErrors.name ? 'rgba(239,68,68,0.6)' : 'rgba(103,232,249,0.15)', boxShadow: 'none' }}
                         onFocus={(e) => { if (!ctaErrors.name) e.currentTarget.style.borderColor = 'rgba(14,165,233,0.5)' }}
@@ -741,12 +742,12 @@ export default function HomeClient() {
                     </div>
                     {/* Email */}
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-1.5">Email Address <span className="text-nebula-400">*</span></label>
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('form.email')} <span className="text-nebula-400">{t('form.required')}</span></label>
                       <input
                         type="email"
                         value={ctaForm.email}
                         onChange={(e) => { setCtaForm((p) => ({ ...p, email: e.target.value })); setCtaErrors((p) => ({ ...p, email: undefined })) }}
-                        placeholder="you@company.com"
+                        placeholder={t('form.emailPlaceholder')}
                         className="w-full px-4 py-2.5 rounded-xl bg-white/4 border text-white/90 text-sm placeholder-slate-500 focus:outline-none transition-all"
                         style={{ borderColor: ctaErrors.email ? 'rgba(239,68,68,0.6)' : 'rgba(103,232,249,0.15)' }}
                         onFocus={(e) => { if (!ctaErrors.email) e.currentTarget.style.borderColor = 'rgba(14,165,233,0.5)' }}
@@ -756,12 +757,12 @@ export default function HomeClient() {
                     </div>
                     {/* Phone */}
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-1.5">Phone Number</label>
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('form.phone')}</label>
                       <input
                         type="tel"
                         value={ctaForm.phone}
                         onChange={(e) => setCtaForm((p) => ({ ...p, phone: e.target.value }))}
-                        placeholder="+63 912 345 6789"
+                        placeholder={t('form.phonePlaceholder')}
                         className="w-full px-4 py-2.5 rounded-xl bg-white/4 border text-white/90 text-sm placeholder-slate-500 focus:outline-none transition-all"
                         style={{ borderColor: 'rgba(103,232,249,0.15)' }}
                         onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(14,165,233,0.5)' }}
@@ -770,12 +771,12 @@ export default function HomeClient() {
                     </div>
                     {/* Company */}
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-1.5">Company / Organization</label>
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('form.company')}</label>
                       <input
                         type="text"
                         value={ctaForm.company}
                         onChange={(e) => setCtaForm((p) => ({ ...p, company: e.target.value }))}
-                        placeholder="Your company name"
+                        placeholder={t('form.companyPlaceholder')}
                         className="w-full px-4 py-2.5 rounded-xl bg-white/4 border text-white/90 text-sm placeholder-slate-500 focus:outline-none transition-all"
                         style={{ borderColor: 'rgba(103,232,249,0.15)' }}
                         onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(14,165,233,0.5)' }}
@@ -786,34 +787,34 @@ export default function HomeClient() {
 
                   {/* Service */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Service Needed</label>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('form.service')}</label>
                     <CtaSelect
                       value={ctaForm.service}
                       onChange={(v) => setCtaForm((p) => ({ ...p, service: v }))}
                       options={ctaServices}
-                      placeholder="Select a service..."
+                      placeholder={t('form.servicePlaceholder')}
                     />
                   </div>
 
                   {/* Budget Range */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Budget Range</label>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('form.budget')}</label>
                     <CtaSelect
                       value={ctaForm.budget}
                       onChange={(v) => setCtaForm((p) => ({ ...p, budget: v }))}
-                      options={['Below ₱10,000', '₱10,000 – ₱50,000', '₱50,000 – ₱150,000', '₱150,000 – ₱500,000', '₱500,000+', "Let's Discuss"]}
-                      placeholder="Select budget range..."
+                      options={translations.form.budgetOptions as unknown as string[]}
+                      placeholder={t('form.budgetPlaceholder')}
                     />
                   </div>
 
                   {/* Message */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Message <span className="text-nebula-400">*</span></label>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('form.message')} <span className="text-nebula-400">{t('form.required')}</span></label>
                     <textarea
                       value={ctaForm.message}
                       onChange={(e) => { setCtaForm((p) => ({ ...p, message: e.target.value })); setCtaErrors((p) => ({ ...p, message: undefined })) }}
                       rows={4}
-                      placeholder="Tell us about your project..."
+                      placeholder={t('form.messagePlaceholder')}
                       className="w-full px-4 py-2.5 rounded-xl bg-transparent border text-slate-200 text-sm placeholder-slate-500 focus:outline-none transition-all resize-none"
                       style={{ borderColor: ctaErrors.message ? 'rgba(239,68,68,0.6)' : 'rgba(103,232,249,0.15)' }}
                       onFocus={(e) => { if (!ctaErrors.message) e.currentTarget.style.borderColor = 'rgba(14,165,233,0.5)' }}
@@ -858,7 +859,7 @@ export default function HomeClient() {
                         <>
                           <Paperclip size={14} className="shrink-0" style={{ color: 'rgba(103,232,249,0.45)' }} />
                           <span className="text-slate-500 text-xs">
-                            {ctaDragOver ? 'Drop file here...' : 'Attach a file — click or drag & drop (max 3 MB)'}
+                            {ctaDragOver ? t('form.fileDrop') : t('form.fileAttach')}
                           </span>
                         </>
                       )}
@@ -877,7 +878,7 @@ export default function HomeClient() {
                     whileTap={{ scale: 0.98 }}
                     className="btn-primary w-full justify-center py-3.5 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <span>{ctaLoading ? 'Sending...' : 'Send Message'}</span>
+                    <span>{ctaLoading ? t('form.sending') : t('form.send')}</span>
                     {ctaLoading ? (
                       <motion.div
                         animate={{ rotate: 360 }}
