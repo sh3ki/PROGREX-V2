@@ -18,6 +18,7 @@ import type { LucideProps } from 'lucide-react'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
 import ConstellationDecor from '@/components/ConstellationDecor'
 import CTASection from '@/components/CTASection'
+import { useTranslation } from '@/components/TranslationProvider'
 
 type IconComponent = React.FC<LucideProps>
 
@@ -36,6 +37,7 @@ const ICON_MAP: Record<string, IconComponent> = {
 const STEP_ICONS: IconComponent[] = [Search, Map, Code2, CheckCircle, Rocket, TrendingUp]
 
 interface Service {
+  slug: string
   title: string
   shortDesc: string
   description: string
@@ -51,6 +53,27 @@ interface Service {
 
 export default function ServiceDetailClient({ service }: { service: Service }) {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
+  const { t, translations } = useTranslation()
+
+  /* ── translated service data ────────────────────────────── */
+  type SvcTrans = { title: string; description: string; process: string[][]; deliverables: string[]; idealFor: string[][]; highlights: string[][]; faqs: string[][] }
+  const svcRaw = (translations.data.services as unknown as Record<string, SvcTrans | undefined>)[service.slug]
+  const svcTitle = svcRaw?.title ?? service.title
+  const svcDesc = svcRaw?.description ?? service.description
+  const svcProcess = svcRaw?.process
+    ? svcRaw.process.map((p, i) => ({ step: i + 1, title: p[0], desc: p[1] }))
+    : service.process
+  const svcDeliverables = svcRaw?.deliverables ?? service.deliverables
+  const svcIdealFor = svcRaw?.idealFor
+    ? svcRaw.idealFor.map((item) => ({ title: item[0], desc: item[1] }))
+    : service.idealFor
+  const svcHighlights = svcRaw?.highlights
+    ? svcRaw.highlights.map((item, i) => ({ icon: service.highlights[i]?.icon ?? 'CheckCircle', label: item[0], desc: item[1] }))
+    : service.highlights
+  const svcFaqs = svcRaw?.faqs
+    ? svcRaw.faqs.map((item) => ({ q: item[0], a: item[1] }))
+    : service.faqs
+  const trustStats = translations.serviceDetail.trustStats as unknown as string[][]
 
   return (
     <>
@@ -68,17 +91,17 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
             transition={{ duration: 0.7 }}
           >
             <div className="eyebrow-badge mb-4 justify-center">
-              PROGREX Services
+              {t('serviceDetail.badge')}
             </div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-4 leading-tight">
-              {service.title}
+              {svcTitle}
             </h1>
             <p className="text-slate-300 text-lg leading-relaxed max-w-2xl mx-auto mb-8">
-              {service.description}
+              {svcDesc}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4 mb-10">
               <Link href="/contact" className="btn-primary inline-flex text-base">
-                <span>Request Proposal</span>
+                <span>{t('serviceDetail.requestProposal')}</span>
                 <ArrowRight size={16} />
               </Link>
               <Link
@@ -86,7 +109,7 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-base text-nebula-300 transition-all duration-200 hover:text-white"
                 style={{ border: '1px solid rgba(103,232,249,0.2)', background: 'rgba(14,165,233,0.06)' }}
               >
-                View Projects
+                {t('serviceDetail.viewProjects')}
               </Link>
             </div>
 
@@ -97,22 +120,17 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
               transition={{ duration: 0.6, delay: 0.35 }}
               className="flex flex-wrap justify-center gap-3"
             >
-              {[
-                { value: '52+', label: 'Projects Delivered' },
-                { value: 'NDA', label: 'Always Protected' },
-                { value: '100%', label: 'IP Ownership' },
-                { value: '30-Day', label: 'Bug-Fix Warranty' },
-              ].map((stat) => (
+              {trustStats.map((stat) => (
                 <div
-                  key={stat.label}
+                  key={stat[1]}
                   className="flex items-center gap-2.5 px-4 py-2 rounded-full"
                   style={{
                     background: 'rgba(14,165,233,0.08)',
                     border: '1px solid rgba(14,165,233,0.18)',
                   }}
                 >
-                  <span className="font-mono font-bold text-sm text-nebula-300">{stat.value}</span>
-                  <span className="text-slate-400 text-xs">{stat.label}</span>
+                  <span className="font-mono font-bold text-sm text-nebula-300">{stat[0]}</span>
+                  <span className="text-slate-400 text-xs">{stat[1]}</span>
                 </div>
               ))}
             </motion.div>
@@ -127,10 +145,10 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
       {/* Process — zigzag timeline */}
       <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="gemini" side="right" offsetY="15%" />}>
         <SectionHeader
-          badge="How We Work"
-          title="Our Proven"
-          highlight="Process"
-          subtitle="A structured, transparent process that delivers great results — every time."
+          badge={t('serviceDetail.processBadge')}
+          title={t('serviceDetail.processTitle')}
+          highlight={t('serviceDetail.processHighlight')}
+          subtitle={t('serviceDetail.processSubtitle')}
         />
 
         <div className="relative max-w-4xl mx-auto">
@@ -141,7 +159,7 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
           />
 
           <div className="space-y-10 sm:space-y-0">
-            {service.process.map((step, i) => {
+            {svcProcess.map((step, i) => {
               const Icon = STEP_ICONS[i % STEP_ICONS.length]
               const isEven = i % 2 === 0
               const stepLabel = String(step.step).padStart(2, '0')
@@ -238,13 +256,13 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
       {/* Key Deliverables */}
       <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="crux" side="left" offsetY="20%" />}>
         <SectionHeader
-          badge="What You Get"
-          title="Key"
-          highlight="Deliverables"
-          subtitle="Every engagement ends with tangible, documented assets you own completely."
+          badge={t('serviceDetail.deliverablesBadge')}
+          title={t('serviceDetail.deliverablesTitle')}
+          highlight={t('serviceDetail.deliverablesHighlight')}
+          subtitle={t('serviceDetail.deliverablesSubtitle')}
         />
         <div className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {service.deliverables.map((item, i) => (
+          {svcDeliverables.map((item, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 20 }}
@@ -292,13 +310,13 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
       {/* Best Suited For */}
       <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="leo" side="right" offsetY="20%" />}>
         <SectionHeader
-          badge="Ideal For"
-          title="Who This"
-          highlight="Service Fits"
-          subtitle="This service is tailored for teams and businesses with these specific needs."
+          badge={t('serviceDetail.idealForBadge')}
+          title={t('serviceDetail.idealForTitle')}
+          highlight={t('serviceDetail.idealForHighlight')}
+          subtitle={t('serviceDetail.idealForSubtitle')}
         />
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          {service.idealFor.map((item, i) => (
+          {svcIdealFor.map((item, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 24 }}
@@ -355,13 +373,13 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
       {/* Service Highlights */}
       <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="scorpius" side="left" offsetY="15%" />}>
         <SectionHeader
-          badge="Why Choose This"
-          title="Service"
-          highlight="Highlights"
-          subtitle="The defining strengths that set our delivery apart for this specific discipline."
+          badge={t('serviceDetail.highlightsBadge')}
+          title={t('serviceDetail.highlightsTitle')}
+          highlight={t('serviceDetail.highlightsHighlight')}
+          subtitle={t('serviceDetail.highlightsSubtitle')}
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {service.highlights.map((item, i) => {
+          {svcHighlights.map((item, i) => {
             const Icon = ICON_MAP[item.icon] ?? CheckCircle
             return (
               <motion.div
@@ -423,12 +441,12 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
       {/* FAQs */}
       <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="scorpius" side="right" offsetY="10%" />}>
         <SectionHeader
-          badge="Common Questions"
-          title="Frequently Asked"
-          highlight="Questions"
+          badge={t('serviceDetail.faqsBadge')}
+          title={t('serviceDetail.faqsTitle')}
+          highlight={t('serviceDetail.faqsHighlight')}
         />
         <div className="max-w-3xl mx-auto space-y-3">
-          {service.faqs.map((faq, i) => (
+          {svcFaqs.map((faq, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 20 }}
@@ -466,10 +484,10 @@ export default function ServiceDetailClient({ service }: { service: Service }) {
       </SectionWrapper>
 
       <CTASection
-        title="Ready to Get Started?"
-        subtitle={`Let's discuss your ${service.title.toLowerCase()} project and craft a solution that exceeds your expectations.`}
-        primaryBtn={{ label: 'Request Proposal', href: '/contact' }}
-        secondaryBtn={{ label: 'View Projects', href: '/projects' }}
+        title={t('serviceDetail.ctaTitle')}
+        subtitle={`Let's discuss your ${svcTitle.toLowerCase()} project and craft a solution that exceeds your expectations.`}
+        primaryBtn={{ label: t('serviceDetail.ctaPrimaryBtn'), href: '/contact' }}
+        secondaryBtn={{ label: t('serviceDetail.ctaSecondaryBtn'), href: '/projects' }}
       />
     </>
   )
