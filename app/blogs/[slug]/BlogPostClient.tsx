@@ -8,6 +8,7 @@ import BlogCard from '@/components/BlogCard'
 import ConstellationDecor from '@/components/ConstellationDecor'
 import CTASection from '@/components/CTASection'
 import SectionWrapper from '@/components/SectionWrapper'
+import { useTranslation } from '@/components/TranslationProvider'
 
 interface BlogPost {
   title: string
@@ -92,6 +93,7 @@ function HeroBanner({ image, title, category }: { image: string; title: string; 
 }
 
 export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost; relatedPosts: RelatedPost[] }) {
+  const { t } = useTranslation()
   const cs = categoryStyle[blog.category] ?? categoryStyle.Default
 
   return (
@@ -112,7 +114,7 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
               className="inline-flex items-center gap-2 font-mono text-xs text-white/35 hover:text-nebula-300 transition-colors mb-2 group"
             >
               <ArrowLeft size={13} className="group-hover:-translate-x-0.5 transition-transform" />
-              ../blogs
+              {t('blogPost.backLink')}
             </Link>
           </motion.div>
 
@@ -190,7 +192,7 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
 
             {/* Share */}
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-white/25 text-[10px] font-mono uppercase tracking-widest">{'// share'}</span>
+              <span className="text-white/25 text-[10px] font-mono uppercase tracking-widest">{t('blogPost.shareLabel')}</span>
               {[
                 { icon: <Twitter size={13} />, href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(blog.title)}` },
                 { icon: <Linkedin size={13} />, href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://progrex.dev/blogs/${blog.slug}`)}` },
@@ -240,7 +242,7 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
           {/* Section divider */}
           <div className="flex items-center gap-4 mb-9">
             <div className="flex-1 h-px" style={{ background: `linear-gradient(to right, ${cs.text}33, transparent)` }} />
-            <span className="font-mono text-[10px] tracking-widest" style={{ color: cs.text + '60' }}>{'// article_content'}</span>
+            <span className="font-mono text-[10px] tracking-widest" style={{ color: cs.text + '60' }}>{t('blogPost.contentLabel')}</span>
             <div className="flex-1 h-px" style={{ background: `linear-gradient(to left, ${cs.text}33, transparent)` }} />
           </div>
 
@@ -261,7 +263,7 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
 
           {/* Bottom tag row */}
           <div className="mt-12 pt-2  flex flex-wrap gap-2 items-center">
-            <span className="font-mono text-[10px] text-white/25 mr-2">{'// tags'}</span>
+            <span className="font-mono text-[10px] text-white/25 mr-2">{t('blogPost.tagsLabel')}</span>
             {blog.tags.map((tag) => (
               <span
                 key={tag}
@@ -307,7 +309,7 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
               <div className="font-bold text-white text-base mb-0.5">{blog.author.name}</div>
               <div className="font-mono text-xs mb-2" style={{ color: cs.text }}>{blog.author.role}</div>
               <div className="text-white/35 text-xs leading-relaxed">
-                Expert contributor at PROGREX. Building and writing about technology that drives real business results.
+                {t('blogPost.authorDesc')}
               </div>
             </div>
           </motion.div>
@@ -322,7 +324,7 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
           <div className="flex items-center gap-4 mb-8">
             <div className="h-px flex-1" style={{ background: `linear-gradient(to right, ${cs.text}33, transparent)` }} />
             <span className="font-mono text-[11px] tracking-widest uppercase" style={{ color: cs.text + '70' }}>
-              {'// related_articles'}
+              {t('blogPost.relatedLabel')}
             </span>
             <div className="h-px flex-1" style={{ background: `linear-gradient(to left, ${cs.text}33, transparent)` }} />
           </div>
@@ -348,10 +350,10 @@ export default function BlogPostClient({ blog, relatedPosts }: { blog: BlogPost;
       )}
 
       <CTASection
-        title="Enjoyed the Article?"
-        subtitle="See how PROGREX puts these ideas into practice — for your business."
-        primaryBtn={{ label: 'Work With Us', href: '/contact' }}
-        secondaryBtn={{ label: 'More Articles', href: '/blogs' }}
+        title={t('blogPost.ctaTitle')}
+        subtitle={t('blogPost.ctaSubtitle')}
+        primaryBtn={{ label: t('blogPost.ctaPrimaryBtn'), href: '/contact' }}
+        secondaryBtn={{ label: t('blogPost.ctaSecondaryBtn'), href: '/blogs' }}
       />
     </>
   )
