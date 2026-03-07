@@ -82,8 +82,8 @@ export default function RootLayout({
           <Navbar />
           <main>{children}</main>
           <Footer />
+          <Chatbot />
         </TranslationProvider>
-        <Chatbot />
       </body>
     </html>
   )
