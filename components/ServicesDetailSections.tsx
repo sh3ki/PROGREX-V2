@@ -1,7 +1,9 @@
 'use client'
 
+import React from 'react'
 import { motion } from 'framer-motion'
 import { CheckCircle, TrendingUp, Clock, Shield, DollarSign, Layers, Code2, Cloud, Eye, Cpu, Plug, Gauge, BadgeCheck, FileCheck, TimerReset, Lock, RefreshCw } from 'lucide-react'
+import { useTranslation } from '@/components/TranslationProvider'
 
 // ── Shared circuit texture style ──────────────────────────────────────────────
 const circuitBg: React.CSSProperties = {
@@ -13,50 +15,16 @@ const circuitBg: React.CSSProperties = {
 // ── 1. Outcomes We Deliver ────────────────────────────────────────────────────
 const ACCENT = '#0EA5E9'
 
-const OUTCOMES = [
-  {
-    icon: TrendingUp,
-    value: '40%+',
-    label: 'Efficiency Gains',
-    desc: 'Clients see measurable productivity improvements within the first quarter post-launch, through automation and optimized workflows.',
-  },
-  {
-    icon: Clock,
-    value: '2–4×',
-    label: 'Faster Delivery',
-    desc: 'Agile sprints, CI/CD pipelines, and reusable component libraries cut your time-to-market dramatically compared to traditional approaches.',
-  },
-  {
-    icon: Gauge,
-    value: '99.9%',
-    label: 'Uptime SLA',
-    desc: 'Production systems engineered for reliability — redundant infrastructure, automated failover, and proactive monitoring keep you online.',
-  },
-  {
-    icon: DollarSign,
-    value: 'Real',
-    label: 'Revenue Impact',
-    desc: 'Software built to drive conversion, reduce churn, and generate recurring revenue — not just check feature boxes on a requirements list.',
-  },
-  {
-    icon: Layers,
-    value: '10×',
-    label: 'Scale-Ready',
-    desc: 'Architecture designed from day one to handle 10x growth without costly rewrites, painful migrations, or emergency refactors.',
-  },
-  {
-    icon: Code2,
-    value: 'Zero',
-    label: 'Legacy Debt',
-    desc: 'Clean, documented, and maintainable code with automated test coverage — no shortcuts, no unexplained hacks, no future headaches.',
-  },
-]
+const OUTCOME_ICONS = [TrendingUp, Clock, Gauge, DollarSign, Layers, Code2]
 
 export function OutcomesSection() {
+  const { translations } = useTranslation()
+  const rawOutcomes = translations.outcomes as unknown as string[][]
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-      {OUTCOMES.map((item, i) => {
-        const Icon = item.icon
+      {rawOutcomes.map((item, i) => {
+        const Icon = OUTCOME_ICONS[i] ?? Code2
+        const [value, label, desc] = item
         return (
           <motion.div
             key={i}
@@ -93,13 +61,13 @@ export function OutcomesSection() {
                 <span
                   className="font-display font-black text-2xl text-nebula-300"
                 >
-                  {item.value}
+                  {value}
                 </span>
               </div>
               <h3 className="font-bold text-white text-base mb-2 group-hover:text-nebula-200 transition-colors">
-                {item.label}
+                {label}
               </h3>
-              <p className="text-slate-400 text-sm leading-relaxed">{item.desc}</p>
+              <p className="text-slate-400 text-sm leading-relaxed">{desc}</p>
             </div>
           </motion.div>
         )
@@ -109,22 +77,16 @@ export function OutcomesSection() {
 }
 
 // ── 2. Quality & Security Standards ──────────────────────────────────────────
-const STANDARDS = [
-  { icon: Shield,      label: 'OWASP Top 10',           desc: 'Every application is hardened against the ten most critical web security risks before deployment.' },
-  { icon: Lock,        label: 'OAuth 2.0 & JWT Auth',   desc: 'Secure, stateless authentication and authorization flows on every system we build.' },
-  { icon: FileCheck,   label: 'GDPR & Privacy Ready',   desc: 'Data collection policies, consent flows, and deletion mechanisms aligned with global privacy standards.' },
-  { icon: BadgeCheck,  label: 'SSL/TLS Encryption',     desc: 'All data in transit is encrypted end-to-end with modern TLS protocols and certificate management.' },
-  { icon: RefreshCw,   label: 'CI/CD Gated Releases',   desc: 'Automated test pipelines block any deployment that breaks existing functionality or coverage thresholds.' },
-  { icon: Eye,         label: 'Code Review Policy',     desc: 'Every code change is peer-reviewed by a senior engineer before merging — no solo cowboy commits.' },
-  { icon: TimerReset,  label: 'Automated Test Coverage',desc: 'Unit, integration, and end-to-end tests run on every build, ensuring regressions are caught immediately.' },
-  { icon: Cpu,         label: 'Dependency Scanning',    desc: "Continuous vulnerability scanning of all third-party packages keeps your supply chain risk-free." },
-]
+const STANDARD_ICONS = [Shield, Lock, FileCheck, BadgeCheck, RefreshCw, Eye, TimerReset, Cpu]
 
 export function QualitySection() {
+  const { translations } = useTranslation()
+  const rawStandards = translations.qualityStandards as unknown as string[][]
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {STANDARDS.map((item, i) => {
-        const Icon = item.icon
+      {rawStandards.map((item, i) => {
+        const Icon = STANDARD_ICONS[i] ?? Shield
+        const [label, desc] = item
         return (
           <motion.div
             key={i}
@@ -153,8 +115,8 @@ export function QualitySection() {
               >
                 <Icon size={18} className="text-nebula-400" />
               </div>
-              <h3 className="text-white font-semibold text-sm mb-1.5 group-hover:text-nebula-200 transition-colors">{item.label}</h3>
-              <p className="text-slate-500 text-xs leading-relaxed group-hover:text-slate-400 transition-colors">{item.desc}</p>
+              <h3 className="text-white font-semibold text-sm mb-1.5 group-hover:text-nebula-200 transition-colors">{label}</h3>
+              <p className="text-slate-500 text-xs leading-relaxed group-hover:text-slate-400 transition-colors">{desc}</p>
             </div>
           </motion.div>
         )
@@ -164,42 +126,16 @@ export function QualitySection() {
 }
 
 // ── 3. What Makes Our Architecture Different ──────────────────────────────────
-const ARCH_ITEMS = [
-  {
-    icon: Plug,
-    title: 'API-First Design',
-    subtitle: 'Integration by default',
-    desc: 'Every system we build exposes clean, versioned REST or GraphQL APIs from day one — making future integrations, mobile clients, and third-party connections straightforward, not painful.',
-    tag: '// ARCH_01',
-  },
-  {
-    icon: Cloud,
-    title: 'Cloud-Native by Default',
-    subtitle: 'Containerized & auto-scaling',
-    desc: 'Applications are containerized with Docker, orchestrated with Kubernetes or managed cloud services, and deployed with infrastructure-as-code — so scaling is a config change, not a crisis.',
-    tag: '// ARCH_02',
-  },
-  {
-    icon: Layers,
-    title: 'Microservices-Ready',
-    subtitle: 'Modular from the ground up',
-    desc: "We build with clear domain boundaries so systems can start as a monolith and split into microservices as you scale — without architectural rewrites or disruption to existing services.",
-    tag: '// ARCH_03',
-  },
-  {
-    icon: Eye,
-    title: 'Observability Built In',
-    subtitle: 'Logs, traces & metrics',
-    desc: "From day one, every service emits structured logs, distributed traces, and performance metrics — giving your team full visibility into what's happening in production at any time.",
-    tag: '// ARCH_04',
-  },
-]
+const ARCH_ICONS = [Plug, Cloud, Layers, Eye]
 
 export function ArchitectureSection() {
+  const { translations } = useTranslation()
+  const rawArch = translations.architecture as unknown as string[][]
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-      {ARCH_ITEMS.map((item, i) => {
-        const Icon = item.icon
+      {rawArch.map((item, i) => {
+        const Icon = ARCH_ICONS[i] ?? Plug
+        const [tag, title, subtitle, desc] = item
         return (
           <motion.div
             key={i}
@@ -230,11 +166,11 @@ export function ArchitectureSection() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="font-mono text-[10px] tracking-widest text-nebula-500/60">{item.tag}</span>
+                  <span className="font-mono text-[10px] tracking-widest text-nebula-500/60">{tag}</span>
                 </div>
-                <h3 className="text-white font-bold text-base mb-0.5 group-hover:text-nebula-200 transition-colors">{item.title}</h3>
-                <p className="font-mono text-[11px] mb-2 text-nebula-400/70">{item.subtitle}</p>
-                <p className="text-slate-400 text-sm leading-relaxed">{item.desc}</p>
+                <h3 className="text-white font-bold text-base mb-0.5 group-hover:text-nebula-200 transition-colors">{title}</h3>
+                <p className="font-mono text-[11px] mb-2 text-nebula-400/70">{subtitle}</p>
+                <p className="text-slate-400 text-sm leading-relaxed">{desc}</p>
               </div>
             </div>
           </motion.div>
@@ -245,57 +181,42 @@ export function ArchitectureSection() {
 }
 
 // ── 4. Service Guarantees  ────────────────────────────────────────────────────
-const GUARANTEES = [
-  'Fixed-price contracts — no surprise invoices, ever',
-  'Source code ownership fully transferred on final payment',
-  'Post-launch bug-fix warranty included on all deliverables',
-  'Weekly progress reports and transparent communication',
-  'NDA signed before every project discussion',
-  'Dedicated project manager on all engagements',
-  'Free 30-minute consultation — no strings attached',
-  'Milestone-based delivery with clear, agreed checkpoints',
-  'No scope creep — change requests handled transparently',
-  'Real in-house developers — no outsourcing or hand-offs',
-  'Direct Slack or Discord access to your engineering team',
-  'Long-term partnership mindset — we grow with your business',
-]
-
 export function GuaranteesSection() {
+  const { translations } = useTranslation()
+  const g = translations.guarantees as unknown as {
+    badge: string; heading: string; headingHighlight: string; body: string;
+    stats: string[][]; items: string[];
+  }
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
       {/* Left — heading */}
       <div>
         <div className="eyebrow-badge mb-4">
           <span className="w-1.5 h-1.5 rounded-full bg-nebula-500 animate-pulse" />
-          Our Commitment
+          {g.badge}
         </div>
         <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-5 leading-tight">
-          Promises We Keep — <span className="text-gradient-nebula">Every Single Time</span>
+          {g.heading} <span className="text-gradient-nebula">{g.headingHighlight}</span>
         </h2>
         <p className="text-slate-400 leading-relaxed mb-6">
-          We operate on a simple principle: say what you&apos;ll do, then do what you say. These guarantees aren&apos;t marketing copy — they are commitments enforced on every engagement we take on.
+          {g.body}
         </p>
         <div className="flex items-center gap-4">
-          <div className="text-center">
-            <div className="font-display font-black text-3xl text-nebula-300">100%</div>
-            <div className="font-mono text-[10px] text-white/40 uppercase tracking-widest mt-0.5">IP Transferred</div>
-          </div>
-          <div className="w-px h-10 bg-nebula-700/30" />
-          <div className="text-center">
-            <div className="font-display font-black text-3xl text-nebula-300">38+</div>
-            <div className="font-mono text-[10px] text-white/40 uppercase tracking-widest mt-0.5">Happy Clients</div>
-          </div>
-          <div className="w-px h-10 bg-nebula-700/30" />
-          <div className="text-center">
-            <div className="font-display font-black text-3xl text-nebula-300">4+</div>
-            <div className="font-mono text-[10px] text-white/40 uppercase tracking-widest mt-0.5">Years Running</div>
-          </div>
+          {g.stats.map((stat, i) => (
+            <React.Fragment key={i}>
+              {i > 0 && <div className="w-px h-10 bg-nebula-700/30" />}
+              <div className="text-center">
+                <div className="font-display font-black text-3xl text-nebula-300">{stat[0]}</div>
+                <div className="font-mono text-[10px] text-white/40 uppercase tracking-widest mt-0.5">{stat[1]}</div>
+              </div>
+            </React.Fragment>
+          ))}
         </div>
       </div>
 
       {/* Right — checklist */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-        {GUARANTEES.map((item, i) => (
+        {g.items.map((item, i) => (
           <motion.div
             key={i}
             initial={{ opacity: 0, x: 20 }}
@@ -314,33 +235,13 @@ export function GuaranteesSection() {
 }
 
 // ── Approach Cards ────────────────────────────────────────────────────────────
-const APPROACH_CARDS = [
-  {
-    title: 'Goal-Oriented',
-    desc: 'We align every technical decision with your business objectives, ensuring every sprint moves the needle on what actually matters.',
-    tag: '// APR_01',
-  },
-  {
-    title: 'Agile Delivery',
-    desc: 'Weekly sprints with working demos, real feedback loops, and transparent roadmaps — iterating fast without losing sight of quality.',
-    tag: '// APR_02',
-  },
-  {
-    title: 'Secure by Design',
-    desc: 'Security best practices are baked into every layer from day one — not patched in as an afterthought before launch.',
-    tag: '// APR_03',
-  },
-  {
-    title: 'Scalable First',
-    desc: 'Architecture decisions made today should never block growth tomorrow. We engineer for 10× from the very first PR.',
-    tag: '// APR_04',
-  },
-]
-
 export function ApproachCards() {
+  const { translations } = useTranslation()
+  const rawApproach = translations.approach as unknown as string[][]
   return (
     <div className="grid grid-cols-2 gap-4">
-      {APPROACH_CARDS.map((item, i) => {
+      {rawApproach.map((item, i) => {
+        const [tag, title, desc] = item
         return (
           <motion.div
             key={i}
@@ -365,9 +266,9 @@ export function ApproachCards() {
               style={{ background: `linear-gradient(to right, transparent, ${ACCENT}cc, transparent)` }}
             />
             <div className="relative p-5">
-              <span className="font-mono text-[9px] tracking-widest block mb-3 text-nebula-500/60">{item.tag}</span>
-              <h3 className="text-sm font-bold text-white mb-1.5 group-hover:text-nebula-200 transition-colors">{item.title}</h3>
-              <p className="text-xs text-white/45 leading-relaxed group-hover:text-white/65 transition-colors">{item.desc}</p>
+              <span className="font-mono text-[9px] tracking-widest block mb-3 text-nebula-500/60">{tag}</span>
+              <h3 className="text-sm font-bold text-white mb-1.5 group-hover:text-nebula-200 transition-colors">{title}</h3>
+              <p className="text-xs text-white/45 leading-relaxed group-hover:text-white/65 transition-colors">{desc}</p>
             </div>
           </motion.div>
         )
