@@ -1,4 +1,4 @@
-// PROGREX — Dutch (nl) Translation File
+﻿// PROGREX — Dutch (nl) Translation File
 const nl = {
   nav: {
     home: 'Startpagina',
@@ -436,6 +436,293 @@ const nl = {
     ['Ondertekent u NDA\'s voor projectbesprekingen?', 'Altijd. We ondertekenen een wederzijdse NDA voor elke gedetailleerde projectbespreking.'],
     ['Hoe werken prijzen en facturering?', 'We bieden vaste-prijs projectfacturering voor goed gedefinieerde scopes, en tijd-en-materialen facturering voor agile projecten.'],
   ],
+
+
+  // ─── DATA: SERVICES ────────────────────────────────────────────────────
+  data: {
+    services: {
+      'custom-software-development': {
+        title: 'Maatwerksoftware Ontwikkeling',
+        shortDesc: 'Op maat gemaakte softwareoplossingen ontworpen om uw unieke zakelijke uitdagingen op elke schaal op te lossen. Van startup-MVP\'s tot enterprise-systemen — wij zetten uw visie om in schone, onderhoudbare en productieklare code.',
+        description: 'Wij ontwerpen, ontwikkelen en implementeren maatwerksoftwareoplossingen die perfect aansluiten op uw bedrijfsprocessen. Van enterprise resource planning tot gespecialiseerde tools — wij brengen uw visie tot leven met schone, schaalbare code.',
+        process: [['Ontdekking & Analyse', 'Wij duiken diep in uw vereisten, processen en doelstellingen.'], ['Systeemontwerp', 'Architectuurplanning, databaseschema en tech-stack-selectie.'], ['Agile Ontwikkeling', 'Iteratieve sprints met regelmatige demo\'s en feedbackrondes.'], ['QA & Testen', 'Uitgebreide unit-, integratie- en prestatietests.'], ['Implementatie', 'CI/CD-pijplijnopzet en productie-implementatie.'], ['Onderhoud', 'Doorlopende ondersteuning, updates en functieverbeteringen.']],
+        deliverables: ['Volledige broncode met inline documentatie', 'Databaseschema, ERD & data dictionary', 'REST / GraphQL API-documentatie', 'CI/CD-pijplijnconfiguratie', 'Productie-implementatie & omgevingsopzet', 'Bugfixes na lancering (30 dagen garantie)'],
+        idealFor: [['Startups & MKB', 'Een nieuw product of interne tool bouwen vanaf de basis met een betrouwbare technische partner.'], ['Enterprise Teams', 'Legacy-systemen moderniseren of bedrijfskritische functionaliteiten uitbreiden zonder de bedrijfsvoering te verstoren.'], ['Productbedrijven', 'Kernmodules opschalen of herbouwen met schone, onderhoudbare, productieklare code.']],
+        highlights: [['Full-Stack Levering', 'Frontend, backend, database en DevOps — allemaal ontworpen en gebouwd onder één dak.'], ['IP-eigendom', 'U bezit 100% van de broncode en al het intellectueel eigendom na projectoplevering.'], ['Agile Proces', 'Wekelijkse sprints, demo\'s en gestructureerde feedbackrondes geven u volledige controle.'], ['Ondersteuning na Lancering', '30 dagen gratis bugfix-garantie en optionele langetermijn onderhoudscontracten.']],
+        faqs: [['Hoeveel kost maatwerksoftware?', 'De prijs hangt af van scope en complexiteit. Eenvoudige interne tools beginnen doorgaans bij ₱50.000–₱120.000, terwijl volledige enterprise-platforms variëren van ₱300.000 tot ₱2.000.000+. Na de ontdekkingsfase geven wij een gedetailleerde projectschatting.'], ['Hoe lang duurt een maatwerkproject?', 'Tijdlijnen variëren per complexiteit — doorgaans 3–12 maanden voor enterprise-projecten, 4–8 weken voor kleinere interne tools.'], ['Ondertekent u NDA\'s?', 'Absoluut. Wij ondertekenen een NDA vóór elke projectbespreking om uw idee en bedrijfsgegevens te beschermen.'], ['Ben ik eigenaar van de broncode?', 'Ja. Na volledige betaling zijn alle intellectuele eigendomsrechten en broncode volledig van u.']],
+      },
+      'web-development': {
+        title: 'Webontwikkeling',
+        shortDesc: 'High-performance, visueel verbluffende websites en webapps gebouwd voor conversie en schaalbaarheid. Onze engineers bouwen pixel-perfecte UI\'s met solide API\'s, consistent snelle laadtijden, naadloze gebruikerservaringen en schaalbare architecturen ontworpen om meetbare resultaten te leveren.',
+        description: 'Van bedrijfswebsites tot complexe SaaS-platforms: wij bouwen snelle, toegankelijke en SEO-geoptimaliseerde webervaringen. Onze front-end engineers creëren pixel-perfecte UI\'s, terwijl onze back-end experts zorgen voor betrouwbare API\'s.',
+        process: [['Strategie & Wireframing', 'Gebruikersstromen, sitemap en wireframe-ontwerp.'], ['UI/UX-ontwerp', 'High-fidelity mockups met uw merksysteem.'], ['Front-end Ontwikkeling', 'React/Next.js aangedreven met Tailwind CSS.'], ['Back-end & API\'s', 'RESTful of GraphQL API\'s met beveiligde authenticatie.'], ['Prestatieoptimalisatie', 'Core Web Vitals afstemming, lazy loading, CDN.'], ['Lancering & SEO', 'Productie-implementatie met SEO en analytics-opzet.']],
+        deliverables: ['Responsieve, pixel-perfecte webapp of website', 'CMS of admin-dashboard (indien van toepassing)', 'SEO-geoptimaliseerde paginastructuur en meta-opzet', 'Analytics-integratie (GA4 / Plausible)', 'Op prestatie afgestemde productiebuild', 'Hosting-, domein- en DNS-configuratie'],
+        idealFor: [['Bedrijven & Merken', 'Een high-converting, professionele online aanwezigheid nodig die uw merk authentiek weerspiegelt.'], ['SaaS-oprichters', 'Een webplatform bouwen met abonnementen, gebruikersdashboards en API-integraties van derden.'], ['E-commerce Operators', 'Een online winkel lanceren of upgraden met moderne UX, geoptimaliseerde checkout en betaalstromen.']],
+        highlights: [['Prestatie Eerst', 'Core Web Vitals geoptimaliseerd — Lighthouse-scores boven 90 voor prestatie, SEO en toegankelijkheid.'], ['SEO-klaar', 'Gestructureerde data, semantische HTML en meta-architectuur van de eerste pagina af ingebouwd.'], ['Mobile-First Ontwerp', 'Elke interface is ontworpen en grondig getest op mobiel, tablet en desktop.'], ['Standaard Beveiligd', 'HTTPS, invoervalidatie, rate limiting en beveiligde authenticatie bij elk project.']],
+        faqs: [['Hoeveel kost een website?', 'De prijs varieert afhankelijk van complexiteit. Een eenvoudige landingspagina begint rond ₱15.000–₱40.000, een bedrijfswebsite met CMS kost doorgaans ₱50.000–₱150.000, en volledige webapplicaties of SaaS-platforms beginnen bij ₱200.000 en hoger. Wij geven een vaste offerte voor aanvang.'], ['Is de website mobielvriendelijk?', 'Elke site die wij bouwen is mobile-first en grondig getest op telefoons, tablets en desktops.'], ['Biedt u hosting aan?', 'Wij kunnen hosting opzetten en beheren op Vercel, AWS of uw voorkeursaanbieder — bij de meeste projectpakketten inbegrepen.'], ['Kunt u mijn bestaande site opnieuw ontwerpen?', 'Ja. Wij bieden volledige herontwerpen en UX-overhauls met zorgvuldig behoud van uw bestaande SEO-waarde.']],
+      },
+      'mobile-app-development': {
+        title: 'Mobiele App-ontwikkeling',
+        shortDesc: 'Native en cross-platform mobiele apps die uitzonderlijke gebruikerservaringen bieden op iOS en Android. Gebouwd met React Native of Flutter — elke app is ontworpen voor betrokkenheid, retentie en langetermijngroei.',
+        description: 'Wij bouwen iOS- en Android-applicaties met React Native en Flutter voor cross-platform efficiëntie, of Swift/Kotlin voor native prestaties. Elke app is ontworpen voor betrokkenheid, retentie en schaalbaarheid.',
+        process: [['Markt- & Gebruikersonderzoek', 'Concurrentieanalyse en persona-definitie.'], ['UX-prototyping', 'Interactieve prototypes voor validatie van gebruikersstromen.'], ['App-ontwikkeling', 'React Native of Flutter cross-platform ontwikkeling.'], ['Backend-integratie', 'API-integratie, pushmeldingen, offline synchronisatie.'], ['App Store-indiening', 'iOS App Store en Google Play implementatie.'], ['Analytics & Updates', 'Crashrapportage, analytics en iteratieve updates.']],
+        deliverables: ['Gepubliceerde iOS- & Android-app (App Store + Google Play)', 'App Store-vermeldingsitems & screenshots', 'Pushmeldingen opzet & configuratie', 'Analytics & crashrapportage-integratie', 'API-backend documentatie', 'Ondersteuning na indiening (14 dagen)'],
+        idealFor: [['Consumentenproduct Startups', 'Een mobiel-eerst product lanceren gericht op eindgebruikers op zowel iOS als Android.'], ['Bedrijven met Buitendienstteams', 'Offline-capabele, GPS-bewuste of hardware-verbonden mobiele tools nodig voor personeel in het veld.'], ['SaaS-bedrijven', 'Een gepolijste mobiele client toevoegen naast een bestaand webplatform of backend-API.']],
+        highlights: [['Cross-Platform Efficiëntie', 'React Native & Flutter leveren native-kwaliteit UX tegen een fractie van de kosten van twee native builds.'], ['Offline Ondersteuning', 'Lokale opslag, synchronisatiewachtrijen en conflictresolutie voor robuuste offline-first apps.'], ['Pushmeldingen', 'Gerichte campagnes, transactionele meldingen en geplande herinneringen vanaf het begin ingebouwd.'], ['Ingebouwde Analytics', 'Eventtracking, conversietrechters en retentiemetrics vanaf dag één geïnstrumenteerd.']],
+        faqs: [['Hoeveel kost een mobiele app?', 'De kosten hangen sterk af van functies en platform. Een eenvoudige cross-platform app begint doorgaans bij ₱80.000–₱200.000, terwijl apps met eigen backends, realtime functies of complexe workflows variëren van ₱300.000 tot ₱1.000.000+.'], ['Cross-platform of native?', 'Wij raden cross-platform (React Native/Flutter) aan voor de meeste projecten — het levert bijna-native prestaties tegen aanzienlijk lagere kosten.'], ['Verzorgt u App Store-indieningen?', 'Ja — wij beheren het volledige indiening- en beoordelingsproces voor zowel de Apple App Store als Google Play Store.']],
+      },
+      'system-integration': {
+        title: 'Systeemintegratie',
+        shortDesc: 'Verbind uw bestaande systemen, API\'s en platformen van derden naadloos voor geïntegreerde, geautomatiseerde bedrijfsvoering. Wij elimineren datasilo\'s en verbinden ERP\'s, CRM\'s, betaalgateways en legacysystemen tot één ecosysteem.',
+        description: 'Doorbreek datasilo\'s en bereik operationele efficiëntie door verspreide systemen te integreren. Wij verbinden ERP\'s, CRM\'s, betaalgateways, API\'s van derden en legacysystemen tot een geïntegreerd, geautomatiseerd ecosysteem.',
+        process: [['Systeemaudit', 'Alle bestaande systemen, datastromen en integratiepunten in kaart brengen.'], ['Integratie-ontwerp', 'API-contracten, middleware en datatransformatieregels definiëren.'], ['Ontwikkeling', 'Connectors, webhooks en middlewarediensten bouwen.'], ['Testen', 'End-to-end integratie- en data-integriteitstesten.'], ['Implementatie', 'Zero-downtime implementatie met rollback-strategieën.'], ['Monitoring', 'Realtime monitoring, alerts en foutafhandeling.']],
+        deliverables: ['Integratiearchitectuur & datastroomdocument', 'Aangepaste API-connectors & middleware', 'Datatransformatie- en mappingregels', 'Foutafhandeling, retry-logica & dead-letter queues', 'End-to-end integratietestresultaten', 'Live monitoringdashboard & alertopzet'],
+        idealFor: [['Groeiende Bedrijven', 'Meerdere SaaS-tools gebruiken die niet synchroniseren, met handmatige datasilo\'s en kostbare dubbele invoer.'], ['Enterprises met Legacysystemen', 'Oude on-premise software verbinden met moderne cloudplatformen en REST API\'s.'], ['Operationele Teams', 'Uren besteden aan data-exports, kopieer-plakworkflows en handmatige consolidatie elke week.']],
+        highlights: [['Any-to-Any Integratie', 'REST, GraphQL, SOAP, webhooks, FTP — wij overbruggen vrijwel elke protocolcombinatie.'], ['Veilig Datatransport', 'OAuth 2.0, API-sleutelrotatie en TLS-versleutelde kanalen bij elke integratie.'], ['Realtime Monitoring', 'Live integratie-gezondheidsdashboards met automatische foutmeldingen en retry-logica.'], ['Zero-Downtime Uitrol', 'Geleidelijke overgangsstrategieën met rollback-plannen garanderen bedrijfscontinuïteit tijdens go-live.']],
+        faqs: [['Hoeveel kost systeemintegratie?', 'De prijs hangt af van het aantal systemen en de complexiteit van datastromen. Eenvoudige twee-systeemintegraties beginnen doorgaans bij ₱30.000–₱80.000, terwijl multi-platform enterprise-integraties veelal variëren van ₱150.000 tot ₱500.000+.'], ['Kunt u legacysystemen integreren?', 'Ja, wij zijn gespecialiseerd in het overbruggen van moderne cloudplatformen met legacy on-premise software via adapters, middleware en protocoltranslatielagen.'], ['Hoe zit het met gegevensbeveiliging?', 'Alle integraties zijn beveiligd met OAuth 2.0, API-sleutelbeheer, TLS-versleuteling en strikte rolgebaseerde toegang op elk datakanaal.']],
+      },
+      'academic-capstone-system-development': {
+        title: 'Capstone Systeemontwikkeling',
+        shortDesc: 'Professionele, volledig functionele capstone- en thesissystemen voor studenten — op tijd geleverd, elke keer. Wij bouwen complete, gedocumenteerde en demo-klare systemen die de eisen van academische panels overtreffen.',
+        description: 'Wij helpen studenten indrukwekkende, volledig functionele capstone- en thesissystemen te bouwen. Van voorraadbeheer tot gezondheidszorgsystemen — wij bouwen complete, gedocumenteerde en presenteerbare systemen die academische eisen overtreffen.',
+        process: [['Eisenverzameling', 'Uw thesisvoorstel beoordelen en systeemscope definiëren.'], ['Systeemontwerp', 'ERD, DFD, use case-diagrammen en wireframes.'], ['Ontwikkeling', 'Volledige systeemontwikkeling met documentatie.'], ['Testen', 'Bugvrij, getest systeem klaar voor demonstratie.'], ['Documentatie', 'Volledige technische en gebruikersdocumentatie.'], ['Presentatie-ondersteuning', 'Oefenwalkthrough voor uw panelverdediging.']],
+        deliverables: ['Volledig functioneel, demo-klaar systeem', 'Becommentarieerde en georganiseerde broncode', 'Technische documentatie (ERD, DFD, use cases)', 'Gebruikershandleiding en beheerdersgids', 'Presentatiewalkthrough en oefensessie', 'Bugvrije demobuild klaar voor panelverdediging'],
+        idealFor: [['Afstuderende Studenten', 'Een compleet, gedocumenteerd en demo-klaar capstone- of thesissysteem nodig om de panelbeoordeling te halen.'], ['Studentprojectgroepen', 'Teams waarvan de scope hun huidige technische vaardigheden overstijgt en professionele ontwikkeling nodig hebben.'], ['Studenten onder Tijdsdruk', 'Panelverdediging nadert terwijl de ontwikkeling achterloopt — spoedlevering is beschikbaar.']],
+        highlights: [['Snelle Levering', 'Spoedopdrachten geaccepteerd — de meeste capstone-systemen worden binnen 2 tot 4 weken voltooid.'], ['Volledige Documentatie', 'Complete technische docs, ERD, DFD, use case-diagrammen en gebruikershandleidingen inbegrepen.'], ['Panel-klare Builds', 'Nette UI, werkende functies en demo-scenario-walkthroughs met u geoefend vóór de verdediging.'], ['NDA-beschermd', 'Uw projectidee en alle projectdetails worden met volledige vertrouwelijkheid behandeld onder NDA.']],
+        faqs: [['Hoeveel kost een capstone-systeem?', 'De prijs hangt af van het type systeem en de complexiteit. Basis single-module systemen beginnen bij ₱8.000–₱15.000, terwijl multi-module systemen met mobiele apps of geavanceerde functies doorgaans variëren van ₱20.000 tot ₱45.000+.'], ['Is dit plagiaat?', 'Nee. Elk systeem wordt op maat gebouwd op basis van uw thesisonderwerp en vereisten. Wij begeleiden u ook door het systeem zodat u het volledig begrijpt en vol vertrouwen kunt presenteren aan uw panel.'], ['Hoe snel kunt u leveren?', 'Spoedlevering is beschikbaar. De meeste capstone-systemen worden binnen 2–4 weken voltooid, afhankelijk van scope en uw inleverdatum.']],
+      },
+      'it-consulting-infrastructure': {
+        title: 'IT-advies / Infrastructuur',
+        shortDesc: 'Strategisch technologieadvies en infrastructuuropzet om uw bedrijfsvoering te optimaliseren. Van cloudmigraties tot DevOps-strategie en beveiligingshardening — wij zetten complexe IT-beslissingen om in duidelijke, ROI-gedreven actieplannen.',
+        description: 'Onze IT-consultants bieden deskundige begeleiding bij technologiestrategie, cloudmigratie, DevOps-implementatie, cyberbeveiliging en infrastructuuroptimalisatie.',
+        process: [['IT-audit', 'Huidige infrastructuur, beveiliging en processen beoordelen.'], ['Strategieontwikkeling', 'Routekaart voor technologieverbeteringen en investeringen.'], ['Implementatieplanning', 'Gedetailleerd uitvoeringsplan met tijdlijnen en KPI\'s.'], ['Uitvoering', 'Hands-on implementatie en configuratie.'], ['Training', 'Teamtraining en kennisoverdracht.'], ['Doorlopende Ondersteuning', 'Beheerde diensten en continue optimalisatie.']],
+        deliverables: ['Huidige-staat IT-auditrapport', 'Geprioriteerde technologieroutekaart', 'Implementatieplan met KPI\'s en mijlpalen', 'Cloudarchitectuurdiagrammen', 'Beveiligings- en compliance-aanbevelingsdocument', 'Teamtraining en kennisoverdrachtsessies'],
+        idealFor: [['Groeiende MKB\'s', 'Snel opschalende bedrijfsvoering die een duidelijke, uitvoerbare technologiestrategie nodig heeft afgestemd op budget.'], ['Bedrijven die naar Cloud Migreren', 'Overgang van kostbare on-premise infrastructuur naar AWS, Azure of Google Cloud.'], ['Teams met Beveiligingszorgen', 'Een uitgebreide audit en hardening van hun IT-omgeving nodig vóór een compliance-review.']],
+        highlights: [['Technologieroutekaart', 'Een duidelijke, geprioriteerde routekaart afgestemd op uw bedrijfsdoelen, beperkingen en budgetrealteit.'], ['Multi-Cloud Expertise', 'Diepgaande praktijkervaring met AWS, Azure en GCP voor migraties en architectuurontwerp.'], ['Beveiliging-eerst Lens', 'Elke aanbeveling wordt beoordeeld vanuit een cyberbeveiliging- en regelgevings-compliancelens.'], ['Kennisoverdracht', 'Wij trainen uw team grondig zodat u nooit langdurig afhankelijk bent van externe expertise.']],
+        faqs: [['Hoeveel kost IT-advies?', 'Advies is beschikbaar op dagbasis of per project. Dagtarieven variëren doorgaans van ₱5.000–₱20.000 afhankelijk van het engagement. Projectgebaseerd advies varieert veelal van ₱40.000 tot ₱200.000+.'], ['Biedt u cloudmigratie aan?', 'Ja. Wij plannen en voeren volledige cloudmigraties uit naar AWS, Azure of GCP — met minimale downtime en een gefaseerde rollback-strategie.'], ['Kunt u helpen met cyberbeveiliging?', 'Ja. Wij bieden beveiligingsaudits, dreigingsmodellering, penetratietestadviezen en end-to-end beveiligingshardening voor uw infrastructuur.']],
+      },
+      'hardware-integration': {
+        title: 'Hardware-integratie',
+        shortDesc: 'Overbrug de fysieke en digitale wereld door hardwareapparaten, sensoren en embedded systems rechtstreeks te verbinden met uw software. Wij ontwerpen end-to-end IoT-oplossingen voor realtime monitoring, bediening op afstand en geautomatiseerde gegevensverzameling.',
+        description: 'Wij ontwerpen en implementeren IoT-architecturen die fysieke hardware — van industriële sensoren en microcontrollers tot slimme apparaten en embedded systems — verbinden met cloud- en webplatformen.',
+        process: [['Hardware-audit', 'Bestaande apparaten, sensoren en communicatieprotocollen evalueren.'], ['Architectuurontwerp', 'De IoT-stack ontwerpen: apparaatlaag, gateway, cloud en dashboard.'], ['Firmware & Protocol', 'Apparaatfirmware en communicatieprotocollen configureren (MQTT, HTTP, BLE, enz.).'], ['Cloudintegratie', 'Hardware verbinden met cloudplatformen via veilige, betrouwbare datapijplijnen.'], ['Dashboard & Alerts', 'Realtime monitoringdashboards en geautomatiseerde alerting bouwen.'], ['Ondersteuning & Schaling', 'Doorlopend apparaatbeheer, OTA-updates en vlootschaling.']],
+        deliverables: ['IoT-systeemarchitectuurdocument', 'Geconfigureerde apparaatfirmware & communicatieprotocollen', 'Cloud-data-ingestiepijplijn', 'Realtime monitoringdashboard', 'Geautomatiseerd alert- & meldingssysteem', 'OTA (over-the-air) updatemechanisme'],
+        idealFor: [['Industriële Operators', 'Machines, sensoren en productielijnen realtime monitoren vanuit een centraal dashboard.'], ['Eigenaren van Slimme Gebouwen', 'HVAC-, toegangscontrole-, energiemeting- en facilitair-beheersystemen automatiseren.'], ['Logistiek & Vlootbedrijven', 'Voertuigen, assets en lading volgen met realtime GPS-positie en telemetrie.']],
+        highlights: [['Protocol-agnostisch', 'MQTT, HTTP, BLE, LoRaWAN, Modbus — wij werken met elke hardware-communicatiestandaard.'], ['Realtime Pijplijnen', 'Live datastromen van edge-apparaten naar clouddashboards met minimale latentie.'], ['OTA-updates', 'Firmware-updates naar uw volledige geïmplementeerde apparatenvloot op afstand en veilig uitrollen.'], ['Veilig by Design', 'Apparaatauthenticatie, versleutelde kanalen en netwerksegmentatie ingebouwd in elke oplossing.']],
+        faqs: [['Hoeveel kost hardware/IoT-integratie?', 'Een basis IoT-integratieproject begint doorgaans bij ₱50.000–₱150.000, terwijl volledige industriële vlootopstellingen veelal variëren van ₱250.000 tot ₱700.000+.'], ['Werkt u met bestaande hardware?', 'Ja. Wij integreren met vrijwel elke hardware die standaard communicatieprotocollen ondersteunt zoals MQTT, HTTP, Modbus, BLE of LoRaWAN.'], ['Kunt u ook het fysieke apparaat bouwen?', 'Wij werken samen met betrouwbare hardware-engineers en elektronica-prototypingbedrijven voor volledig op maat gemaakt apparaatontwerp en -productie wanneer nodig.']],
+      },
+      'ai-machine-learning': {
+        title: 'AI & Machine Learning',
+        shortDesc: 'Benut de kracht van kunstmatige intelligentie om beslissingen te automatiseren, verborgen inzichten te ontdekken en slimmere producten op schaal te bouwen. Van voorspellende analyses en computer vision tot LLM-aangedreven chatbots en op maat getrainde modellen.',
+        description: 'Wij ontwikkelen op maat gemaakte AI- en machine learning-oplossingen die ruwe data transformeren tot meetbaar concurrentievoordeel.',
+        process: [['Probleemdefiniëring', 'Het bedrijfsprobleem definiëren en AI-toepasbaarheid evalueren.'], ['Datastrategie', 'Dataverzameling, opschoning, labeling en pijplijnontwerp.'], ['Modelontwikkeling', 'ML/AI-modellen trainen, evalueren en itereren.'], ['Integratie', 'Modellen inbedden in uw applicatie via REST API\'s of SDK\'s.'], ['Implementatie', 'Productie-implementatie met monitoring, versiebeheer en hertrainingspijplijnen.'], ['Monitoring & Hertraining', 'Modelprestaties volgen en hertrainen op nieuwe data in de loop der tijd.']],
+        deliverables: ['Getraind, geëvalueerd & versiebeheerd ML-model', 'REST API-endpoint voor modelinferentie', 'Datatrainingspijplijn & geannoteerde notebooks', 'Modelprestatiedashboard', 'Geautomatiseerd hertrainingsschema & triggers', 'Modeldocumentatie & modelkaarten'],
+        idealFor: [['Datarijke Bedrijven', 'Grote datasets hebben en AI nodig om patronen, inzichten te extraheren en geautomatiseerde beslissingen te nemen.'], ['Productbedrijven', 'Intelligente functies willen — aanbevelingen, voorspellingen of NLP — ingebed in hun product.'], ['Operationele Teams', 'Kwaliteitsinspectie, documentverwerking of anomaliedetectie-workflows willen automatiseren.']],
+        highlights: [['Op Maat Getrainde Modellen', 'Wij trainen modellen op uw data — geen one-size-fits-all oplossingen die uw domein negeren.'], ['Productieklare API\'s', 'Modellen geïmplementeerd als schaalbare, versiebeheerde REST API\'s met ingebouwde prestatiemonitoring.'], ['Datapijplijn Inbegrepen', 'Van ruwe data-ingestie en labeling tot feature engineering, validatie en opslag.'], ['Continue Verbetering', 'Geautomatiseerde hertrainingspijplijnen houden uw modellen accuraat naarmate nieuwe data binnenkomt.']],
+        faqs: [['Hoeveel kost een AI/ML-project?', 'Een basis AI-functie of chatbot begint doorgaans bij ₱80.000–₱200.000. Op maat getrainde modellen met volledige MLOps-pijplijnen variëren veelal van ₱350.000 tot ₱1.200.000+.'], ['Hebben we een grote dataset nodig?', 'Niet altijd. Wij maken gebruik van voorgetrainde modellen, transfer learning en data-augmentatietechnieken om sterke resultaten te leveren, zelfs met beperkte data.'], ['Kunt u een chatbot bouwen getraind op onze data?', 'Ja. Wij bouwen RAG-gebaseerde chatbots en fijn-afgestemde LLM-applicaties aangedreven door uw eigen documenten, kennisbank of interne data.']],
+      },
+      'business-automation': {
+        title: 'Bedrijfsautomatisering',
+        shortDesc: 'Elimineer repetitieve handmatige processen en bespaar duizenden uren per jaar door intelligente, betrouwbare workflowautomatisering.',
+        description: 'Wij analyseren uw bedrijfsworkflows en identificeren automatiseringskansen — vervolgens bouwen wij op maat gemaakte oplossingen die knelpunten elimineren, fouten verminderen en doorvoer versnellen.',
+        process: [['Procesmapping', 'Alle handmatige workflows en knelpunten documenteren en analyseren.'], ['Automatiseringsontwerp', 'De automatiseringsarchitectuur ontwerpen — RPA, API\'s of op maat gemaakte tools.'], ['Ontwikkeling', 'Automatiseringsscripts, bots en workflow-engines bouwen en testen.'], ['Integratie', 'Verbinden met uw bestaande softwarestack en databronnen.'], ['Testen & Uitrol', 'UAT, parallelle tests en gefaseerde productie-uitrol.'], ['Monitoring', 'Logs, alerts en dashboards om automatiseringsbetrouwbaarheid te waarborgen.']],
+        deliverables: ['Volledig gebouwde automatiseringsworkflows & scripts', 'API-integratieconnectors', 'Foutregistratie, retry-logica & foutmeldingen', 'Operationeel monitoringdashboard', 'Gedetailleerde procesdocumentatie', 'Overdrachtstraining voor uw team'],
+        idealFor: [['Operationeel Zware Teams', 'Personeel dat dagelijks uren besteedt aan repetitieve gegevensinvoer, statusupdates of goedkeuringsroutering.'], ['Financiële & HR-afdelingen', 'Automatisering van salarisruns, facturering, personeelsonboarding en compliance-rapportagecycli.'], ['Opschalende Bedrijven', 'Doorvoer en outputvolume verhogen zonder evenredige toename van personeelsbestand of overhead.']],
+        highlights: [['End-to-End Automatisering', 'Van trigger tot eindresultaat — nul handmatige stappen zodra de automatisering is geïmplementeerd.'], ['ROI-gericht', 'Wij kwantificeren tijdsbesparing en kostenreductie voor en na elke gebouwde automatisering.'], ['Niet-invasieve Integratie', 'Haakt in op uw bestaande softwarestack via API\'s — geen systeemoverhauls of migraties nodig.'], ['Slimme Alerting', 'Directe meldingen wanneer een automatisering faalt of een menselijke beslissing nodig heeft om door te gaan.']],
+        faqs: [['Hoeveel kost bedrijfsautomatisering?', 'Een enkele geautomatiseerde workflow begint doorgaans bij ₱25.000–₱70.000. Volledige automatisering over meerdere afdelingen varieert veelal van ₱120.000 tot ₱500.000+.'], ['Welke processen zijn het beste voor automatisering?', 'Repetitieve, regelgebaseerde, grootvolume taken met voorspelbare invoer en uitvoer zijn ideaal — zoals gegevensinvoer, rapportgeneratie, facturering, goedkeuringen en meldingen.'], ['Zal automatisering mijn bestaande systemen kapotmaken?', 'Nee. Wij ontwerpen alle automatisering niet-invasief — inhakend op uw bestaande software via API\'s en webhooks zonder kernsystemen aan te raken of te wijzigen.']],
+      },
+      'deployment-hosting-services': {
+        title: 'Implementatie & Hosting',
+        shortDesc: 'Breng uw applicatie van code naar productie met een betrouwbare, veilige en auto-scaling infrastructuuropzet gebouwd voor real-world verkeer.',
+        description: 'Wij verzorgen de volledige implementatielevenscyclus — van omgevingsinrichting en containerisatie tot CI/CD-automatisering en productie-hardening.',
+        process: [['Infrastructuuraudit', 'Uw huidige opzet beoordelen en implementatiedoelen definiëren.'], ['Omgevingsopzet', 'Cloudomgevingen configureren: dev, staging en productie.'], ['Containerisatie', 'Uw applicatie dockeriseren voor portabiliteit en consistentie.'], ['CI/CD-pijplijn', 'Geautomatiseerde build-, test- en deploypijplijnen met rollback-ondersteuning.'], ['Beveiligingshardening', 'SSL, geheimenbeheer, firewallregels en IAM-beleid.'], ['Monitoring & Alerts', 'Uptimemonitoring, logaggregatie en incidentalterting.']],
+        deliverables: ['Cloudomgeving opzet (dev / staging / prod)', 'Volledig gecontaineriseerde applicatie (Docker)', 'Geautomatiseerde CI/CD-pijplijn met rollback-ondersteuning', 'SSL-, domein- en DNS-configuratie', 'Monitoring, logging & uptime-alertdashboards', 'Runbook en infrastructuuroverdrage documentatie'],
+        idealFor: [['Ontwikkelteams', 'App gebouwd maar deskundige hulp nodig om betrouwbaar, veilig en herhaalbaar in productie te komen.'], ['Scale-Up Bedrijven', 'Gedeelde hosting ontgroeid en auto-scaling cloudinfrastructuur nodig voor real-world verkeer.'], ['Teams zonder DevOps', 'Geen in-house DevOps-expertise en een volledige pijplijn nodig die gebouwd en overgedragen wordt met training.']],
+        highlights: [['Zero-Downtime Deploys', 'Blue-green en rolling deployments zorgen dat uw gebruikers nooit downtime ervaren tijdens releases.'], ['Beveiliging Gehard', 'IAM-beleid, geheimenbeheer, firewallregels en SSL geconfigureerd vanaf dag één.'], ['Auto-Scaling', 'Direct opschalen bij verkeerspieken en automatisch terugschalen — betaal alleen voor wat u gebruikt.'], ['Volledige Observability', 'Logs, metrics, distributed traces en uptime-alerts verbonden over elke laag van uw stack.']],
+        faqs: [['Hoeveel kost implementatie en DevOps-opzet?', 'Een eenvoudige cloudopzet met CI/CD-pijplijn begint doorgaans bij ₱20.000–₱60.000. Volledig gecontaineriseerde implementaties met Kubernetes variëren veelal van ₱80.000 tot ₱250.000+.'], ['Welke cloudprovider raadt u aan?', 'Dat hangt af van uw behoeften — wij werken met AWS, GCP en Azure en doen aanbevelingen op basis van uw specifieke schaal, kostendoelen en bestaande stack.'], ['Kunt u ons bestaande deployment beheren?', 'Ja. Wij bieden beheerde DevOps-retainerdiensten inclusief doorlopend CI/CD-pijplijnbeheer, infrastructuurkostenoptimalisatie en incidentrespons.']],
+      },
+      'ui-ux-design': {
+        title: 'UI/UX-ontwerp & Prototyping',
+        shortDesc: 'Geweldige software begint met geweldig ontwerp — wij creëren intuïtieve, visueel overtuigende gebruikerservaringen gebaseerd op gebruikersonderzoek en gevalideerd door middel van echte tests.',
+        description: 'Ons ontwerpteam combineert esthetiek met bruikbaarheid om digitale ervaringen te creëren waar gebruikers van houden en waar bedrijven op vertrouwen.',
+        process: [['Onderzoek', 'Gebruikersonderzoek, personacreatie en concurrentieanalyse.'], ['Informatiearchitectuur', 'Sitemap, gebruikersstromen en contenthiërarchie-ontwerp.'], ['Wireframing', 'Lage en middelhoge fidelity wireframes voor snelle conceptvalidatie.'], ['UI-ontwerp', 'High-fidelity mockups met een merkgebonden ontwerpsysteem.'], ['Prototyping', 'Interactieve Figma-prototypes voor stakeholder- en gebruikerstesten.'], ['Overdracht', 'Ontwikkelaarsklare assets, annotaties en componentspecificaties.']],
+        deliverables: ['Gebruikersonderzoeksrapport & persona\'s', 'Sitemap & gebruikersstroomdiagrammen', 'Lage en hoge fidelity wireframes', 'Interactief Figma-prototype', 'Ontwerpsysteem & componentenbibliotheek', 'Ontwikkelaarsoverdrachtpakket (specificaties, assets, annotaties)'],
+        idealFor: [['Oprichters & Productmanagers', 'Productconcepten moeten valideren en een duidelijke visie communiceren aan stakeholders vóór ontwikkeling.'], ['Ontwikkelteams', 'Code-klaar maar missen ontwerpexpertise voor een gepolijste, gebruiker-geteste en conversie-geoptimaliseerde interface.'], ['Gevestigde Bedrijven', 'Bestaand product lijdt onder UX-frictie, slechte retentie of merkinconsistentie en heeft een herontwerp nodig.']],
+        highlights: [['Onderzoeksgedreven Ontwerp', 'Elke beslissing wordt ondersteund door gebruikersinterviews, concurrentieanalyse en iteratieve bruikbaarheidstesten.'], ['Volledig Ontwerpsysteem', 'Herbruikbare componenten, ontwerptokens en richtlijnen waaruit uw dev-team kan bouwen en schalen.'], ['Interactieve Prototypes', 'Volledig klikbare Figma-prototypes voor echte gebruikerstests en gepolijste stakeholderpresentaties.'], ['Ontwikkelaarsklare Overdracht', 'Geannoteerde specificaties, geëxporteerde assets en componentdocumentatie die ontwikkelaars giswerk elimineren.']],
+        faqs: [['Hoeveel kost UI/UX-ontwerp?', 'Wireframes en basis prototypes beginnen doorgaans bij ₱15.000–₱40.000. Een volledig ontwerptraject varieert veelal van ₱60.000 tot ₱200.000+.'], ['Biedt u ontwerp-only trajecten aan?', 'Ja. Wij bieden UI/UX-ontwerp als volledig zelfstandige dienst — geen ontwikkeling vereist.'], ['Ontwerpt u voor zowel web als mobiel?', 'Absoluut. Wij ontwerpen responsieve webinterfaces en native mobiele UI\'s gelijktijdig binnen één verenigd ontwerpsysteem.']],
+      },
+      'cybersecurity-data-protection': {
+        title: 'Cyberbeveiliging & Gegevensbescherming',
+        shortDesc: 'Bescherm uw systemen, gegevens en gebruikers met een proactieve, beveiliging-eerst aanpak ingebed in elke laag van uw applicatie.',
+        description: 'Wij bieden uitgebreide cyberbeveiligingsdiensten voor softwareapplicaties en IT-infrastructuur — van dreigingsmodellering en penetratietesten tot veilige code-reviews en compliance-begeleiding.',
+        process: [['Dreigingsmodellering', 'Aanvalsoppervlakken, dreigingsvectoren en risicoscenario\'s identificeren.'], ['Beveiligingsaudit', 'Code-review, dependency-scanning en configuratieanalyse.'], ['Hardening', 'Beveiligingsfixes, versleuteling en toegangscontroleverbeteringen toepassen.'], ['Penetratietesten', 'Gecontroleerde ethische hacking om exploiteerbare kwetsbaarheden te ontdekken.'], ['Compliance-review', 'Begeleiding bij AVG, HIPAA, PCI-DSS en SOC2-vereisten.'], ['Training & Beleid', 'Beveiligingsbewustzijnstraining en interne beleidsdocumentatie.']],
+        deliverables: ['Kwetsbaarheidsbeoordeling & risicogeclassificeerd bevindingsrapport', 'Dreigingsmodeldocument', 'Beveiligingshardeningsimplementatie', 'Penetratietestresultaten & reproductiestappen', 'Compliance-checklist (AVG / HIPAA / PCI-DSS)', 'Beveiligingsbewustzijnstrainingsmateriaal voor uw team'],
+        idealFor: [['SaaS & Webapplicaties', 'Gebruikersgegevens, betalingen of gevoelige bedrijfsinformatie verwerken die streng beschermd moeten worden.'], ['Gereguleerde Industrieën', 'Opereren onder AVG, HIPAA of PCI-DSS compliance-vereisten die validatie en begeleiding nodig hebben.'], ['Post-incident Teams', 'Herstellen van een inbreuk of mislukte beveiligingsaudit en een snelle, uitgebreide overhauling nodig hebben.']],
+        highlights: [['Proactieve Beveiliging', 'Wij identificeren en verhelpen kwetsbaarheden vóórdat aanvallers dat doen — niet na een kostbare inbreuk.'], ['Gedetailleerde Rapportage', 'Elke bevinding gedocumenteerd met ernstclassificatie, reproductiestappen en duidelijke hersteladviezen.'], ['Compliance-begeleiding', 'Praktische, uitvoerbare paden naar AVG, HIPAA en PCI-DSS compliance — niet alleen theorie.'], ['Doorlopende Monitoring', 'Retainer-gebaseerde continue beveiligingsmonitoring en kwartaalauditpakketten zijn beschikbaar.']],
+        faqs: [['Hoeveel kost een cyberbeveiligingsaudit?', 'Een gerichte kwetsbaarheidsbeoordeling begint doorgaans bij ₱30.000–₱80.000. Een uitgebreide penetratietest met compliance-review varieert veelal van ₱120.000 tot ₱350.000+.'], ['Hoe gaat u om met ontdekte kwetsbaarheden?', 'Wij leveren een gedetailleerd rapport met ernstclassificaties, reproductiestappen en duidelijke aanbevolen fixes — en werken vervolgens met uw team aan volledige remediëring.'], ['Biedt u doorlopende beveiligingsmonitoring aan?', 'Ja. Wij bieden retainer-gebaseerde continue beveiligingsmonitoring, kwartaal-penetratietestcycli en dedicated incidentrespons-ondersteuning.']],
+      },
+    },
+
+    // ─── DATA: PROJECTS ──────────────────────────────────────────────────
+    projects: {
+      'nexus-erp': {
+        title: 'Nexus ERP Platform',
+        shortDesc: 'End-to-end enterprise resource planning systeem gebouwd voor een productiebedrijf met 500 medewerkers. Omvat voorraad, HR, salarisadministratie, inkoop en realtime financiële rapportage.',
+        overview: 'Een uitgebreid ERP-systeem dat voorraad, HR, salarisadministratie, inkoop en financiële rapportage dekt.',
+        problem: 'De klant werkte met losgekoppelde spreadsheets en legacy-software, wat leidde tot data-inconsistenties en operationele vertragingen.',
+        solution: 'Wij bouwden een geïntegreerd ERP-platform met realtime dashboards, geautomatiseerde workflows en rolgebaseerde toegangscontrole.',
+        features: ['Voorraadbeheer', 'HR & Salarisadministratie', 'Inkoopmodule', 'Financiële Rapportage', 'Leveranciersportaal', 'Analytics Dashboard'],
+        results: [['Operationele Efficiëntie', '+65%'], ['Gegevensinvoertijd Verminderd', '-80%'], ['Rapportgeneratie', 'Realtime'], ['ROI in Jaar 1', '340%']],
+        testimonial: ['PROGREX leverde een systeem dat onze manier van werken transformeerde. De beste investering ooit.', 'Marcus Thompson', 'COO, Nexus Manufacturing'],
+      },
+      'edutrack-lms': {
+        title: 'EduTrack LMS',
+        shortDesc: 'Volledig uitgerust leermanagementsysteem uitgerold over een netwerk van 12 scholen in de Filipijnen.',
+        overview: 'Een schaalbaar LMS met online cursussen, toetsen, live sessies, oudermonitoring en betaalintegratie.',
+        problem: 'Scholen hadden een geïntegreerd digitaal platform nodig voor afstandsonderwijs, beoordeling en ouder-leerkrachtcommunicatie.',
+        solution: 'Wij bouwden EduTrack — een multi-tenant LMS met schoolspecifieke branding, studentdashboards en geïntegreerde Stripe-betaling.',
+        features: ['Cursusbeheer', 'Live Sessies', 'Toetsengine', 'Ouderportaal', 'Cijferregistratie', 'Certificaatgeneratie'],
+        results: [['Ingeschreven Studenten', '18.000+'], ['Cursusafrondings­percentage', '87%'], ['Scholen op Platform', '12'], ['Oudertevredenheid', '4,9/5']],
+        testimonial: ['EduTrack is de ruggengraat van onze digitale onderwijsstrategie geworden. Uitstekend platform.', 'Dr. Elena Santos', 'Directeur, EduNet Schools'],
+      },
+      'swiftcart-ecommerce': {
+        title: 'SwiftCart E-Commerce',
+        shortDesc: 'High-conversie multi-vendor e-commerceplatform met realtime voorraad en geavanceerde analytics.',
+        overview: 'Een B2C/B2B e-commerceplatform met ondersteuning voor meerdere verkopers, dynamische prijzen en logistieke integratie.',
+        problem: 'De klant had een basiswebsite met slechte UX en geen voorraadbeheer, waardoor 40% van potentiële klanten afhaakt bij checkout.',
+        solution: 'Wij herbouwden het volledige platform met Next.js, geoptimaliseerde checkoutflow, multi-vendor ondersteuning en realtime voorraadregistratie.',
+        features: ['Multi-Vendor Ondersteuning', 'Dynamische Prijzen', 'Realtime Voorraad', 'Geavanceerde Analytics', 'Logistieke Integratie', 'Mobiele App'],
+        results: [['Conversiepercentage', '+127%'], ['Paginalaadsnelheid', '1,2s gem.'], ['Maandelijkse Omzetgroei', '+89%'], ['Winkelwagenverlatingsgraad', '-45%']],
+        testimonial: ['Onze omzet verdubbelde letterlijk binnen 3 maanden na lancering van het nieuwe platform. PROGREX leverde.', 'Jei Santos', 'CEO, SwiftCart Retail'],
+      },
+      'meditrack-hms': {
+        title: 'MediTrack Ziekenhuis­beheer',
+        shortDesc: 'Uitgebreid ziekenhuisbeheersysteem voor patiëntendossiers, facturering, apotheek en telemedicijn.',
+        overview: 'Een full-stack HMS met EMR/EHR, afspraakplanning, apotheekbeheer en telemedicijn.',
+        problem: 'Ziekenhuisactiviteiten waren afhankelijk van papieren dossiers, wat vertragingen, fouten en compliance-risico\'s veroorzaakte.',
+        solution: 'MediTrack digitaliseert alle ziekenhuisactiviteiten met HIPAA-conforme patiëntendossiers, geautomatiseerde facturering en telemedicijn.',
+        features: ['EMR/EHR', 'Afspraakplanning', 'Apotheekbeheer', 'Telemedicijn', 'Facturering & Verzekering', 'Laboratoriumresultaten'],
+        results: [['Patiëntverwerkingstijd', '-60%'], ['Factureringsnauwkeurigheid', '99,8%'], ['Telemedicijn-consultaties', '2.400/mnd'], ['Medewerkerstevredenheid', '4,8/5']],
+        testimonial: ['MediTrack heeft onze operaties ingrijpend veranderd. De kwaliteit van patiëntenzorg is dramatisch verbeterd.', 'Dr. Mark Reyes', 'Chief Medical Officer'],
+      },
+      'propmanage-saas': {
+        title: 'PropManage SaaS',
+        shortDesc: 'Vastgoedbeheers-SaaS-platform waarmee verhuurders huurders, huurincasso, onderhoud en financiële rapporten kunnen beheren.',
+        overview: 'Multi-tenant SaaS voor vastgoedbeheerders met geautomatiseerde huurincasso, onderhoudstickets en financiële rapporten.',
+        problem: 'Vastgoedbeheerders gebruikten spreadsheets en handmatige bankoverschrijvingen, wat betalingsachterstanden en slechte huurd­erscommunicatie veroorzaakte.',
+        solution: 'PropManage automatiseert huurincasso, stuurt herinneringen via SMS/e-mail en biedt financiële dashboards.',
+        features: ['Huurdersportaal', 'Geautomatiseerde Huurincasso', 'Onderhoudstickets', 'SMS/E-mail Meldingen', 'Financiële Rapporten', 'Multi-vastgoed'],
+        results: [['Tijdige Huurincasso', '97%'], ['Besparing Administratietijd', '15u/week'], ['Beheerde Huurders', '3.200+'], ['Achterstallige Betalingen', '-72%']],
+        testimonial: ['PropManage verdient zichzelf elke maand terug. Heeft ons vastgoedbedrijf absoluut getransformeerd.', 'Lisa Chen', 'Directeur, Chen Properties'],
+      },
+      'campusvote-academic': {
+        title: 'CampusVote Systeem',
+        shortDesc: 'Beveiligd online studentenverkiezingssysteem met biometrische verificatie en realtime stemtelling.',
+        overview: 'Een capstone-project voor universitaire studentenraadsverkiezingen met biometrische login en live resultaten.',
+        problem: 'Traditionele papieren verkiezingen waren traag, duur en kwetsbaar voor fraude.',
+        solution: 'Wij bouwden CampusVote met vingerafdrukauthenticatie, versleutelde stemopslag en realtime resultaatverspreiding.',
+        features: ['Biometrische Login', 'Versleuteld Stemmen', 'Live Resultaten Dashboard', 'Auditspoor', 'Beheerderspaneel', 'Mobiel Responsief'],
+        results: [['Kiezersopkomst', '+43%'], ['Verkiezingsduur', '6u (voorheen 3 dagen)'], ['Nul Fraudegevallen', '100%'], ['Studenttevredenheid', '4,7/5']],
+        testimonial: ['Het meest indrukwekkende capstone-systeem dat ons panel ooit heeft beoordeeld. Werkelijk productieklaar.', 'Prof. Ana Reyes', 'Informatica-afdeling'],
+      },
+      'smartfactory-iot': {
+        title: 'SmartFactory IoT Monitor',
+        shortDesc: 'Industriëel IoT-monitoringplatform dat 200+ fabrieksensoren verbindt met een centraal clouddashboard met voorspellende onderhoudsanalytics.',
+        overview: 'Een full-stack IoT-oplossing die fysieke fabrieksapparatuur verbindt met een realtime cloud-monitoringplatform.',
+        problem: 'De klant had geen zicht op machinegezondheid of energieverbruik, wat leidde tot onverwachte storingen en kostbare ongeplande downtime.',
+        solution: 'Wij implementeerden een MQTT-gebaseerd sensornetwerk verbonden met AWS IoT Core, met een React-dashboard voor realtime monitoring en anomaliedetectie.',
+        features: ['Realtime Sensor Dashboard', 'Voorspellende Onderhoudsmeldingen', 'OTA Firmware-updates', 'Energieverbruikregistratie', 'Geautomatiseerde Downtimerapportages', 'Multi-site Ondersteuning'],
+        results: [['Ongeplande Downtime', '-68%'], ['Verbonden Apparaten', '240+'], ['Energiekostenbesparing', '₱1,2M/jr'], ['Alertresponstijd', '<30 seconden']],
+        testimonial: ['We gingen van nul zichtbaarheid naar volledige fabriekstransparantie van de ene op de andere dag. PROGREX bouwde precies wat we nodig hadden.', 'Rene Villanueva', 'Fabrieksmanager, Villanueva Industrial'],
+      },
+    },
+
+    // ─── DATA: READY-MADE SYSTEMS ────────────────────────────────────────
+    systems: {
+      'proschool': {
+        name: 'ProSchool — Schoolbeheersysteem',
+        tagline: 'De complete schoolbeheeroplossing voor moderne instellingen.',
+        shortDesc: 'Beheer studenten, docenten, aanwezigheid, cijfers, lesgeld en meer vanuit één krachtig platform.',
+        features: ['Studentinschrijving & Profielen', 'Aanwezigheidsregistratie', 'Cijfers & Rapporten', 'Lesgeldincasso & Facturering', 'Docentenbeheer', 'Ouderportaal', 'Aankondigingenmodule', 'Bibliotheekbeheer'],
+        pricing: [['Starter', '₱8,000', 'eenmalig', 'Tot 200 studenten', '3 maanden ondersteuning'], ['Professional', '₱18,000', 'eenmalig', 'Tot 1.000 studenten', '6 maanden ondersteuning'], ['Enterprise', '₱35,000', 'eenmalig', 'Onbeperkt studenten', '12 maanden ondersteuning']],
+        faqs: [['Is het systeem aanpasbaar?', 'Ja, wij kunnen branding, modules en workflows aanpassen.'], ['Biedt u training aan?', 'Ja. Elke aankoop bevat 1 dag gratis training.']],
+      },
+      'proinventory': {
+        name: 'ProInventory — Voorraadbeheersysteem',
+        tagline: 'Realtime voorraadcontrole voor bedrijven van elke omvang.',
+        shortDesc: 'Volg voorraad, beheer leveranciers, automatiseer her-bestellingen en genereer gedetailleerde rapporten met gemak.',
+        features: ['Realtime Voorraadregistratie', 'Barcode / QR-scanning', 'Leveranciersbeheer', 'Inkooporders', 'Verkoop & Facturering', 'Lage-voorraadmeldingen', 'Multi-locatie Ondersteuning', 'Geavanceerde Rapporten'],
+        pricing: [['Basis', '₱5,000', 'eenmalig', '2 Gebruikers', '3 maanden ondersteuning'], ['Zakelijk', '₱12,000', 'eenmalig', '10 Gebruikers', '6 maanden ondersteuning'], ['Enterprise', '₱25,000', 'eenmalig', 'Onbeperkt gebruikers', '12 maanden ondersteuning']],
+        faqs: [['Werkt het offline?', 'Ja. Het systeem werkt lokaal. Cloudsynchronisatie is beschikbaar als add-on.'], ['Kan ik bestaande gegevens importeren?', 'Ja. Wij ondersteunen Excel/CSV-import voor alle datatypen.']],
+      },
+      'prohris': {
+        name: 'ProHRIS — HR & Salarissysteem',
+        tagline: 'Automatiseer HR-processen en salarisadministratie met vertrouwen.',
+        shortDesc: 'Compleet HR-platform met salarisberekening, DTR-registratie, verlofbeheer en compliance.',
+        features: ['Medewerkerdatabase', 'Dagelijks Tijdsregistratie (DTR)', 'Salarisberekening', 'SSS / PhilHealth / Pag-IBIG', 'Loonheffing', 'Verlofbeheer', '13e Maand Uitkering', 'Loonstrookgeneratie'],
+        pricing: [['MKB', '₱10,000', 'eenmalig', 'Tot 30 medewerkers', '3 maanden ondersteuning'], ['Zakelijk', '₱20,000', 'eenmalig', 'Tot 100 medewerkers', '6 maanden ondersteuning'], ['Corporate', '₱40,000', 'eenmalig', 'Onbeperkt medewerkers', '12 maanden ondersteuning']],
+        faqs: [['Is het BIR-conform?', 'Ja. Belastingberekeningen volgen de laatste BIR- en TRAIN Law-tarieven.'], ['Kan ik integreren met biometrische apparaten?', 'Ja. Wij ondersteunen de meeste biometrische tijdregistratiehardware.']],
+      },
+    },
+
+    // ─── DATA: TESTIMONIALS ──────────────────────────────────────────────
+    testimonials: [
+      { name: 'Marcus Thompson', role: 'COO, Nexus Manufacturing', company: 'Nexus Manufacturing', quote: 'PROGREX leverde een systeem dat onze manier van werken transformeerde. Het team was professioneel, snel en de codekwaliteit was uitzonderlijk. De beste investering die we ooit hebben gedaan.' },
+      { name: 'Dr. Elena Santos', role: 'Directeur, EduNet Schools', company: 'EduNet Schools', quote: 'EduTrack is de ruggengraat van onze digitale onderwijsstrategie geworden. PROGREX leverde precies wat ze beloofden, op tijd, binnen budget. Uitstekend team.' },
+      { name: 'Jei Santos', role: 'CEO, SwiftCart Retail', company: 'SwiftCart Retail', quote: 'Onze omzet verdubbelde letterlijk binnen 3 maanden na lancering van het nieuwe platform dat PROGREX bouwde. Ik heb met veel dev-bureaus gewerkt — geen komt in de buurt van de kwaliteit hier.' },
+      { name: 'Lisa Chen', role: 'Directeur, Chen Properties', company: 'Chen Properties', quote: 'PropManage verdient zichzelf elke maand terug in bespaarde administratietijd. PROGREX begrijpt bedrijfsvoering, niet alleen code. Ze zijn een echte technologiepartner.' },
+      { name: 'Dr. Mark Reyes', role: 'Chief Medical Officer', company: 'Reyes Medical Center', quote: 'MediTrack heeft onze ziekenhuisactiviteiten ingrijpend veranderd. De kwaliteit van patiëntenzorg is sinds de implementatie dramatisch verbeterd. PROGREX overtrof onze verwachtingen.' },
+      { name: 'Andrea Lim', role: 'Hoofd Operaties, LimLogistics', company: 'LimLogistics', quote: 'Onze vlootbeheerscaos is nu volledig onder controle dankzij PROGREX. Het systeem dat ze bouwden is intuïtief, snel en verwerkt dagelijks duizenden transacties zonder hapering.' },
+      { name: 'Carlos Rivera', role: 'Oprichter, RivaTech Startup', company: 'RivaTech', quote: 'Als startup hadden we een partner nodig die snel kon bewegen zonder kwaliteit op te offeren. PROGREX overtrof elke verwachting. We lanceerden onze MVP in 6 weken en het schaalde prachtig.' },
+      { name: 'Sophia Park', role: 'CTO, NovaPay Fintech', company: 'NovaPay', quote: 'Beveiliging en betrouwbaarheid zijn niet-onderhandelbaar in fintech. PROGREX bouwde onze betalingsinfrastructuur naar bankgraadnormen. Nul downtime in 18 maanden live operaties.' },
+      { name: 'James Okonkwo', role: 'IT-directeur, PrimeCorp Group', company: 'PrimeCorp Group', quote: 'We hadden een legacysysteem dat meer kostte om te onderhouden dan om opnieuw te bouwen. PROGREX moderniseerde onze volledige stack in 4 maanden. De resultaten waren onmiddellijk — productiviteit steeg 60%.' },
+      { name: 'Rachel Nguyen', role: 'E-Commerce Manager, UrbanThread', company: 'UrbanThread', quote: 'PROGREX transformeerde onze verouderde winkel tot een high-converting platform. Ons winkelwagenverlatingspercentage daalde met 40% en mobiele verkoop verdrievoudigde binnen twee maanden na lancering.' },
+    ],
+
+    // ─── DATA: TEAM ──────────────────────────────────────────────────────
+    team: [
+      { name: 'Jedidia Shekainah Garcia', role: 'Oprichter & CEO', bio: 'Mede-oprichter van PROGREX in 2025 met de drive om software te bouwen die daadwerkelijk werkt voor de mensen die het gebruiken. Beheert productrichting, klantrelaties en houdt het team gefocust op wat ertoe doet. Gelooft dat goede software begint met het begrijpen van het probleem, niet met het haasten naar code.' },
+      { name: 'Lee Rafael Torres', role: 'Mede-oprichter & CTO', bio: 'Mede-oprichter van PROGREX en leider van alle technische beslissingen — van architectuur tot implementatie. Geobsedeerd door het schrijven van schone, onderhoudbare code en het bouwen van systemen die stand houden onder real-world druk. Het type engineer dat daadwerkelijk de documentatie leest.' },
+      { name: 'Bheberlyn O. Eugenio', role: 'Projectmanager', bio: 'Verantwoordelijk voor het aansturen van projecten van concept tot oplevering, waarbij tijdlijnen, budgetten en doelen op koers blijven. Werkt nauw samen met het team om prioriteiten af te stemmen en communicatie helder en actiegericht te houden.' },
+    ],
+
+    // ─── DATA: CORE VALUES ───────────────────────────────────────────────
+    coreValues: [
+      ['Snelheid Zonder Compromis', 'Wij leveren snel zonder kwaliteit op te offeren. Agile in hart, methodisch in uitvoering.'],
+      ['Beveiliging Eerst', 'Elk systeem dat wij bouwen is ontworpen met beveiliging, privacy en compliance als niet-onderhandelbaar.'],
+      ['Geobsedeerd door Kwaliteit', 'Wij shippen geen code waar we niet trots op zijn. Hoge standaarden zijn verankerd in onze cultuur.'],
+      ['Echt Partnerschap', 'Wij behandelen uw doelen als de onze. Uw succes is de enige maatstaf die wij bijhouden.'],
+      ['Continue Innovatie', 'Wij leren voortdurend, evolueren en passen opkomende technologieën toe om echte problemen op te lossen.'],
+      ['Radicale Transparantie', 'Duidelijke communicatie, eerlijke tijdlijnen en geen verborgen verrassingen — ooit.'],
+    ],
+
+    // ─── DATA: GENERAL FAQs ──────────────────────────────────────────────
+    generalFaqs: [
+      ['Hoe lang duurt het om een maat­werksysteem te bouwen?', 'Tijdlijnen hangen af van de scope en complexiteit van het project. Voor kleinere tools en webapps: verwacht 1–2 weken. Middelgrote platforms duren doorgaans 1–3 maanden, terwijl enterprise-systemen variëren van 3–6 maanden. Wij leveren een gedetailleerde projecttijdlijn tijdens de ontdekkingsfase.'],
+      ['Hoeveel kost een project?', 'Elk project is uniek. Prijzen zijn gebaseerd op scope, complexiteit en technische vereisten. Instapprojecten beginnen rond ₱30.000–₱80.000, terwijl midden-tot-enterprise-oplossingen variëren vanaf ₱150.000. Wij bieden ook flexibele betalingsregelingen. Neem contact op voor een gratis schatting.'],
+      ['Welke technologieën gebruikt u?', 'Wij zijn gespecialiseerd in moderne stacks: React, Next.js, Node.js, Python, Laravel, Flutter en meer. Voor infrastructuur gebruiken wij AWS, GCP, Docker en CI/CD-pijplijnen. Wij kiezen de beste match op basis van de behoeften van uw project — niet wat trending is.'],
+      ['Biedt u ondersteuning na oplevering?', 'Ja. Alle opgeleverde projecten bevatten een ondersteuningsvenster na lancering. Wij bieden ook doorlopende onderhoudsretainers voor monitoring, bugfixes, updates en functietoevoegingen.'],
+      ['Ben ik eigenaar van de broncode en het intellectueel eigendom?', 'Absoluut. Na volledige betaling worden alle broncode, assets en intellectuele eigendomsrechten aan u overgedragen. Wij ondertekenen ook NDA\'s vóór elke projectbespreking om uw idee vanaf dag één te beschermen.'],
+      ['Kan ik wijzigingen aanvragen tijdens de ontwikkeling?', 'Ja. Wij volgen een agile, iteratieve aanpak met regelmatige check-ins en demo-mijlpalen. Kleine revisies zijn opgenomen in de scope; significante wijzigingen worden transparant beoordeeld en afgesproken vóór implementatie.'],
+    ],
+
+    // ─── DATA: STATS ─────────────────────────────────────────────────────
+    stats: [
+      ['52+', 'Opgeleverde Projecten'],
+      ['38+', 'Tevreden Klanten'],
+      ['4+', 'Jaar Ervaring'],
+      ['15+', 'Teamleden'],
+    ],
+
+    // ─── DATA: FEATURED PROJECTS (CAROUSEL) ──────────────────────────────
+    featuredProjects: {
+      'nexus-erp': { title: 'Nexus ERP Platform', shortDesc: 'End-to-end enterprise resource planning systeem gebouwd voor een productiebedrijf met 500 medewerkers. Integreert inkoop, HR, voorraad en realtime analytics in één geïntegreerd platform.' },
+      'edutrack-lms': { title: 'EduTrack LMS', shortDesc: 'Volledig uitgerust leermanagementsysteem voor een netwerk van 12 scholen in de Filipijnen. Ondersteunt live lessen, beoordeling, aanwezigheidsregistratie en studentvoortgangsdashboards.' },
+      'swiftcart-ecommerce': { title: 'SwiftCart E-Commerce', shortDesc: 'High-conversie multi-vendor e-commerceplatform met realtime voorraadbeheer, geavanceerde analytics en geïntegreerde Stripe-betalingen. Verwerkt 10.000+ dagelijks actieve gebruikers op piekmoment.' },
+      'pulsecrm': { title: 'PulseCRM', shortDesc: 'Klantrelatiebeheersysteem met AI-aangedreven leadscoring, pijplijnvisualisatie en geautomatiseerde opvolgworkflows. Verminderde de verkoopcyclustijd met 38% voor de klant.' },
+      'healthbridge': { title: 'HealthBridge Portaal', shortDesc: 'Patiëntenbeheersportaal dat klinieken, artsen en patiënten verbindt met telemedicijn, afspraakplanning en digitale receptmogelijkheden. Uitgerold over 8 medische centra.' },
+    },
+  },
 } as const
 
 export default nl
