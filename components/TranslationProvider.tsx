@@ -1,172 +1,158 @@
 'use client'
 
 /**
- * TranslationProvider — two-phase approach to avoid React DOM stomping.
+ * TranslationProvider — React Context-based translation system.
  *
- * Phase 1 (overlay VISIBLE): fetchAndCache() — hits the API, stores all
- *   translations in localStorage while the user sees the spinner.
- *
- * Phase 2 (overlay HIDDEN): after React re-renders (settles), applyFromCache()
- *   re-collects FRESH DOM nodes and paints translations from localStorage.
- *   This avoids the bug where React's reconciliation detaches nodes we
- *   already translated.
+ * Replaces the old DOM-walking + MyMemory API approach.
+ * - English is bundled; other languages are loaded on demand via dynamic import.
+ * - Shows IntroLoader overlay while language loads.
+ * - Exposes `useTranslation()` hook with `t(key)`, `lang`, `setLang`, and `translations`.
  */
 
-import { useEffect, useRef, useState } from 'react'
-import { usePathname } from 'next/navigation'
-import { fetchAndCache, applyFromCache } from '@/lib/translator'
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  type ReactNode,
+} from 'react'
+import en, { type TranslationType } from '@/lib/translations/en'
+import { langImports } from '@/lib/translations/index'
+import IntroLoader from '@/components/IntroLoader'
 
-/** Wait for two animation frames — enough for React to finish re-rendering */
-function afterReactSettles(): Promise<void> {
-  return new Promise(resolve =>
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-  )
+/* ──────────────────────────── Context ──────────────────────────── */
+
+interface TranslationContextValue {
+  /** Dot-notation lookup: t('home.heroBadge') → translated string */
+  t: (key: string) => string
+  /** Active language code (e.g. 'EN', 'FIL', 'ZH') */
+  lang: string
+  /** Switch language — triggers dynamic import + IntroLoader */
+  setLang: (code: string) => void
+  /** Full translation object for direct access */
+  translations: TranslationType
 }
 
-export default function TranslationProvider() {
-  const pathname   = usePathname()
-  const langRef    = useRef<string>('EN')
-  const [translating, setTranslating] = useState(false)
+const TranslationContext = createContext<TranslationContextValue>({
+  t: (key) => key,
+  lang: 'EN',
+  setLang: () => {},
+  translations: en,
+})
 
-  /** Reset to English — clears storage, hides spinner, signals Navbar */
-  function revertToEnglish(reason: string) {
-    console.warn(`[PROGREX Translate] Fallback to EN — ${reason}`)
-    langRef.current = 'EN'
-    try { localStorage.setItem('progrex-lang', 'EN') } catch { /* ignore */ }
-    setTranslating(false)
-    document.dispatchEvent(new CustomEvent('progrex-lang-reset'))
+export function useTranslation() {
+  return useContext(TranslationContext)
+}
+
+/* ───────────────────────── Deep-get helper ─────────────────────── */
+
+function deepGet(obj: unknown, path: string): string | undefined {
+  const parts = path.split('.')
+  let current: unknown = obj
+  for (const part of parts) {
+    if (current == null || typeof current !== 'object') return undefined
+    current = (current as Record<string, unknown>)[part]
   }
+  return typeof current === 'string' ? current : undefined
+}
 
-  // ── Initial mount: restore persisted language & listen for changes ──
-  useEffect(() => {
-    const saved = localStorage.getItem('progrex-lang') ?? 'EN'
+/* ───────────────────────── Provider ───────────────────────────── */
 
-    if (saved !== 'EN') {
-      langRef.current = saved
-      setTimeout(async () => {
-        try {
-          setTranslating(true)
-          const stats = await fetchAndCache(saved)
-          setTranslating(false)
-          // Let React settle after hiding overlay, THEN paint translations
-          await afterReactSettles()
-          const applied = applyFromCache(saved)
-          console.info(
-            `[PROGREX Translate] Initial | Lang: ${saved}` +
-            ` | API calls: ${stats.apiCalls} | Cache hits: ${stats.fromCache}` +
-            ` | Applied: ${applied}`
-          )
-        } catch (err) {
-          revertToEnglish(String(err))
-        }
-      }, 0)
-    }
+export default function TranslationProvider({ children }: { children: ReactNode }) {
+  const [lang, setLangState] = useState('EN')
+  const [translations, setTranslations] = useState<TranslationType>(en)
+  const [showLoader, setShowLoader] = useState(false)
+  const switchingRef = useRef(false)
 
-    const handler = (e: Event) => {
-      const lang = (e as CustomEvent<string>).detail
-      langRef.current = lang
+  /* — t() function: lookup key → current language → fallback English — */
+  const t = useCallback(
+    (key: string): string => {
+      // Try current language
+      const val = deepGet(translations, key)
+      if (val !== undefined) return val
+      // Fallback to English
+      const fallback = deepGet(en, key)
+      if (fallback !== undefined) return fallback
+      // Last resort: return key itself
+      return key
+    },
+    [translations],
+  )
 
-      const run = async () => {
-        try {
-          setTranslating(true)
-          // Phase 1: fetch while spinner is visible
-          const stats = await fetchAndCache(lang)
-          // Phase 2: hide spinner, let React re-render, then apply to fresh nodes
-          setTranslating(false)
-          await afterReactSettles()
-          const applied = applyFromCache(lang)
-          console.info(
-            `[PROGREX Translate] Switched → ${lang}` +
-            ` | API calls: ${stats.apiCalls} | Cache hits: ${stats.fromCache}` +
-            ` | Applied: ${applied}`
-          )
-        } catch (err) {
-          revertToEnglish(String(err))
-        }
+  /* — Switch language — */
+  const setLang = useCallback(
+    async (code: string) => {
+      if (code === lang && code !== 'EN') return
+      if (switchingRef.current) return
+      switchingRef.current = true
+
+      if (code === 'EN') {
+        setTranslations(en)
+        setLangState('EN')
+        try { localStorage.setItem('progrex-lang', 'EN') } catch { /* SSR */ }
+        switchingRef.current = false
+        return
       }
-      run()
-    }
 
+      const importer = langImports[code]
+      if (!importer) {
+        switchingRef.current = false
+        return
+      }
+
+      // Show IntroLoader
+      setShowLoader(true)
+
+      try {
+        // Load language file + enforce minimum display time for IntroLoader
+        const [mod] = await Promise.all([
+          importer(),
+          new Promise((r) => setTimeout(r, 2200)),
+        ])
+        setTranslations(mod.default)
+        setLangState(code)
+        try { localStorage.setItem('progrex-lang', code) } catch { /* SSR */ }
+      } catch (err) {
+        console.error('[PROGREX Translate] Failed to load language:', code, err)
+        // Revert to English
+        setTranslations(en)
+        setLangState('EN')
+        try { localStorage.setItem('progrex-lang', 'EN') } catch { /* SSR */ }
+        document.dispatchEvent(new CustomEvent('progrex-lang-reset'))
+      } finally {
+        setShowLoader(false)
+        switchingRef.current = false
+      }
+    },
+    [lang],
+  )
+
+  /* — Restore persisted language on mount — */
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('progrex-lang')
+      if (saved && saved !== 'EN') {
+        setLang(saved)
+      }
+    } catch { /* SSR / incognito */ }
+  }, [setLang])
+
+  /* — Listen for Navbar's custom event — */
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const code = (e as CustomEvent<string>).detail
+      setLang(code)
+    }
     document.addEventListener('progrex-lang-change', handler)
     return () => document.removeEventListener('progrex-lang-change', handler)
-  }, [])
-
-  // ── Re-apply on every page navigation ──
-  useEffect(() => {
-    const lang = langRef.current
-    if (lang === 'EN') return
-
-    const t = setTimeout(async () => {
-      try {
-        // Page just navigated — fetch any new text, then apply
-        const stats = await fetchAndCache(lang)
-        await afterReactSettles()
-        const applied = applyFromCache(lang)
-        console.info(
-          `[PROGREX Translate] Nav → ${pathname} | Lang: ${lang}` +
-          ` | API calls: ${stats.apiCalls} | Applied: ${applied}`
-        )
-      } catch (err) {
-        revertToEnglish(String(err))
-      }
-    }, 200)
-
-    return () => clearTimeout(t)
-  }, [pathname])
-
-  // ── Overlay + spinner while fetching translations ──
-  if (!translating) return null
+  }, [setLang])
 
   return (
-    <div
-      aria-label="Loading..."
-      style={{
-        position:       'fixed',
-        inset:          0,
-        zIndex:         99999,
-        display:        'flex',
-        flexDirection:  'column',
-        alignItems:     'center',
-        justifyContent: 'center',
-        gap:            '16px',
-        background:     'rgba(3,3,15,0.72)',
-        backdropFilter: 'blur(6px)',
-        WebkitBackdropFilter: 'blur(6px)',
-      }}
-    >
-      {/* Progress bar at top */}
-      <div style={{
-        position:       'absolute',
-        top:            0,
-        left:           0,
-        right:          0,
-        height:         '2px',
-        background:     'linear-gradient(90deg, #0EA5E9, #7C3AED, #0EA5E9)',
-        backgroundSize: '200% 100%',
-        animation:      'pxt-slide 1.2s linear infinite',
-      }} />
-
-      {/* Spinner ring */}
-      <div style={{
-        width:        52,
-        height:       52,
-        borderRadius: '50%',
-        border:       '3px solid rgba(103,232,249,0.15)',
-        borderTop:    '3px solid #0EA5E9',
-        borderRight:  '3px solid #7C3AED',
-        animation:    'pxt-spin 0.8s linear infinite',
-      }} />
-
-      {/* Label */}
-      <div style={{
-        fontFamily:    'JetBrains Mono, monospace',
-        fontSize:      '11px',
-        letterSpacing: '0.15em',
-        color:         'rgba(103,232,249,0.7)',
-        textTransform: 'uppercase',
-      }}>
-        Loading...
-      </div>
-    </div>
+    <TranslationContext.Provider value={{ t, lang, setLang, translations }}>
+      {showLoader && <IntroLoader />}
+      {children}
+    </TranslationContext.Provider>
   )
 }
