@@ -232,7 +232,7 @@ export default function IntroLoader() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, y: -12 }}
           transition={{ duration: 0.65, ease: [0.4, 0, 0.2, 1] }}
-          className="fixed inset-0 z-9999 flex flex-col items-center justify-center select-none"
+          className="fixed inset-0 z-[99999] flex flex-col items-center justify-center select-none"
           style={{ background: '#03030F' }}
         >
           {/* Galaxy starfield canvas */}
