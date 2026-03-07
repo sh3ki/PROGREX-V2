@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, Globe, ChevronDown } from 'lucide-react'
-import { SUPPORTED_LANG_CODES } from '@/lib/translator'
+import { SUPPORTED_LANG_CODES } from '@/lib/translations/index'
 
 // All possible languages — only those present in SUPPORTED_LANG_CODES will be shown
 const ALL_LANGUAGES = [
