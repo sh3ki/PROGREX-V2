@@ -7,47 +7,29 @@ import ConstellationDecor from '@/components/ConstellationDecor'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
 import CTASection from '@/components/CTASection'
 import TeamCarousel from '@/components/TeamCarousel'
-import { coreValues, stats } from '@/lib/mockData'
+import { useTranslation } from '@/components/TranslationProvider'
 
-// Icons mapped to each core value (same order as mockData coreValues)
+// Icons mapped to each core value (same order as data.coreValues)
 const VALUE_ICONS = [Zap, Shield, Award, Users, Lightbulb, Eye]
-
-const processSteps = [
-  { step: '01', icon: Search,     title: 'Discovery',  desc: 'We listen first. Understand your goals, challenges, users, and success metrics before writing a single line of code.' },
-  { step: '02', icon: Map,        title: 'Strategy',   desc: 'We craft a technical roadmap and project plan with clear milestones, resource allocation, and risk mitigation.' },
-  { step: '03', icon: Palette,    title: 'Design',     desc: 'Human-centered UX design, high-fidelity prototypes, and design system creation before development begins.' },
-  { step: '04', icon: Code2,      title: 'Build',      desc: 'Agile sprints with weekly demos. Clean, documented, tested code delivered iteratively.' },
-  { step: '05', icon: Rocket,     title: 'Launch',     desc: 'Production deployment with CI/CD pipelines, monitoring, and performance optimization.' },
-  { step: '06', icon: TrendingUp, title: 'Grow',       desc: 'Ongoing support, feature additions, and scaling as your business grows.' },
-]
-
-const whyUs = [
-  'Transparent pricing and timelines',
-  'Direct access to senior developers',
-  'Post-launch support included',
-  'Scalable architecture from day one',
-  'Agile process with weekly demos',
-  'Modern tech stack, no legacy code',
-  'Production-quality code, zero shortcuts',
-  'NDA-protected, all IP transferred to you',
-  'Flexible engagement models tailored to your needs',
-  'Long-term partnership mindset — we grow with you',
-  'Business-first approach focused on ROI, not just features',
-  'Dedicated project manager for seamless communication',
-  'Performance-optimized systems built for speed and reliability',
-  'Secure development practices with data protection standards'
-]
+const PROCESS_ICONS = [Search, Map, Palette, Code2, Rocket, TrendingUp]
 
 export default function AboutClient() {
+  const { t, translations } = useTranslation()
+
+  const stats = (translations.data.stats as unknown as string[][]).map(([value, label]) => ({ value, label }))
+  const coreValues = (translations.data.coreValues as unknown as string[][]).map(([title, desc]) => ({ title, desc }))
+  const whyItems = translations.about.whyItems as unknown as string[]
+  const processSteps = (translations.about.processSteps as unknown as string[][]).map((s, i) => ({ step: s[0], icon: PROCESS_ICONS[i], title: s[1], desc: s[2] }))
+
   return (
     <>
       {/* Hero */}
       <Hero
-        badge="Who We Are"
-        title="We Build Technology That"
-        highlight="Changes Businesses."
-        subtitle="PROGREX is a full-service technology solutions company helping businesses grow, scale, and lead through exceptional software."
-        primaryBtn={{ label: 'Work With Us', href: '/contact' }}
+        badge={t('about.heroBadge')}
+        title={t('about.heroTitle')}
+        highlight={t('about.heroHighlight')}
+        subtitle={t('about.heroSubtitle')}
+        primaryBtn={{ label: t('about.heroPrimaryBtn'), href: '/contact' }}
       />
 
       {/* Company Story */}
@@ -61,24 +43,16 @@ export default function AboutClient() {
           >
             <div className="eyebrow-badge mb-4">
               <span className="w-1.5 h-1.5 rounded-full bg-nebula-500 animate-pulse" />
-              Our Story
+              {t('about.storyBadge')}
             </div>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-5 leading-tight">
-              From Two Builders <span className="text-gradient-nebula">to a Growing Tech Team</span>
+              {t('about.storyHeading')} <span className="text-gradient-nebula">{t('about.storyHighlight')}</span>
             </h2>
             <div className="space-y-4 text-slate-400 leading-relaxed">
-              <p>
-                PROGREX was founded in 2025 by two developers with a shared obsession: building software that genuinely solves problems. What started as a two-person operation — fueled by late nights, strong coffee, and an unwillingness to ship mediocre work — quickly earned a reputation for quality and reliability.
-              </p>
-              <p>
-                As word spread and projects grew in scope, so did the team. What began as a small group of four quickly expanded as we brought in engineers, designers, and specialists who shared the same standards and passion for building things the right way.
-              </p>
-              <p>
-               Today, PROGREX is a team of 15+ developers and growing — large enough to tackle ambitious projects, yet focused enough to move quickly and maintain the craftsmanship we built our reputation on.
-              </p>
-              <p>
-                We&apos;re still early in our story, but every project we take on is treated with the same intensity and care as that very first one.
-              </p>
+              <p>{t('about.storyP1')}</p>
+              <p>{t('about.storyP2')}</p>
+              <p>{t('about.storyP3')}</p>
+              <p>{t('about.storyP4')}</p>
             </div>
           </motion.div>
 
@@ -127,9 +101,9 @@ export default function AboutClient() {
           {[
             {
               icon: <Target size={22} />,
-              label: 'Our Mission',
-              title: 'Build real software that solves real problems.',
-              desc: 'We help individuals, startups, and small businesses get their ideas off the ground with clean, functional, and well-built software — no fluff, no over-engineering, just work that delivers.',
+              label: t('about.missionLabel'),
+              title: t('about.missionTitle'),
+              desc: t('about.missionDesc'),
               accent: { from: '#0EA5E9', to: '#06B6D4' },
               glow: 'rgba(14,165,233,0.08)',
               border: 'rgba(14,165,233,0.25)',
@@ -141,9 +115,9 @@ export default function AboutClient() {
             },
             {
               icon: <Telescope size={22} />,
-              label: 'Our Vision',
-              title: 'Grow into a team people can genuinely rely on.',
-              desc: 'We want to be the go-to development partner for clients who need honest communication, fair pricing, and software that actually holds up — starting local, building a track record one project at a time.',
+              label: t('about.visionLabel'),
+              title: t('about.visionTitle'),
+              desc: t('about.visionDesc'),
               accent: { from: '#7C3AED', to: '#A78BFA' },
               glow: 'rgba(124,58,237,0.08)',
               border: 'rgba(124,58,237,0.25)',
@@ -222,10 +196,10 @@ export default function AboutClient() {
       {/* Core Values */}
       <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="orion" side="left" offsetY="10%" />}>
         <SectionHeader
-          badge="What We Stand For"
-          title="Our Core"
-          highlight="Values"
-          subtitle="These aren't wall posters. They are the principles that guide every decision, every sprint, every client interaction."
+          badge={t('about.valuesBadge')}
+          title={t('about.valuesTitle')}
+          highlight={t('about.valuesHighlight')}
+          subtitle={t('about.valuesSubtitle')}
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {coreValues.map((val, i) => (
@@ -295,10 +269,10 @@ export default function AboutClient() {
       {/* Team */}
       <SectionWrapper className="bg-section-b" id="team" decoration={<ConstellationDecor name="scorpius" side="right" offsetY="12%" />}>
         <SectionHeader
-          badge="The People Behind PROGREX"
-          title="Meet Our"
-          highlight="Team"
-          subtitle="Talented engineers, designers, and strategists united by a passion for building exceptional technology."
+          badge={t('about.teamBadge')}
+          title={t('about.teamTitle')}
+          highlight={t('about.teamHighlight')}
+          subtitle={t('about.teamSubtitle')}
         />
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -314,14 +288,14 @@ export default function AboutClient() {
       <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="bigdipper" side="left" offsetY="25%" />}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <SectionHeader
-            badge="Why PROGREX"
-            title="Why 38+ Businesses Choose"
-            highlight="Us"
-            subtitle="We don't just write code. We build solutions that generate real business outcomes."
+            badge={t('about.whyBadge')}
+            title={t('about.whyTitle')}
+            highlight={t('about.whyHighlight')}
+            subtitle={t('about.whySubtitle')}
             center={false}
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {whyUs.map((item, i) => (
+            {whyItems.map((item, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, x: 20 }}
@@ -341,10 +315,10 @@ export default function AboutClient() {
       {/* Process Timeline */}
       <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="leo" side="right" offsetY="18%" />}>
         <SectionHeader
-          badge="How We Work"
-          title="Our Proven"
-          highlight="Process"
-          subtitle="A structured, transparent process that delivers great results — every time."
+          badge={t('about.processBadge')}
+          title={t('about.processTitle')}
+          highlight={t('about.processHighlight')}
+          subtitle={t('about.processSubtitle')}
         />
 
         <div className="relative max-w-4xl mx-auto">
@@ -451,10 +425,10 @@ export default function AboutClient() {
 
       {/* CTA */}
       <CTASection
-        title="Ready to Work With Us?"
-        subtitle="Let's discuss your project and see how PROGREX can help you achieve your technology goals."
-        primaryBtn={{ label: 'Get a Free Consultation', href: '/contact' }}
-        secondaryBtn={{ label: 'See Our Projects', href: '/projects' }}
+        title={t('about.ctaTitle')}
+        subtitle={t('about.ctaSubtitle')}
+        primaryBtn={{ label: t('about.ctaPrimaryBtn'), href: '/contact' }}
+        secondaryBtn={{ label: t('about.ctaSecondaryBtn'), href: '/projects' }}
       />
     </>
   )
