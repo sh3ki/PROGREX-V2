@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
+import { useTranslation } from '@/components/TranslationProvider'
 
 const PROJECTS = [
   {
@@ -101,10 +102,12 @@ function getCardStyle(offset: number) {
 }
 
 export default function FeaturedProjectsCarousel() {
+  const { t, translations } = useTranslation()
   const [current, setCurrent] = useState(0)
   const [direction, setDirection] = useState(0)
   const [dragging, setDragging] = useState(false)
 
+  const tp = translations.data.featuredProjects as Record<string, { title: string; shortDesc: string }>
   const total = PROJECTS.length
 
   const go = useCallback(
@@ -198,7 +201,7 @@ export default function FeaturedProjectsCarousel() {
                     <div className="relative aspect-[16/9] overflow-hidden">
                       <Image
                         src={project.image}
-                        alt={project.title}
+                        alt={tp[project.slug]?.title ?? project.title}
                         fill
                         className="object-cover object-top"
                         sizes="(max-width: 768px) 100vw, 672px"
@@ -258,10 +261,10 @@ export default function FeaturedProjectsCarousel() {
                           color: isCenter ? '#fff' : 'rgba(255,255,255,0.75)',
                         }}
                       >
-                        {project.title}
+                        {tp[project.slug]?.title ?? project.title}
                       </h3>
                       <p className="text-white/50 text-sm leading-relaxed mb-5">
-                        {project.shortDesc}
+                        {tp[project.slug]?.shortDesc ?? project.shortDesc}
                       </p>
 
                       <div className="flex items-center justify-between gap-4">
@@ -284,7 +287,7 @@ export default function FeaturedProjectsCarousel() {
 
                         {isCenter && (
                           <span className="shrink-0 inline-flex items-center gap-1.5 font-mono text-sm text-nebula-400">
-                            View Case Study
+                            {t('common.viewCaseStudy')}
                             <ArrowRight size={13} />
                           </span>
                         )}
@@ -365,7 +368,7 @@ export default function FeaturedProjectsCarousel() {
 
       {/* Drag hint */}
       <p className="text-center font-mono text-[10px] text-white/20 mt-3 tracking-widest">
-        ← DRAG OR SWIPE TO EXPLORE →
+        {t('common.dragHint')}
       </p>
     </div>
   )

@@ -5,6 +5,7 @@ import { motion, useInView } from 'framer-motion'
 import Link from 'next/link'
 import { ArrowRight, ChevronRight } from 'lucide-react'
 import OrbitOrb from './OrbitOrb'
+import { useTranslation } from '@/components/TranslationProvider'
 
 interface HeroProps {
   badge?: string
@@ -17,13 +18,6 @@ interface HeroProps {
   secondaryBtn?: { label: string; href: string }
   showStats?: boolean
 }
-
-const stats = [
-  { value: 52, suffix: '+', label: 'Projects' },
-  { value: 38,  suffix: '+', label: 'Clients' },
-  { value: 4,   suffix: '+', label: 'Years' },
-  { value: 15,  suffix: '+', label: 'Experts' },
-]
 
 function CountUp({ target, suffix }: { target: number; suffix: string }) {
   const [count, setCount] = useState(0)
@@ -54,10 +48,20 @@ export default function Hero({
   highlightNewLine = false,
   subtitleLabel,
   subtitle,
-  primaryBtn = { label: 'Get a Quote', href: '/contact' },
+  primaryBtn,
   secondaryBtn,
   showStats = false,
 }: HeroProps) {
+  const { t } = useTranslation()
+
+  const resolvedPrimaryBtn = primaryBtn ?? { label: t('hero.defaultBtn'), href: '/contact' }
+
+  const stats = [
+    { value: 52, suffix: '+', label: t('hero.statProjects') },
+    { value: 38, suffix: '+', label: t('hero.statClients') },
+    { value: 4,  suffix: '+', label: t('hero.statYears') },
+    { value: 15, suffix: '+', label: t('hero.statExperts') },
+  ]
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
       {/* Nebula blobs */}
@@ -135,8 +139,8 @@ export default function Hero({
               transition={{ duration: 0.5, delay: 0.4 }}
               className="flex flex-row gap-4 flex-wrap"
             >
-              <Link href={primaryBtn.href} className="btn-primary text-base px-8 py-4">
-                <span>{primaryBtn.label}</span>
+              <Link href={resolvedPrimaryBtn.href} className="btn-primary text-base px-8 py-4">
+                <span>{resolvedPrimaryBtn.label}</span>
                 <ArrowRight size={18} />
               </Link>
               {secondaryBtn && (

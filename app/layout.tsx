@@ -78,11 +78,12 @@ export default function RootLayout({
         {/* Global starfield — fixed, behind everything */}
         <StarfieldCanvas />
         <CustomCursor />
-        <TranslationProvider />
-        <Navbar />
-        <main>{children}</main>
-        <Footer />
-        <Chatbot />
+        <TranslationProvider>
+          <Navbar />
+          <main>{children}</main>
+          <Footer />
+          <Chatbot />
+        </TranslationProvider>
       </body>
     </html>
   )

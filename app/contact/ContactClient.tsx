@@ -17,26 +17,7 @@ const WhatsAppIcon = ({ size = 16 }: { size?: number }) => (
 )
 import SectionWrapper from '@/components/SectionWrapper'
 import ConstellationDecor from '@/components/ConstellationDecor'
-
-const services = [
-  'Custom Software Development',
-  'Web Development',
-  'Mobile App Development',
-  'System Integration',
-  'Academic / Capstone System',
-  'IT Consulting',
-  'Ready-Made System',
-  'Other',
-]
-
-const budgets = [
-  'Below ₱10,000',
-  '₱10,000 – ₱50,000',
-  '₱50,000 – ₱150,000',
-  '₱150,000 – ₱500,000',
-  '₱500,000+',
-  "Let's Discuss",
-]
+import { useTranslation } from '@/components/TranslationProvider'
 
 interface FormData {
   name: string
@@ -49,6 +30,11 @@ interface FormData {
 }
 
 export default function ContactClient() {
+  const { t, translations } = useTranslation()
+  const services = translations.form.ctaServices as unknown as string[]
+  const budgets = translations.form.budgetOptions as unknown as string[]
+  const socialLabels = translations.contact.socialLabels as unknown as string[]
+
   const [form, setForm] = useState<FormData>({
     name: '', email: '', phone: '', company: '', service: '', budget: '', message: '',
   })
@@ -66,7 +52,7 @@ export default function ContactClient() {
   const handleFileSelect = (file: File) => {
     setFileError('')
     if (file.size > MAX_FILE_SIZE) {
-      setFileError(`File too large (max 3 MB). "${file.name}" is ${(file.size / 1024 / 1024).toFixed(1)} MB.`)
+      setFileError(`${t('form.fileTooBig')} "${file.name}" is ${(file.size / 1024 / 1024).toFixed(1)} MB.`)
       return
     }
     setAttachedFile(file)
@@ -74,10 +60,10 @@ export default function ContactClient() {
 
   const validate = (): boolean => {
     const newErrors: Partial<FormData> = {}
-    if (!form.name.trim()) newErrors.name = 'Name is required'
-    if (!form.email.trim()) newErrors.email = 'Email is required'
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) newErrors.email = 'Invalid email'
-    if (!form.message.trim()) newErrors.message = 'Message is required'
+    if (!form.name.trim()) newErrors.name = t('form.nameRequired')
+    if (!form.email.trim()) newErrors.email = t('form.emailRequired')
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) newErrors.email = t('form.invalidEmail')
+    if (!form.message.trim()) newErrors.message = t('form.messageRequired')
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -106,11 +92,11 @@ export default function ContactClient() {
         body: JSON.stringify({ ...form, attachment }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to send')
+      if (!res.ok) throw new Error(data.error || t('form.failedToSend'))
       setAttachedFile(null)
       setSubmitted(true)
     } catch (err: unknown) {
-      setServerError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
+      setServerError(err instanceof Error ? err.message : t('form.serverError'))
     } finally {
       setLoading(false)
     }
@@ -131,13 +117,13 @@ export default function ContactClient() {
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
             <div className="eyebrow-badge mb-4 justify-center">
               <span className="w-1.5 h-1.5 rounded-full bg-nebula-500 animate-pulse" />
-              Let&apos;s Work Together
+              {t('contact.badge')}
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white mb-4 leading-tight">
-              Start Your <span className="text-gradient-nebula">Project</span>
+              {t('contact.title')} <span className="text-gradient-nebula">{t('contact.highlight')}</span>
             </h1>
             <p className="text-slate-300 text-lg max-w-xl mx-auto leading-relaxed">
-              Tell us about your project and we&apos;ll get back to you within 24 hours with a plan.
+              {t('contact.subtitle')}
             </p>
           </motion.div>
         </div>
@@ -164,15 +150,15 @@ export default function ContactClient() {
                   >
                     <CheckCircle size={28} className="text-white" />
                   </motion.div>
-                  <h2 className="text-2xl font-extrabold text-white mb-3">Message Sent!</h2>
+                  <h2 className="text-2xl font-extrabold text-white mb-3">{t('form.successTitle')}</h2>
                   <p className="text-slate-400 leading-relaxed mb-6">
-                    Thank you, <strong className="text-white">{form.name}</strong>! We&apos;ve received your message and will get back to you within 24 hours.
+                    Thank you, <strong className="text-white">{form.name}</strong>! {t('form.successMsg')}
                   </p>
                   <button
                     onClick={() => { setSubmitted(false); setForm({ name: '', email: '', phone: '', company: '', service: '', budget: '', message: '' }) }}
                     className="btn-outline text-sm px-6 py-2.5 inline-flex"
                   >
-                    Send Another Message
+                    {t('form.sendAnother')}
                   </button>
                 </motion.div>
               ) : (
@@ -184,41 +170,41 @@ export default function ContactClient() {
                   onSubmit={handleSubmit}
                   className="glass-card rounded-2xl p-6 sm:p-8 border border-nebula-700/20 space-y-5"
                 >
-                  <h2 className="text-xl font-bold text-white mb-2">Get a Free Quote</h2>
+                  <h2 className="text-xl font-bold text-white mb-2">{t('contact.formHeading')}</h2>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <Field label="Full Name *" value={form.name} onChange={(v) => handleChange('name', v)} error={errors.name} placeholder="Your name" />
-                    <Field label="Email Address *" type="email" value={form.email} onChange={(v) => handleChange('email', v)} error={errors.email} placeholder="you@company.com" />
-                    <Field label="Phone Number" type="tel" value={form.phone} onChange={(v) => handleChange('phone', v)} placeholder="+63 912 345 6789" />
-                    <Field label="Company / Organization" value={form.company} onChange={(v) => handleChange('company', v)} placeholder="Your company name" />
+                    <Field label={`${t('form.fullName')} ${t('form.required')}`} value={form.name} onChange={(v) => handleChange('name', v)} error={errors.name} placeholder={t('form.namePlaceholder')} />
+                    <Field label={`${t('form.email')} ${t('form.required')}`} type="email" value={form.email} onChange={(v) => handleChange('email', v)} error={errors.email} placeholder={t('form.emailPlaceholder')} />
+                    <Field label={t('form.phone')} type="tel" value={form.phone} onChange={(v) => handleChange('phone', v)} placeholder={t('form.phonePlaceholder')} />
+                    <Field label={t('form.company')} value={form.company} onChange={(v) => handleChange('company', v)} placeholder={t('form.companyPlaceholder')} />
                   </div>
 
                   {/* Service */}
                   <CustomSelect
-                    label="Service Needed"
+                    label={t('form.service')}
                     value={form.service}
                     onChange={(v) => handleChange('service', v)}
                     options={services}
-                    placeholder="Select a service..."
+                    placeholder={t('form.servicePlaceholder')}
                   />
 
                   {/* Budget */}
                   <CustomSelect
-                    label="Budget Range"
+                    label={t('form.budget')}
                     value={form.budget}
                     onChange={(v) => handleChange('budget', v)}
                     options={budgets}
-                    placeholder="Select budget range..."
+                    placeholder={t('form.budgetPlaceholder')}
                   />
 
                   {/* Message */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Project Details *</label>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('form.projectDetails')} {t('form.required')}</label>
                     <textarea
                       value={form.message}
                       onChange={(e) => handleChange('message', e.target.value)}
                       rows={4}
-                      placeholder="Describe your project, goals, and any specific requirements..."
+                      placeholder={t('form.detailsPlaceholder')}
                       className={`w-full px-4 py-2.5 rounded-xl glass border bg-transparent text-slate-200 text-sm placeholder-slate-500 focus:outline-none transition-all resize-none ${
                         errors.message ? 'border-red-500/60' : 'border-nebula-700/20 focus:border-nebula-500/60 focus:shadow-nebula-sm'
                       }`}
@@ -262,7 +248,7 @@ export default function ContactClient() {
                         <>
                           <Paperclip size={14} className="text-nebula-400/60 shrink-0" />
                           <span className="text-slate-500 text-xs">
-                            {dragOver ? 'Drop file here...' : 'Attach a file — click or drag & drop (max 3 MB)'}
+                            {dragOver ? t('form.fileDrop') : t('form.fileAttach')}
                           </span>
                         </>
                       )}
@@ -281,7 +267,7 @@ export default function ContactClient() {
                     whileTap={{ scale: 0.98 }}
                     className="btn-primary w-full justify-center py-3.5 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <span>{loading ? 'Sending...' : 'Send Message'}</span>
+                    <span>{loading ? t('form.sending') : t('form.send')}</span>
                     {loading ? (
                       <motion.div
                         animate={{ rotate: 360 }}
@@ -300,14 +286,14 @@ export default function ContactClient() {
           {/* Contact Info */}
           <div className="lg:col-span-2 space-y-5">
             <div className="glass-card rounded-2xl p-6 border border-nebula-700/20">
-              <h3 className="text-white font-bold mb-5">Contact Information</h3>
+              <h3 className="text-white font-bold mb-5">{t('contact.infoHeading')}</h3>
               <div className="space-y-4">
                 {[
-                  { icon: <Mail size={16} />, label: 'General', value: 'info@progrex.cloud', href: 'mailto:info@progrex.cloud' },
-                  { icon: <Mail size={16} />, label: 'Contact', value: 'contact@progrex.cloud', href: 'mailto:contact@progrex.cloud' },
-                  { icon: <Mail size={16} />, label: 'Support', value: 'support@progrex.cloud', href: 'mailto:support@progrex.cloud' },
-                  { icon: <Phone size={16} />, label: 'Phone / WhatsApp', value: '+63 956 593 4460', href: 'tel:+639565934460' },
-                  { icon: <MapPin size={16} />, label: 'Office', value: 'Calauan, Laguna, Philippines', href: 'https://maps.app.goo.gl/obdsRKxLpNnmu2Bd8' },
+                  { icon: <Mail size={16} />, label: t('contact.generalLabel'), value: 'info@progrex.cloud', href: 'mailto:info@progrex.cloud' },
+                  { icon: <Mail size={16} />, label: t('contact.contactLabel'), value: 'contact@progrex.cloud', href: 'mailto:contact@progrex.cloud' },
+                  { icon: <Mail size={16} />, label: t('contact.supportLabel'), value: 'support@progrex.cloud', href: 'mailto:support@progrex.cloud' },
+                  { icon: <Phone size={16} />, label: t('contact.phoneLabel'), value: '+63 956 593 4460', href: 'tel:+639565934460' },
+                  { icon: <MapPin size={16} />, label: t('contact.officeLabel'), value: 'Calauan, Laguna, Philippines', href: 'https://maps.app.goo.gl/obdsRKxLpNnmu2Bd8' },
                 ].map((item) => (
                   <a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer" className="flex items-start gap-3 group">
                     <div className="w-8 h-8 rounded-lg bg-linear-to-br from-nebula-700 to-aurora-600 flex items-center justify-center text-white shrink-0 group-hover:shadow-nebula-sm transition-all">
@@ -342,7 +328,7 @@ export default function ContactClient() {
                 {/* hover overlay */}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 flex items-center justify-center">
                   <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1.5 text-white text-xs font-mono bg-black/70 px-3 py-1.5 rounded-lg border border-white/10">
-                    <ExternalLink size={11} /> Open in Google Maps
+                    <ExternalLink size={11} /> {t('contact.openMaps')}
                   </span>
                 </div>
               </div>
@@ -350,17 +336,17 @@ export default function ContactClient() {
 
             {/* Social */}
             <div className="glass-card rounded-2xl p-5 pr-4 border border-nebula-700/20">
-              <h4 className="text-white font-bold text-sm mb-4">Follow Us</h4>
+              <h4 className="text-white font-bold text-sm mb-4">{t('contact.followUs')}</h4>
               <div className="flex flex-wrap gap-3">
                 {[
-                  { icon: <Facebook size={16} />, label: 'Facebook', href: 'https://www.facebook.com/progrex.tech' },
-                  { icon: <Instagram size={16} />, label: 'Instagram', href: 'https://www.instagram.com/progrex.tech' },
-                  { icon: <Twitter size={16} />, label: 'X / Twitter', href: 'https://x.com/progrex_tech' },
-                  { icon: <TikTokIcon size={16} />, label: 'TikTok', href: 'https://www.tiktok.com/@progrex.tech' },
-                  { icon: <Youtube size={16} />, label: 'YouTube', href: 'https://www.youtube.com/@progrex.technologies' },
-                  { icon: <WhatsAppIcon size={16} />, label: 'WhatsApp', href: 'https://wa.me/639565934460' },
-                  { icon: <Github size={16} />, label: 'GitHub', href: 'https://github.com/progrex-tech' },
-                  { icon: <MapPin size={16} />, label: 'Google Maps', href: 'https://maps.app.goo.gl/obdsRKxLpNnmu2Bd8' },
+                  { icon: <Facebook size={16} />, label: socialLabels[0], href: 'https://www.facebook.com/progrex.tech' },
+                  { icon: <Instagram size={16} />, label: socialLabels[1], href: 'https://www.instagram.com/progrex.tech' },
+                  { icon: <Twitter size={16} />, label: socialLabels[2], href: 'https://x.com/progrex_tech' },
+                  { icon: <TikTokIcon size={16} />, label: socialLabels[3], href: 'https://www.tiktok.com/@progrex.tech' },
+                  { icon: <Youtube size={16} />, label: socialLabels[4], href: 'https://www.youtube.com/@progrex.technologies' },
+                  { icon: <WhatsAppIcon size={16} />, label: socialLabels[5], href: 'https://wa.me/639565934460' },
+                  { icon: <Github size={16} />, label: socialLabels[6], href: 'https://github.com/progrex-tech' },
+                  { icon: <MapPin size={16} />, label: socialLabels[7], href: 'https://maps.app.goo.gl/obdsRKxLpNnmu2Bd8' },
                 ].map((social) => (
                   <a
                     key={social.label}
@@ -380,10 +366,10 @@ export default function ContactClient() {
             <div className="glass-card rounded-2xl p-5 border border-nebula-700/20">
               <div className="flex items-center gap-2 mb-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-emerald-400 text-sm font-mono">{'// ONLINE — Available'}</span>
+                <span className="text-emerald-400 text-sm font-mono">{t('contact.responseStatus')}</span>
               </div>
               <p className="text-slate-400 text-xs leading-relaxed">
-                Open 24/7. We&apos;re available anytime, day or night, and typically respond within <strong className="text-white">24 hours</strong>. For urgent projects, call us directly for immediate assistance.
+                {t('contact.responseMsg')} <strong className="text-white">{t('contact.responseTime')}</strong>{t('contact.responseUrgent')}
               </p>
             </div>
           </div>

@@ -4,35 +4,9 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Mail, Phone, MapPin, Twitter, Facebook, Instagram, Youtube, X, Github } from 'lucide-react'
+import { useTranslation } from '@/components/TranslationProvider'
 
-// ─── Footer link data ────────────────────────────────────────────────────────
-
-const footerLinks = {
-  Company: [
-    { label: 'About Us', href: '/about' },
-    { label: 'Our Team', href: '/about#team' },
-    { label: 'Projects', href: '/projects' },
-    { label: 'Contact', href: '/contact' },
-  ],
-  Services: [
-    { label: 'Custom Software', href: '/services/custom-software-development' },
-    { label: 'Web Development', href: '/services/web-development' },
-    { label: 'Mobile Development', href: '/services/mobile-app-development' },
-    { label: 'View All Services', href: '/services' },
-  ],
-  Products: [
-    { label: 'ProSchool', href: '/ready-made-systems' },
-    { label: 'ProInventory', href: '/ready-made-systems' },
-    { label: 'ProHRIS', href: '/ready-made-systems' },
-    { label: 'View All Systems', href: '/ready-made-systems' },
-  ],
-  Resources: [
-    { label: 'Blog', href: '/blogs' },
-    { label: 'Case Studies', href: '/projects' },
-    { label: 'Privacy Policy', href: 'modal:privacy' },
-    { label: 'Terms of Service', href: 'modal:terms' },
-  ],
-}
+// ─── Footer link data is now derived from translations inside the component ──
 
 // ─── Custom SVG icons ────────────────────────────────────────────────────────
 
@@ -458,10 +432,12 @@ function LegalModal({
   title,
   content,
   onClose,
+  closeLabel = 'CLOSE',
 }: {
   title: string
   content: string
   onClose: () => void
+  closeLabel?: string
 }) {
   return (
     <div
@@ -513,7 +489,7 @@ function LegalModal({
             className="px-5 py-2 text-sm font-mono font-semibold rounded-lg text-nebula-300 transition-all hover:bg-nebula-400/10"
             style={{ border: '1px solid rgba(103,232,249,0.25)' }}
           >
-            CLOSE
+            {closeLabel}
           </button>
         </div>
       </div>
@@ -524,7 +500,21 @@ function LegalModal({
 // ─── Footer ───────────────────────────────────────────────────────────────────
 
 export default function Footer() {
+  const { t, translations } = useTranslation()
   const [modal, setModal] = useState<'privacy' | 'terms' | null>(null)
+
+  const companyHrefs = ['/about', '/about#team', '/projects', '/contact']
+  const servicesHrefs = ['/services/custom-software-development', '/services/web-development', '/services/mobile-app-development', '/services']
+  const productsHrefs = ['/ready-made-systems', '/ready-made-systems', '/ready-made-systems', '/ready-made-systems']
+  const resourcesHrefs = ['/blogs', '/projects', 'modal:privacy', 'modal:terms']
+
+  const tFooter = translations.footer
+  const footerLinks = {
+    [tFooter.companyHeading]: companyHrefs.map((href, i) => ({ label: (tFooter.companyLinks as unknown as string[])[i] ?? '', href })),
+    [tFooter.servicesHeading]: servicesHrefs.map((href, i) => ({ label: (tFooter.servicesLinks as unknown as string[])[i] ?? '', href })),
+    [tFooter.productsHeading]: productsHrefs.map((href, i) => ({ label: (tFooter.productsLinks as unknown as string[])[i] ?? '', href })),
+    [tFooter.resourcesHeading]: resourcesHrefs.map((href, i) => ({ label: (tFooter.resourcesLinks as unknown as string[])[i] ?? '', href })),
+  }
 
   const handleLinkClick = (href: string, e: React.MouseEvent) => {
     if (href === 'modal:privacy') {
@@ -541,16 +531,18 @@ export default function Footer() {
       {/* Legal modals */}
       {modal === 'privacy' && (
         <LegalModal
-          title="Privacy Policy"
+          title={t('footer.privacyTitle')}
           content={PRIVACY_POLICY}
           onClose={() => setModal(null)}
+          closeLabel={t('footer.close')}
         />
       )}
       {modal === 'terms' && (
         <LegalModal
-          title="Terms of Service"
+          title={t('footer.termsTitle')}
           content={TERMS_OF_SERVICE}
           onClose={() => setModal(null)}
+          closeLabel={t('footer.close')}
         />
       )}
 
@@ -584,7 +576,7 @@ export default function Footer() {
                 />
               </Link>
               <p className="text-white/40 text-sm leading-relaxed max-w-55">
-                Technology solutions that drive success. Custom software, web apps, and enterprise systems that scale.
+                {t('footer.brand')}
               </p>
             </div>
 
@@ -669,7 +661,7 @@ export default function Footer() {
             style={{ borderTop: '1px solid rgba(103,232,249,0.08)' }}
           >
             <p className="font-mono text-sm text-white/25 tracking-wider">
-              © {new Date().getFullYear()} PROGREX — ALL RIGHTS RESERVED
+              {t('footer.copyright').replace('{year}', String(new Date().getFullYear()))}
             </p>
 
             <div className="flex items-center gap-2">

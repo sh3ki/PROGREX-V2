@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   X, Send, Bot, User, Loader2, RotateCcw, Sparkles, ChevronsUp,
 } from 'lucide-react'
+import { useTranslation } from '@/components/TranslationProvider'
 
 interface Message {
   id: string
@@ -62,6 +63,7 @@ function renderContent(text: string) {
 }
 
 export default function Chatbot() {
+  const { lang: activeLang } = useTranslation()
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>(() => [getWelcomeMessage(
     typeof window !== 'undefined' ? (localStorage.getItem('progrex-lang') ?? 'EN') : 'EN'
@@ -70,23 +72,13 @@ export default function Chatbot() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hasNewMessage, setHasNewMessage] = useState(false)
-  const [activeLang, setActiveLangState] = useState('EN')
 
-  // Sync language from Navbar via localStorage + custom event
+  // When language changes via TranslationProvider, update welcome message if chat is fresh
   useEffect(() => {
-    const stored = localStorage.getItem('progrex-lang')
-    if (stored) setActiveLangState(stored)
-    const handler = (e: Event) => {
-      const lang = (e as CustomEvent<string>).detail
-      setActiveLangState(lang)
-      // Update welcome message if chat is still fresh
-      setMessages(prev =>
-        prev.length === 1 && prev[0].id === 'welcome' ? [getWelcomeMessage(lang)] : prev
-      )
-    }
-    document.addEventListener('progrex-lang-change', handler)
-    return () => document.removeEventListener('progrex-lang-change', handler)
-  }, [])
+    setMessages(prev =>
+      prev.length === 1 && prev[0].id === 'welcome' ? [getWelcomeMessage(activeLang)] : prev
+    )
+  }, [activeLang])
 
   // ── Lead form state ──────────────────────────────────────────────────
   const [formMode, setFormMode] = useState(false)

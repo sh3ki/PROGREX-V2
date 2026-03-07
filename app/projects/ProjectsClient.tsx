@@ -6,36 +6,39 @@ import Hero from '@/components/Hero'
 import ProjectCard from '@/components/ProjectCard'
 import CTASection from '@/components/CTASection'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
-import { projects, projectCategories } from '@/lib/mockData'
+import { projects } from '@/lib/mockData'
+import { useTranslation } from '@/components/TranslationProvider'
 
 export default function ProjectsClient() {
-  const [activeFilter, setActiveFilter] = useState('All')
+  const { t, translations } = useTranslation()
+  const categories = translations.projects.categories as unknown as string[]
+  const [activeFilter, setActiveFilter] = useState(categories[0] || 'All')
 
-  const filtered = activeFilter === 'All'
+  const filtered = activeFilter === categories[0]
     ? projects
     : projects.filter((p) => p.category === activeFilter)
 
   return (
     <>
       <Hero
-        badge="Our Portfolio"
-        title="Projects That"
-        highlight="Drive Impact"
-        subtitle="52+ delivered solutions. Each one built with purpose, precision, and a commitment to measurable results."
-        primaryBtn={{ label: 'Start Your Project', href: '/contact' }}
+        badge={t('projects.heroBadge')}
+        title={t('projects.heroTitle')}
+        highlight={t('projects.heroHighlight')}
+        subtitle={t('projects.heroSubtitle')}
+        primaryBtn={{ label: t('projects.heroPrimaryBtn'), href: '/contact' }}
       />
 
       <SectionWrapper className="bg-[#050510]">
         <SectionHeader
-          badge="Case Studies"
-          title="Our"
-          highlight="Work"
-          subtitle="Filter by category to explore our expertise across industries and technology types."
+          badge={t('projects.listingBadge')}
+          title={t('projects.listingTitle')}
+          highlight={t('projects.listingHighlight')}
+          subtitle={t('projects.listingSubtitle')}
         />
 
         {/* Filter tabs */}
         <div className="flex flex-wrap gap-2 justify-center mb-10">
-          {projectCategories.map((cat) => (
+          {categories.map((cat) => (
             <motion.button
               key={cat}
               onClick={() => setActiveFilter(cat)}
@@ -65,10 +68,16 @@ export default function ProjectsClient() {
                 transition={{ duration: 0.3, delay: i * 0.05 }}
               >
                 <ProjectCard
-                  title={project.title}
+                  title={
+                    (translations.data?.projects as Record<string, { title?: string; shortDesc?: string }>)?.[project.slug]?.title
+                    || project.title
+                  }
                   category={project.category}
                   industry={project.industry}
-                  shortDesc={project.shortDesc}
+                  shortDesc={
+                    (translations.data?.projects as Record<string, { title?: string; shortDesc?: string }>)?.[project.slug]?.shortDesc
+                    || project.shortDesc
+                  }
                   slug={project.slug}
                   tags={project.tags}
                   image={project.image}
@@ -81,16 +90,16 @@ export default function ProjectsClient() {
 
         {filtered.length === 0 && (
           <div className="text-center py-20 text-slate-500">
-            No projects found in this category yet.
+            {t('projects.emptyState')}
           </div>
         )}
       </SectionWrapper>
 
       <CTASection
-        title="Have a Project in Mind?"
-        subtitle="Let's turn your idea into a powerful, production-ready system that delivers real results."
-        primaryBtn={{ label: 'Get a Quote', href: '/contact' }}
-        secondaryBtn={{ label: 'Our Services', href: '/services' }}
+        title={t('projects.ctaTitle')}
+        subtitle={t('projects.ctaSubtitle')}
+        primaryBtn={{ label: t('projects.ctaPrimaryBtn'), href: '/contact' }}
+        secondaryBtn={{ label: t('projects.ctaSecondaryBtn'), href: '/services' }}
       />
     </>
   )

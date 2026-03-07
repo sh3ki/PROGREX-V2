@@ -10,8 +10,10 @@ import {
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
 import ConstellationDecor from '@/components/ConstellationDecor'
 import CTASection from '@/components/CTASection'
+import { useTranslation } from '@/components/TranslationProvider'
 
 interface Project {
+  slug: string
   title: string
   category: string
   industry: string
@@ -142,7 +144,19 @@ function ImageCarousel({ images }: { images: string[] }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function CaseStudyClient({ project }: { project: Project }) {
+  const { t, translations } = useTranslation()
   const images = project.images ?? (project.image ? [project.image] : [])
+
+  // Translated project data with fallback to English prop values
+  const tp = (translations.data as unknown as { projects?: Record<string, { title?: string; shortDesc?: string; overview?: string; problem?: string; solution?: string; features?: readonly string[]; results?: readonly (readonly string[])[]; testimonial?: readonly string[] }> })?.projects?.[project.slug]
+  const pTitle = tp?.title ?? project.title
+  const pShortDesc = tp?.shortDesc ?? project.shortDesc
+  const pOverview = tp?.overview ?? project.overview
+  const pProblem = tp?.problem ?? project.problem
+  const pSolution = tp?.solution ?? project.solution
+  const pFeatures = tp?.features ? [...tp.features] : project.features
+  const pResults: (readonly string[])[] = tp?.results ? [...tp.results] : project.results.map(r => [r.metric, r.value])
+  const pTestimonial: readonly string[] = tp?.testimonial ?? [project.testimonial.quote, project.testimonial.author, project.testimonial.role]
 
   return (
     <>
@@ -153,7 +167,7 @@ export default function CaseStudyClient({ project }: { project: Project }) {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }}>
             <Link href="/projects" className="inline-flex items-center gap-2 font-mono text-xs text-white/35 hover:text-nebula-300 transition-colors mb-4 group">
-              <ArrowLeft size={13} className="group-hover:-translate-x-0.5 transition-transform" />../projects
+              <ArrowLeft size={13} className="group-hover:-translate-x-0.5 transition-transform" />{t('caseStudy.backLink')}
             </Link>
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.06 }}>
@@ -161,8 +175,8 @@ export default function CaseStudyClient({ project }: { project: Project }) {
               <span className="font-mono text-[11px] px-3 py-1 rounded font-semibold tracking-wide" style={{ background: 'rgba(167,139,250,0.15)', color: '#c4b5fd', border: '1px solid rgba(167,139,250,0.35)' }}>{project.category}</span>
               <span className="font-mono text-[11px] px-3 py-1 rounded font-semibold tracking-wide" style={{ background: 'rgba(14,165,233,0.10)', color: '#7dd3fc', border: '1px solid rgba(14,165,233,0.25)' }}>{project.industry}</span>
             </div>
-            <h1 className="font-display font-extrabold text-white leading-tight" style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', letterSpacing: '-0.02em' }}>{project.title}</h1>
-            <p className="text-white/50 text-lg leading-relaxed mb-4 max-w-3xl">{project.shortDesc}</p>
+            <h1 className="font-display font-extrabold text-white leading-tight" style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', letterSpacing: '-0.02em' }}>{pTitle}</h1>
+            <p className="text-white/50 text-lg leading-relaxed mb-4 max-w-3xl">{pShortDesc}</p>
             <div className="flex flex-wrap gap-2 mb-6">
               {project.technologies.map((tech) => (<span key={tech} className="font-mono text-[11px] px-3 py-1 rounded" style={{ background: 'rgba(103,232,249,0.06)', border: '1px solid rgba(103,232,249,0.15)', color: 'rgba(103,232,249,0.65)' }}>{tech}</span>))}
             </div>
@@ -181,12 +195,12 @@ export default function CaseStudyClient({ project }: { project: Project }) {
 
       {/* ─── Overview / Problem / Solution ─────────────────────────── */}
       <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="orion" side="right" offsetY="10%" />}>
-        <SectionHeader badge="Case Study" title="Project" highlight="Breakdown" />
+        <SectionHeader badge={t('caseStudy.overviewBadge')} title={t('caseStudy.overviewTitle')} highlight={t('caseStudy.overviewHighlight')} />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {[
-            { label: 'Project Overview', content: project.overview, icon: <AlignLeft size={20} className="text-nebula-400" />, accentColor: 'rgba(167,139,250,0.18)', borderColor: 'rgba(167,139,250,0.25)', textColor: '#c4b5fd', hoverBorder: 'rgba(167,139,250,0.5)', hoverGlow: 'rgba(167,139,250,0.12)' },
-            { label: 'The Challenge', content: project.problem, icon: <AlertTriangle size={20} className="text-amber-400" />, accentColor: 'rgba(251,191,36,0.12)', borderColor: 'rgba(251,191,36,0.22)', textColor: '#fcd34d', hoverBorder: 'rgba(251,191,36,0.45)', hoverGlow: 'rgba(251,191,36,0.10)' },
-            { label: 'Our Solution', content: project.solution, icon: <Lightbulb size={20} className="text-aurora-400" />, accentColor: 'rgba(34,211,153,0.12)', borderColor: 'rgba(34,211,153,0.22)', textColor: '#6ee7b7', hoverBorder: 'rgba(34,211,153,0.45)', hoverGlow: 'rgba(34,211,153,0.10)' },
+            { label: t('caseStudy.overviewLabel'), content: pOverview, icon: <AlignLeft size={20} className="text-nebula-400" />, accentColor: 'rgba(167,139,250,0.18)', borderColor: 'rgba(167,139,250,0.25)', textColor: '#c4b5fd', hoverBorder: 'rgba(167,139,250,0.5)', hoverGlow: 'rgba(167,139,250,0.12)' },
+            { label: t('caseStudy.challengeLabel'), content: pProblem, icon: <AlertTriangle size={20} className="text-amber-400" />, accentColor: 'rgba(251,191,36,0.12)', borderColor: 'rgba(251,191,36,0.22)', textColor: '#fcd34d', hoverBorder: 'rgba(251,191,36,0.45)', hoverGlow: 'rgba(251,191,36,0.10)' },
+            { label: t('caseStudy.solutionLabel'), content: pSolution, icon: <Lightbulb size={20} className="text-aurora-400" />, accentColor: 'rgba(34,211,153,0.12)', borderColor: 'rgba(34,211,153,0.22)', textColor: '#6ee7b7', hoverBorder: 'rgba(34,211,153,0.45)', hoverGlow: 'rgba(34,211,153,0.10)' },
           ].map((item, i) => (
             <motion.div
               key={i}
@@ -215,9 +229,9 @@ export default function CaseStudyClient({ project }: { project: Project }) {
 
       {/* ─── Features ──────────────────────────────────────────────── */}
       <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="bigdipper" side="left" offsetY="20%" />}>
-        <SectionHeader badge="What We Built" title="Full" highlight="Feature Set" />
+        <SectionHeader badge={t('caseStudy.featuresBadge')} title={t('caseStudy.featuresTitle')} highlight={t('caseStudy.featuresHighlight')} />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-4xl mx-auto">
-          {project.features.map((feature, i) => (
+          {pFeatures.map((feature, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, x: -16 }}
@@ -238,9 +252,9 @@ export default function CaseStudyClient({ project }: { project: Project }) {
 
       {/* ─── Results Metrics ───────────────────────────────────────── */}
       <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="crux" side="right" offsetY="25%" />}>
-        <SectionHeader badge="Measurable Impact" title="Results &" highlight="Metrics" />
+        <SectionHeader badge={t('caseStudy.resultsBadge')} title={t('caseStudy.resultsTitle')} highlight={t('caseStudy.resultsHighlight')} />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {project.results.map((result, i) => (
+          {pResults.map((result, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 24 }}
@@ -266,8 +280,8 @@ export default function CaseStudyClient({ project }: { project: Project }) {
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{ background: 'rgba(14,165,233,0.1)', border: '1px solid rgba(14,165,233,0.22)' }}>
                   <TrendingUp size={18} className="text-nebula-400" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-extrabold text-gradient-nebula mb-1 leading-tight">{result.value}</div>
-                <div className="text-white/45 text-xs font-mono leading-snug">{result.metric}</div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-gradient-nebula mb-1 leading-tight">{result[1]}</div>
+                <div className="text-white/45 text-xs font-mono leading-snug">{result[0]}</div>
               </div>
             </motion.div>
           ))}
@@ -280,7 +294,7 @@ export default function CaseStudyClient({ project }: { project: Project }) {
         <div className="pointer-events-none absolute inset-x-0 top-0 h-72" style={{ background: 'radial-gradient(ellipse 70% 50% at 50% 0%, rgba(124,58,237,0.09) 0%, transparent 100%)' }} />
         <div className="pointer-events-none absolute left-[-10%] top-1/3 w-72 h-72 rounded-full" style={{ background: 'radial-gradient(circle, rgba(14,165,233,0.07) 0%, transparent 70%)', filter: 'blur(40px)' }} />
         <div className="pointer-events-none absolute right-[-10%] bottom-1/4 w-72 h-72 rounded-full" style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.07) 0%, transparent 70%)', filter: 'blur(40px)' }} />
-        <SectionHeader badge="Client Feedback" title="What They" highlight="Say" />
+        <SectionHeader badge={t('caseStudy.testimonialBadge')} title={t('caseStudy.testimonialTitle')} highlight={t('caseStudy.testimonialHighlight')} />
         <div className="max-w-3xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -313,18 +327,18 @@ export default function CaseStudyClient({ project }: { project: Project }) {
             </div>
             {/* Quote text */}
             <p className="text-white/80 text-base sm:text-lg leading-relaxed mb-8 italic relative z-10">
-              &ldquo;{project.testimonial.quote}&rdquo;
+              &ldquo;{pTestimonial[0]}&rdquo;
             </p>
             {/* Author row */}
             <div className="flex items-center gap-4 relative z-10">
              
               <div>
-                <div className="font-bold text-white">{project.testimonial.author}</div>
-                <div className="font-mono text-xs text-nebula-400/70 mt-0.5">{project.testimonial.role}</div>
+                <div className="font-bold text-white">{pTestimonial[1]}</div>
+                <div className="font-mono text-xs text-nebula-400/70 mt-0.5">{pTestimonial[2]}</div>
               </div>
               <div className="ml-auto shrink-0">
                 <span className="font-mono text-[10px] px-3 py-1 rounded-full" style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', color: '#a78bfa' }}>
-                  {project.testimonial.role.includes(',') ? project.testimonial.role.split(',').slice(1).join(',').trim() : project.category}
+                  {pTestimonial[2].includes(',') ? pTestimonial[2].split(',').slice(1).join(',').trim() : project.category}
                 </span>
               </div>
             </div>
@@ -332,7 +346,7 @@ export default function CaseStudyClient({ project }: { project: Project }) {
         </div>
       </SectionWrapper>
 
-      <CTASection title="Ready to Build Your Success Story?" subtitle="Let PROGREX engineer a solution that transforms your business the same way." primaryBtn={{ label: 'Start Your Project', href: '/contact' }} secondaryBtn={{ label: 'More Projects', href: '/projects' }} />
+      <CTASection title={t('caseStudy.ctaTitle')} subtitle={t('caseStudy.ctaSubtitle')} primaryBtn={{ label: t('caseStudy.ctaPrimaryBtn'), href: '/contact' }} secondaryBtn={{ label: t('caseStudy.ctaSecondaryBtn'), href: '/projects' }} />
     </>
   )
 }
