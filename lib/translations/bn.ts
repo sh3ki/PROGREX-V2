@@ -437,3 +437,19 @@ const bn = {
     ['মূল্য নির্ধারণ ও বিলিং কীভাবে কাজ করে?', 'আমরা সুনির্ধারিত স্কোপের জন্য ফিক্সড-প্রাইস প্রকল্প বিলিং এবং চটপটে প্রকল্পের জন্য টাইম-এন্ড-মেটেরিয়ালস বিলিং অফার করি।'],
   ],
 
+  // ─── DATA (placeholder — English fallbacks used by components) ──────────
+  data: {
+    services: {},
+    projects: {},
+    systems: {},
+    testimonials: [],
+    team: [],
+    coreValues: [],
+    generalFaqs: [],
+    stats: [],
+    featuredProjects: {},
+  },
+} as const
+
+export default bn
+
