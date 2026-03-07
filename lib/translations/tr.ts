@@ -105,7 +105,7 @@ const tr = {
     storyHighlight: 'Büyüyen Bir Teknoloji Ekibine',
     storyP1: 'PROGREX, 2025 yılında gerçek anlamda sorunları çözen yazılım geliştirme ortak tutkusuyla iki geliştirici tarafından kuruldu.',
     storyP2: 'Söylenti yayıldıkça ve projeler büyüdükçe ekip de büyüdü.',
-    storyP3: 'Bugün PROGREX 15'ten fazla geliştiriciden oluşan bir ekibe sahip ve büyümeye devam ediyoruz.',
+    storyP3: 'Bugün PROGREX 15\'ten fazla geliştiriciden oluşan bir ekibe sahip ve büyümeye devam ediyoruz.',
     storyP4: 'Hikayemizin başındayız, ancak her projeye ilk projemizle aynı yoğunluk ve özenle yaklaşıyoruz.',
     missionLabel: 'Misyonumuz',
     missionTitle: 'Gerçek sorunları çözen gerçek yazılım üretmek.',
