@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
+import { useTranslation } from '@/components/TranslationProvider'
 
 interface CTASectionProps {
   title?: string
@@ -12,11 +13,17 @@ interface CTASectionProps {
 }
 
 export default function CTASection({
-  title = 'Ready to Build Something Powerful?',
-  subtitle = "Partner with PROGREX and transform your ideas into cutting-edge software solutions. Let's build the future together.",
-  primaryBtn = { label: 'Start Your Project', href: '/contact' },
-  secondaryBtn = { label: 'View Our Work', href: '/projects' },
+  title,
+  subtitle,
+  primaryBtn,
+  secondaryBtn,
 }: CTASectionProps) {
+  const { t } = useTranslation()
+
+  const resolvedTitle = title ?? t('cta.defaultTitle')
+  const resolvedSubtitle = subtitle ?? t('cta.defaultSubtitle')
+  const resolvedPrimary = primaryBtn ?? { label: t('cta.defaultPrimaryBtn'), href: '/contact' }
+  const resolvedSecondary = secondaryBtn ?? { label: t('cta.defaultSecondaryBtn'), href: '/projects' }
   return (
     <section className="relative py-28 overflow-hidden">
       {/* Deep space background — semi-transparent so starfield shows through */}
@@ -39,11 +46,11 @@ export default function CTASection({
           {/* Eyebrow */}
           <div className="eyebrow-badge mx-auto mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-nebula-400 animate-pulse inline-block mr-2" />
-            INITIATE MISSION
+            {t('common.initiateMission')}
           </div>
 
           <h2 className="font-display font-black text-3xl sm:text-4xl lg:text-5xl text-white mb-5 leading-tight">
-            {title.split(' ').map((word, i) => {
+            {resolvedTitle.split(' ').map((word, i) => {
               const isHighlight = ['Powerful?', 'Future', 'Success', 'Today', 'Partner'].some(
                 (h) => word.includes(h)
               )
@@ -56,19 +63,19 @@ export default function CTASection({
           </h2>
 
           <p className="text-white/50 text-base sm:text-lg leading-relaxed mb-10 max-w-xl mx-auto">
-            {subtitle}
+            {resolvedSubtitle}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-              <Link href={primaryBtn.href} className="btn-primary text-base px-8 py-4">
-                <span>{primaryBtn.label}</span>
+              <Link href={resolvedPrimary.href} className="btn-primary text-base px-8 py-4">
+                <span>{resolvedPrimary.label}</span>
                 <ArrowRight size={16} />
               </Link>
             </motion.div>
             <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-              <Link href={secondaryBtn.href} className="btn-outline text-base px-8 py-4">
-                {secondaryBtn.label}
+              <Link href={resolvedSecondary.href} className="btn-outline text-base px-8 py-4">
+                {resolvedSecondary.label}
               </Link>
             </motion.div>
           </div>
