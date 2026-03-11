@@ -72,6 +72,7 @@ export default function ProjectsClient() {
                     (translations.data?.projects as Record<string, { title?: string; shortDesc?: string }>)?.[project.slug]?.title
                     || project.title
                   }
+                  systemType={project.systemType}
                   category={project.category}
                   industry={project.industry}
                   shortDesc={
