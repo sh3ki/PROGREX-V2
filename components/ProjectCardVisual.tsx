@@ -1,6 +1,7 @@
 'use client'
 
 import type { JSX } from 'react'
+import PhoneMockup from './PhoneMockup'
 
 interface ProjectCardVisualProps {
   category: string
@@ -137,6 +138,7 @@ const patterns: Record<string, JSX.Element> = {
 }
 
 export default function ProjectCardVisual({ category, title, image }: ProjectCardVisualProps) {
+  const isMobile = category?.toLowerCase() === 'mobile'
   const key = Object.keys(patterns).find(k => category?.toLowerCase().includes(k.toLowerCase())) ?? 'Web'
 
   return (
@@ -145,12 +147,19 @@ export default function ProjectCardVisual({ category, title, image }: ProjectCar
       style={{ background: 'linear-gradient(135deg, rgba(5,5,25,0.9), rgba(10,10,40,0.7))' }}
     >
       {image ? (
-        /* Real photo */
-        <img
-          src={image}
-          alt={title}
-          className="absolute inset-0 w-full h-full object-cover opacity-75 group-hover:opacity-90 scale-105 group-hover:scale-110 transition-all duration-500"
-        />
+        isMobile ? (
+          /* Phone mockup for mobile apps */
+          <div className="absolute inset-0">
+            <PhoneMockup src={image} alt={title} />
+          </div>
+        ) : (
+          /* Real photo */
+          <img
+            src={image}
+            alt={title}
+            className="absolute inset-0 w-full h-full object-cover opacity-75 group-hover:opacity-90 scale-105 group-hover:scale-110 transition-all duration-500"
+          />
+        )
       ) : (
         /* SVG pattern fallback */
         <div className="absolute inset-0">
