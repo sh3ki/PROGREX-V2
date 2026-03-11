@@ -199,6 +199,41 @@ export default function HomeClient() {
         showStats
       />
 
+      {/* ── FEATURED PROJECTS ────────────────────────────────────────────── */}
+      <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="bigdipper" side="left" offsetY="15%" />}>
+        <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
+        {/* Ambient glow */}
+        <div className="absolute inset-x-0 top-0 h-72 pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 40% at 50% 0%, rgba(124,58,237,0.07) 0%, transparent 100%)' }} />
+
+        <SectionHeader
+          badge={t('home.projectsBadge')}
+          title={t('home.projectsTitle')}
+          highlight={t('home.projectsHighlight')}
+          subtitle={t('home.projectsSubtitle')}
+        />
+
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, delay: 0.2 }}
+        >
+          <FeaturedProjectsCarousel />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.5 }}
+          className="text-center mt-10"
+        >
+          <Link href="/projects" className="btn-outline inline-flex">
+            {t('home.projectsViewAll')} <ArrowRight size={16} />
+          </Link>
+        </motion.div>
+      </SectionWrapper>
+
       {/* ── SERVICES PREVIEW ─────────────────────────────────────────────── */}
       <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="orion" side="right" offsetY="10%" />}>
         {/* Ambient top glow */}
@@ -238,41 +273,6 @@ export default function HomeClient() {
           </div>
           <Link href="/services" className="btn-outline inline-flex">
             {t('home.servicesExplore')} <ArrowRight size={16} />
-          </Link>
-        </motion.div>
-      </SectionWrapper>
-
-      {/* ── FEATURED PROJECTS ────────────────────────────────────────────── */}
-      <SectionWrapper className="bg-section-b" decoration={<ConstellationDecor name="bigdipper" side="left" offsetY="15%" />}>
-        <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
-        {/* Ambient glow */}
-        <div className="absolute inset-x-0 top-0 h-72 pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 40% at 50% 0%, rgba(124,58,237,0.07) 0%, transparent 100%)' }} />
-
-        <SectionHeader
-          badge={t('home.projectsBadge')}
-          title={t('home.projectsTitle')}
-          highlight={t('home.projectsHighlight')}
-          subtitle={t('home.projectsSubtitle')}
-        />
-
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7, delay: 0.2 }}
-        >
-          <FeaturedProjectsCarousel />
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.5 }}
-          className="text-center mt-10"
-        >
-          <Link href="/projects" className="btn-outline inline-flex">
-            {t('home.projectsViewAll')} <ArrowRight size={16} />
           </Link>
         </motion.div>
       </SectionWrapper>
