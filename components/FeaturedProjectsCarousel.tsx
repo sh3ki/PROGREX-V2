@@ -6,12 +6,14 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
 import { useTranslation } from '@/components/TranslationProvider'
+import PhoneMockup from '@/components/PhoneMockup'
 
 const PROJECTS = [
   {
     id: 1,
     slug: 'nexus-erp',
     title: 'Nexus ERP Platform',
+    systemType: 'Enterprise Resource Planning System',
     category: 'Enterprise',
     industry: 'Manufacturing',
     tags: ['React', 'Node.js', 'PostgreSQL'],
@@ -23,6 +25,7 @@ const PROJECTS = [
     id: 2,
     slug: 'edutrack-lms',
     title: 'EduTrack LMS',
+    systemType: 'Learning Management System',
     category: 'Web',
     industry: 'Education',
     tags: ['Next.js', 'Prisma', 'PostgreSQL'],
@@ -34,6 +37,7 @@ const PROJECTS = [
     id: 3,
     slug: 'swiftcart-ecommerce',
     title: 'SwiftCart E-Commerce',
+    systemType: 'E-Commerce Platform',
     category: 'E-commerce',
     industry: 'Retail',
     tags: ['Next.js', 'MongoDB', 'Stripe'],
@@ -45,6 +49,7 @@ const PROJECTS = [
     id: 4,
     slug: 'pulsecrm',
     title: 'PulseCRM',
+    systemType: 'Customer Relationship Management System',
     category: 'CRM',
     industry: 'Sales & Marketing',
     tags: ['React', 'FastAPI', 'Redis'],
@@ -56,12 +61,25 @@ const PROJECTS = [
     id: 5,
     slug: 'healthbridge',
     title: 'HealthBridge Portal',
+    systemType: 'Patient Management Portal',
     category: 'Healthcare',
     industry: 'Medical',
     tags: ['React Native', 'Django', 'PostgreSQL'],
     image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=900&q=80',
     shortDesc:
       'Patient management portal connecting clinics, doctors, and patients with telemedicine, appointment scheduling, and digital prescription capabilities. Deployed across 8 medical centers.',
+  },
+  {
+    id: 6,
+    slug: 'brainspark-app',
+    title: 'BrainSpark',
+    systemType: 'Flashcard & Quiz Learning App',
+    category: 'Mobile',
+    industry: 'Education',
+    tags: ['Flutter', 'Supabase', 'Dart'],
+    image: 'https://res.cloudinary.com/dlu2bqrda/image/upload/v1773217678/1_nxiqfg.png',
+    shortDesc:
+      'Adaptive flashcard and quiz learning app using spaced-repetition, mastery tracking, and timed quiz sessions. Built with Flutter and Supabase for iOS and Android.',
   },
 ]
 
@@ -199,22 +217,28 @@ export default function FeaturedProjectsCarousel() {
                   <>
                     {/* Image — 16:9 */}
                     <div className="relative aspect-[16/9] overflow-hidden">
-                      <Image
-                        src={project.image}
-                        alt={tp[project.slug]?.title ?? project.title}
-                        fill
-                        className="object-cover object-top"
-                        sizes="(max-width: 768px) 100vw, 672px"
-                        draggable={false}
-                      />
-                      {/* overlay */}
-                      <div
-                        className="absolute inset-0"
-                        style={{
-                          background:
-                            'linear-gradient(to bottom, rgba(6,6,22,0.1) 0%, rgba(6,6,22,0.65) 100%)',
-                        }}
-                      />
+                      {project.category === 'Mobile' ? (
+                        <PhoneMockup src={project.image} alt={tp[project.slug]?.title ?? project.title} />
+                      ) : (
+                        <>
+                          <Image
+                            src={project.image}
+                            alt={tp[project.slug]?.title ?? project.title}
+                            fill
+                            className="object-cover object-top"
+                            sizes="(max-width: 768px) 100vw, 672px"
+                            draggable={false}
+                          />
+                          {/* overlay */}
+                          <div
+                            className="absolute inset-0"
+                            style={{
+                              background:
+                                'linear-gradient(to bottom, rgba(6,6,22,0.1) 0%, rgba(6,6,22,0.65) 100%)',
+                            }}
+                          />
+                        </>
+                      )}
 
                       {/* Top-edge gradient line */}
                       <div
@@ -256,13 +280,16 @@ export default function FeaturedProjectsCarousel() {
                     {/* Content */}
                     <div className="p-5 sm:p-6">
                       <h3
-                        className="font-display font-bold text-xl sm:text-2xl mb-3"
+                        className="font-display font-bold text-xl sm:text-2xl mb-0.5"
                         style={{
                           color: isCenter ? '#fff' : 'rgba(255,255,255,0.75)',
                         }}
                       >
                         {tp[project.slug]?.title ?? project.title}
                       </h3>
+                      {project.systemType && (
+                        <p className="font-mono text-base text-cyan-400/60 mb-3 tracking-wide">{project.systemType}</p>
+                      )}
                       <p className="text-white/50 text-sm leading-relaxed mb-5">
                         {tp[project.slug]?.shortDesc ?? project.shortDesc}
                       </p>

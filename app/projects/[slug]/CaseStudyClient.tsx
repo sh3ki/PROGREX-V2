@@ -11,10 +11,12 @@ import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
 import ConstellationDecor from '@/components/ConstellationDecor'
 import CTASection from '@/components/CTASection'
 import { useTranslation } from '@/components/TranslationProvider'
+import PhoneMockup from '@/components/PhoneMockup'
 
 interface Project {
   slug: string
   title: string
+  systemType?: string
   category: string
   industry: string
   shortDesc: string
@@ -39,7 +41,7 @@ const CIRCUIT_BG = {
 const INTERVAL_MS = 3000
 
 // ─── Image Carousel ──────────────────────────────────────────────────────────
-function ImageCarousel({ images }: { images: string[] }) {
+function ImageCarousel({ images, isMobile = false }: { images: string[]; isMobile?: boolean }) {
   const [current, setCurrent] = useState(0)
   const [direction, setDirection] = useState(1)
   const [imgErrors, setImgErrors] = useState<Record<number, boolean>>({})
@@ -93,7 +95,7 @@ function ImageCarousel({ images }: { images: string[] }) {
   return (
     <div
       className="relative w-full overflow-hidden rounded-2xl border border-white/8"
-      style={{ aspectRatio: '16/9' }}
+      style={{ aspectRatio: isMobile ? '16/9' : '16/9' }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -108,13 +110,23 @@ function ImageCarousel({ images }: { images: string[] }) {
           transition={{ type: 'tween', duration: 0.45, ease: 'easeInOut' }}
           className="absolute inset-0"
         >
-          {images[current] && !imgErrors[current] ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={images[current]} alt={`Screenshot ${current + 1}`} className="w-full h-full object-cover" onError={() => setImgErrors((e) => ({ ...e, [current]: true }))} />
+          {isMobile ? (
+            images[current] && !imgErrors[current] ? (
+              <PhoneMockup src={images[current]} alt={`Screenshot ${current + 1}`} />
+            ) : (
+              <div className="w-full h-full bg-space-800 flex items-center justify-center"><span className="font-mono text-white/15 text-sm">screenshot {current + 1}</span></div>
+            )
           ) : (
-            <div className="w-full h-full bg-space-800 flex items-center justify-center"><span className="font-mono text-white/15 text-sm">screenshot {current + 1}</span></div>
+            <>
+              {images[current] && !imgErrors[current] ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={images[current]} alt={`Screenshot ${current + 1}`} className="w-full h-full object-cover" onError={() => setImgErrors((e) => ({ ...e, [current]: true }))} />
+              ) : (
+                <div className="w-full h-full bg-space-800 flex items-center justify-center"><span className="font-mono text-white/15 text-sm">screenshot {current + 1}</span></div>
+              )}
+              <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(5,5,16,0.7) 0%, transparent 50%)' }} />
+            </>
           )}
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(5,5,16,0.7) 0%, transparent 50%)' }} />
         </motion.div>
       </AnimatePresence>
 
@@ -176,6 +188,9 @@ export default function CaseStudyClient({ project }: { project: Project }) {
               <span className="font-mono text-[11px] px-3 py-1 rounded font-semibold tracking-wide" style={{ background: 'rgba(14,165,233,0.10)', color: '#7dd3fc', border: '1px solid rgba(14,165,233,0.25)' }}>{project.industry}</span>
             </div>
             <h1 className="font-display font-extrabold text-white leading-tight" style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', letterSpacing: '-0.02em' }}>{pTitle}</h1>
+            {project.systemType && (
+              <p className="font-mono text-2xl text-cyan-400/70 mb-6 tracking-wide">{project.systemType}</p>
+            )}
             <p className="text-white/50 text-lg leading-relaxed mb-4 max-w-3xl">{pShortDesc}</p>
             <div className="flex flex-wrap gap-2 mb-6">
               {project.technologies.map((tech) => (<span key={tech} className="font-mono text-[11px] px-3 py-1 rounded" style={{ background: 'rgba(103,232,249,0.06)', border: '1px solid rgba(103,232,249,0.15)', color: 'rgba(103,232,249,0.65)' }}>{tech}</span>))}
@@ -188,7 +203,7 @@ export default function CaseStudyClient({ project }: { project: Project }) {
       {images.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-2 mb-4">
           <div className="max-w-4xl mx-auto">
-            <ImageCarousel images={images} />
+            <ImageCarousel images={images} isMobile={project.category === 'Mobile'} />
           </div>
         </motion.div>
       )}

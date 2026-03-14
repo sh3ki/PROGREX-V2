@@ -7,6 +7,7 @@ import ProjectCardVisual from './ProjectCardVisual'
 
 interface ProjectCardProps {
   title: string
+  systemType?: string
   category: string
   industry: string
   shortDesc: string
@@ -17,7 +18,7 @@ interface ProjectCardProps {
 }
 
 export default function ProjectCard({
-  title, category, industry, shortDesc, slug, tags, image, index = 0,
+  title, systemType, category, industry, shortDesc, slug, tags, image, index = 0,
 }: ProjectCardProps) {
   const [hovered, setHovered] = useState(false)
 
@@ -68,9 +69,12 @@ export default function ProjectCard({
 
         {/* Content */}
         <div className="p-5">
-          <h3 className="font-display font-bold text-white text-base mb-2 group-hover:text-nebula-300 transition-colors duration-200">
+          <h3 className="font-display font-bold text-white text-base mb-0.5 group-hover:text-nebula-300 transition-colors duration-200">
             {title}
           </h3>
+          {systemType && (
+            <p className="font-mono text-base text-cyan-400/60 mb-2 tracking-wide">{systemType}</p>
+          )}
           <p className="text-white/50 text-sm leading-relaxed mb-4">
             {shortDesc}
           </p>
