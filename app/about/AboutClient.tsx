@@ -32,6 +32,24 @@ export default function AboutClient() {
         primaryBtn={{ label: t('about.heroPrimaryBtn'), href: '/contact' }}
       />
 
+      {/* Team */}
+      <SectionWrapper className="bg-section-b" id="team" decoration={<ConstellationDecor name="scorpius" side="right" offsetY="12%" />}>
+        <SectionHeader
+          badge={t('about.teamBadge')}
+          title={t('about.teamTitle')}
+          highlight={t('about.teamHighlight')}
+          subtitle={t('about.teamSubtitle')}
+        />
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, delay: 0.2 }}
+        >
+          <TeamCarousel />
+        </motion.div>
+      </SectionWrapper>
+
       {/* Company Story */}
       <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="gemini" side="left" offsetY="15%" />}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
@@ -264,24 +282,6 @@ export default function AboutClient() {
             </motion.div>
           ))}
         </div>
-      </SectionWrapper>
-
-      {/* Team */}
-      <SectionWrapper className="bg-section-b" id="team" decoration={<ConstellationDecor name="scorpius" side="right" offsetY="12%" />}>
-        <SectionHeader
-          badge={t('about.teamBadge')}
-          title={t('about.teamTitle')}
-          highlight={t('about.teamHighlight')}
-          subtitle={t('about.teamSubtitle')}
-        />
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7, delay: 0.2 }}
-        >
-          <TeamCarousel />
-        </motion.div>
       </SectionWrapper>
 
       {/* Why Choose Us */}
