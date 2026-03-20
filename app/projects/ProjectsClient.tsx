@@ -13,13 +13,34 @@ export default function ProjectsClient() {
   const { t, translations } = useTranslation()
   const translatedCategories = translations.projects.categories as unknown as string[]
   const allLabel = translatedCategories[0] || 'All'
+
+  const preferredCategoryOrder = [
+    'Web',
+    'Mobile',
+    'Enterprise',
+    'Academic',
+    'AI/ML',
+    'E-commerce',
+    'Software',
+  ]
+
+  const sortedProjectCategories = Array.from(
+    new Set(
+      projects.flatMap((p) => (Array.isArray(p.category) ? p.category : [p.category]))
+    )
+  ).sort((a, b) => {
+    const aIndex = preferredCategoryOrder.indexOf(a)
+    const bIndex = preferredCategoryOrder.indexOf(b)
+    const aRank = aIndex === -1 ? Number.MAX_SAFE_INTEGER : aIndex
+    const bRank = bIndex === -1 ? Number.MAX_SAFE_INTEGER : bIndex
+
+    if (aRank !== bRank) return aRank - bRank
+    return a.localeCompare(b)
+  })
+
   const categories = [
     allLabel,
-    ...Array.from(
-      new Set(
-        projects.flatMap((p) => (Array.isArray(p.category) ? p.category : [p.category]))
-      )
-    ),
+    ...sortedProjectCategories,
   ]
   const [activeFilter, setActiveFilter] = useState(allLabel)
 
