@@ -12,7 +12,7 @@ const PROJECTS = [
   {
     id: 1,
     slug: 'pup-aaccup',
-    title: 'PUP_AACCUP',
+    title: 'PUP Accreditation System',
     systemType: 'Accreditation Document and Records System',
     category: 'Academic',
     industry: 'Education',
