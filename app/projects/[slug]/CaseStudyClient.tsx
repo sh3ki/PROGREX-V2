@@ -10,18 +10,21 @@ import {
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
 import ConstellationDecor from '@/components/ConstellationDecor'
 import CTASection from '@/components/CTASection'
+import ProjectCard from '@/components/ProjectCard'
 import { useTranslation } from '@/components/TranslationProvider'
 import PhoneMockup from '@/components/PhoneMockup'
 
 interface Project {
+  id?: string
   slug: string
   title: string
   systemType?: string
-  category: string
+  category: string | string[]
   industry: string
   shortDesc: string
   image: string
   images?: string[]
+  tags: string[]
   overview: string
   problem: string
   solution: string
@@ -155,9 +158,19 @@ function ImageCarousel({ images, isMobile = false }: { images: string[]; isMobil
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function CaseStudyClient({ project }: { project: Project }) {
+export default function CaseStudyClient({
+  project,
+  previousProject,
+  nextProject,
+}: {
+  project: Project
+  previousProject: Project
+  nextProject: Project
+}) {
   const { t, translations } = useTranslation()
   const images = project.images ?? (project.image ? [project.image] : [])
+  const projectCategories = Array.isArray(project.category) ? project.category : [project.category]
+  const primaryCategory = projectCategories[0] ?? 'Project'
 
   // Translated project data with fallback to English prop values
   const tp = (translations.data as unknown as { projects?: Record<string, { title?: string; shortDesc?: string; overview?: string; problem?: string; solution?: string; features?: readonly string[]; results?: readonly (readonly string[])[]; testimonial?: readonly string[] }> })?.projects?.[project.slug]
@@ -184,7 +197,7 @@ export default function CaseStudyClient({ project }: { project: Project }) {
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.06 }}>
             <div className="flex flex-wrap items-center gap-2 mb-4">
-              <span className="font-mono text-[11px] px-3 py-1 rounded font-semibold tracking-wide" style={{ background: 'rgba(167,139,250,0.15)', color: '#c4b5fd', border: '1px solid rgba(167,139,250,0.35)' }}>{project.category}</span>
+              <span className="font-mono text-[11px] px-3 py-1 rounded font-semibold tracking-wide" style={{ background: 'rgba(167,139,250,0.15)', color: '#c4b5fd', border: '1px solid rgba(167,139,250,0.35)' }}>{projectCategories.join(' • ')}</span>
               <span className="font-mono text-[11px] px-3 py-1 rounded font-semibold tracking-wide" style={{ background: 'rgba(14,165,233,0.10)', color: '#7dd3fc', border: '1px solid rgba(14,165,233,0.25)' }}>{project.industry}</span>
             </div>
             <h1 className="font-display font-extrabold text-white leading-tight" style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', letterSpacing: '-0.02em' }}>{pTitle}</h1>
@@ -203,7 +216,7 @@ export default function CaseStudyClient({ project }: { project: Project }) {
       {images.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-2 mb-4">
           <div className="max-w-4xl mx-auto">
-            <ImageCarousel images={images} isMobile={project.category === 'Mobile'} />
+            <ImageCarousel images={images} isMobile={projectCategories.includes('Mobile')} />
           </div>
         </motion.div>
       )}
@@ -353,11 +366,49 @@ export default function CaseStudyClient({ project }: { project: Project }) {
               </div>
               <div className="ml-auto shrink-0">
                 <span className="font-mono text-[10px] px-3 py-1 rounded-full" style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', color: '#a78bfa' }}>
-                  {pTestimonial[2].includes(',') ? pTestimonial[2].split(',').slice(1).join(',').trim() : project.category}
+                  {pTestimonial[2].includes(',') ? pTestimonial[2].split(',').slice(1).join(',').trim() : primaryCategory}
                 </span>
               </div>
             </div>
           </motion.div>
+        </div>
+      </SectionWrapper>
+
+      {/* ─── View Other Projects ─────────────────────────────────── */}
+      <SectionWrapper className="bg-section-a" decoration={<ConstellationDecor name="taurus" side="right" offsetY="20%" />}>
+        <SectionHeader
+          badge="Explore More"
+          title="View Other"
+          highlight="Projects"
+          subtitle="Continue exploring nearby case studies from our project lineup."
+        />
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {[
+            { label: 'Previous Project', project: previousProject },
+            { label: 'Next Project', project: nextProject },
+          ].map(({ label, project: adjacentProject }, index) => (
+            <div key={adjacentProject.slug}>
+              <div className="font-mono text-[10px] uppercase tracking-widest text-white/45 mb-2">{label}</div>
+              <ProjectCard
+                title={
+                  (translations.data?.projects as Record<string, { title?: string; shortDesc?: string }>)?.[adjacentProject.slug]?.title
+                  || adjacentProject.title
+                }
+                systemType={adjacentProject.systemType}
+                category={adjacentProject.category}
+                industry={adjacentProject.industry}
+                shortDesc={
+                  (translations.data?.projects as Record<string, { title?: string; shortDesc?: string }>)?.[adjacentProject.slug]?.shortDesc
+                  || adjacentProject.shortDesc
+                }
+                slug={adjacentProject.slug}
+                tags={adjacentProject.tags}
+                image={adjacentProject.image}
+                index={index}
+              />
+            </div>
+          ))}
         </div>
       </SectionWrapper>
 
