@@ -23,7 +23,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProjectPage({ params }: Props) {
   const { slug } = await params
-  const project = projects.find((p) => p.slug === slug)
+  const projectIndex = projects.findIndex((p) => p.slug === slug)
+  const project = projectIndex >= 0 ? projects[projectIndex] : undefined
   if (!project) notFound()
-  return <CaseStudyClient project={project} />
+
+  const previousProject = projects[(projectIndex - 1 + projects.length) % projects.length]
+  const nextProject = projects[(projectIndex + 1) % projects.length]
+
+  return (
+    <CaseStudyClient
+      project={project}
+      previousProject={previousProject}
+      nextProject={nextProject}
+    />
+  )
 }
