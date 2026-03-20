@@ -23,18 +23,6 @@ const PROJECTS = [
   },
   {
     id: 2,
-    slug: 'fredos-grilling-pos',
-    title: 'Fredo\'s Grilling',
-    systemType: 'POS, Sales and Inventory Management System',
-    category: 'Enterprise',
-    industry: 'Food and Beverage',
-    tags: ['Laravel', 'React', 'MySQL'],
-    image: 'https://res.cloudinary.com/dlu2bqrda/image/upload/v1772851619/1_avvvyf.png',
-    shortDesc:
-      'Restaurant operations system combining POS, inventory tracking, and sales analytics for fast-moving food service teams.',
-  },
-  {
-    id: 3,
     slug: 'protech-detect-to-protect',
     title: 'Protech: Detect to Protect',
     systemType: 'Face Recognition School Monitoring System',
@@ -46,7 +34,31 @@ const PROJECTS = [
       'AI-enabled campus monitoring platform with facial recognition, attendance logs, and incident alerts for safer school operations.',
   },
   {
+    id: 3,
+    slug: 'habitforge-app',
+    title: 'HabitForge',
+    systemType: 'Habit Tracking and Routine App',
+    category: 'Mobile',
+    industry: 'Productivity',
+    tags: ['Flutter', 'Supabase', 'Dart'],
+    image: 'https://res.cloudinary.com/dlu2bqrda/image/upload/v1773982046/2_oinafj.png',
+    shortDesc:
+      'Habit and routine tracker built for long-term behavior change with streak analytics and smart reminder logic.',
+  },
+  {
     id: 4,
+    slug: 'fredos-grilling-pos',
+    title: 'Fredo\'s Grilling',
+    systemType: 'POS, Sales and Inventory Management System',
+    category: 'Enterprise',
+    industry: 'Food and Beverage',
+    tags: ['Laravel', 'React', 'MySQL'],
+    image: 'https://res.cloudinary.com/dlu2bqrda/image/upload/v1772851619/1_avvvyf.png',
+    shortDesc:
+      'Restaurant operations system combining POS, inventory tracking, and sales analytics for fast-moving food service teams.',
+  },
+  {
+    id: 5,
     slug: 'tbs-container',
     title: 'TBS Container',
     systemType: 'Shipping Container Management System',
@@ -58,7 +70,7 @@ const PROJECTS = [
       'Container tracking and dispatch system for logistics operators, with status dashboards and movement audit history.',
   },
   {
-    id: 5,
+    id: 6,
     slug: 'nikes-catering-web',
     title: 'Nike\'s Catering Services Web',
     systemType: 'Catering Ordering and Booking Web System',
@@ -70,7 +82,19 @@ const PROJECTS = [
       'Booking and order management system for catering operations with client workflows, schedule handling, and service dashboards.',
   },
   {
-    id: 6,
+    id: 7,
+    slug: 'pocketpulse-app',
+    title: 'PocketPulse',
+    systemType: 'Personal Finance and Budgeting App',
+    category: 'Mobile',
+    industry: 'Fintech',
+    tags: ['Kotlin', 'Compose', 'Firebase'],
+    image: 'https://res.cloudinary.com/dlu2bqrda/image/upload/v1773982120/2_liyxyi.png',
+    shortDesc:
+      'Native Android budgeting app that tracks spending, account balances, and monthly financial health with offline-first reliability.',
+  },
+  {
+    id: 8,
     slug: 'premio-motor-loan',
     title: 'Premio',
     systemType: 'Motor Loan and Appointment Management System',
@@ -80,6 +104,66 @@ const PROJECTS = [
     image: 'https://res.cloudinary.com/dlu2bqrda/image/upload/v1772851637/1_fmdit1.png',
     shortDesc:
       'Motor loan application and appointment platform that improves dealership processing speed and applicant visibility.',
+  },
+  {
+    id: 9,
+    slug: 'streamrock-realty',
+    title: 'Streamrock Realty',
+    systemType: 'Real Estate Listings and Management Platform',
+    category: 'Web',
+    industry: 'Real Estate',
+    tags: ['React', 'Node.js', 'MongoDB'],
+    image: 'https://res.cloudinary.com/dlu2bqrda/image/upload/v1773226961/1_yrwjhf.png',
+    shortDesc:
+      'Modern MERN platform for property listings, search filters, and inquiry workflows across multiple property categories.',
+  },
+  {
+    id: 10,
+    slug: 'tradeloop-app',
+    title: 'TradeLoop',
+    systemType: 'Peer-to-Peer Marketplace App',
+    category: 'Mobile',
+    industry: 'E-Commerce Marketplace',
+    tags: ['Flutter', 'Supabase', 'Dart'],
+    image: 'https://res.cloudinary.com/dlu2bqrda/image/upload/v1773982159/2_bimfaa.png',
+    shortDesc:
+      'Local marketplace app for buying, selling, and trading second-hand items with structured offers and in-app deal chat.',
+  },
+  {
+    id: 11,
+    slug: 'rmdc-dental-clinic',
+    title: 'RMDC',
+    systemType: 'Dental Clinic Management System',
+    category: 'Enterprise',
+    industry: 'Healthcare',
+    tags: ['Laravel', 'MySQL', 'Tailwind CSS'],
+    image: 'https://res.cloudinary.com/dlu2bqrda/image/upload/v1773220346/1_mqpgr3.png',
+    shortDesc:
+      'Comprehensive dental clinic platform for appointments, patient records, inventory, payments, and real-time notifications.',
+  },
+  {
+    id: 12,
+    slug: 'savora-app',
+    title: 'Savora',
+    systemType: 'Recipe and Meal Planning App',
+    category: 'Mobile',
+    industry: 'Food and Lifestyle',
+    tags: ['Flutter', 'Appwrite', 'Dart'],
+    image: 'https://res.cloudinary.com/dlu2bqrda/image/upload/v1773982131/2_j5wfva.png',
+    shortDesc:
+      'Recipe discovery and meal planning app that turns saved dishes into structured weekly plans and shopping flows.',
+  },
+  {
+    id: 13,
+    slug: 'aniki-figures',
+    title: 'Aniki Figures',
+    systemType: 'Premium Anime Figure E-Commerce Platform',
+    category: 'Web',
+    industry: 'Retail and Collectibles',
+    tags: ['Next.js', 'Express', 'MongoDB'],
+    image: 'https://res.cloudinary.com/dlu2bqrda/image/upload/v1773219902/1_njmh8v.png',
+    shortDesc:
+      'Specialized anime collectibles storefront with advanced discovery, pre-orders, and account-based checkout workflows.',
   },
 ]
 
