@@ -8,7 +8,7 @@ import ProjectCardVisual from './ProjectCardVisual'
 interface ProjectCardProps {
   title: string
   systemType?: string
-  category: string
+  category: string | string[]
   industry: string
   shortDesc: string
   slug: string
@@ -21,6 +21,7 @@ export default function ProjectCard({
   title, systemType, category, industry, shortDesc, slug, tags, image, index = 0,
 }: ProjectCardProps) {
   const [hovered, setHovered] = useState(false)
+  const primaryCategory = Array.isArray(category) ? category[0] ?? 'Project' : category
 
   return (
     <Link href={`/projects/${slug}`} className="block group">
@@ -57,7 +58,7 @@ export default function ProjectCard({
                 backdropFilter: 'blur(4px)',
               }}
             >
-              {category}
+              {primaryCategory}
             </span>
           </div>
           <div className="absolute top-3 right-3 z-10">
