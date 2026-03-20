@@ -956,18 +956,22 @@ export const projects = [
     problem: 'The client relied on manual processes and disconnected tools, resulting in delays, data errors, and limited visibility for management decisions.',
     solution: 'We delivered an end-to-end platform with role-based access, process automation, audit-ready records, and real-time dashboards tailored to the client workflow.',
     features: [
-      'Role-Based Access Control', 
-      'Dashboard and KPI Overview', 
-      'Advanced Search and Filters', 
-      'Approval and Validation Workflow', 
-      'Automated Notifications', 
-      'Audit Trail and Activity Logs', 
-      'Exportable Reports (PDF/CSV)', 
-      'Mobile-Responsive Interface', 
-      'Offline Draft and Sync Support', 
-      'In-App Activity Timeline', 
-      'Push Notifications', 
-      'Secure Authentication'
+      'Role-Based Access Control',
+      'Dashboard and KPI Overview',
+      'Advanced Search and Filters',
+      'Approval and Validation Workflow',
+      'Automated Notifications',
+      'Audit Trail and Activity Logs',
+      'Exportable Reports (PDF/CSV)',
+      'Mobile-Responsive Interface',
+      'Offline Draft and Sync Support',
+      'In-App Activity Timeline',
+      'Push Notifications',
+      'Secure Authentication',
+      'Multi-Tenant or Branch Support',
+      'Configurable User Permissions',
+      'Data Import and Bulk Upload',
+      'Document and Attachment Management',
     ],
     technologies: ['JavaScript', 'Node.js', 'Express', 'MySQL', 'EJS', 'Chart.js'],
     results: [
@@ -1026,7 +1030,11 @@ export const projects = [
       'Offline Draft and Sync Support',
       'In-App Activity Timeline',
       'Push Notifications',
-      'Secure Authentication'
+      'Secure Authentication',
+      'Multi-Tenant or Branch Support',
+      'Configurable User Permissions',
+      'Data Import and Bulk Upload',
+      'Document and Attachment Management',
     ],
     technologies: ['Python', 'FastAPI', 'React', 'Firebase Auth', 'Firebase Storage', 'TensorFlow', 'OpenCV'],
     results: [
@@ -1073,7 +1081,11 @@ export const projects = [
       'Offline Draft and Sync Support',
       'In-App Activity Timeline',
       'Push Notifications',
-      'Secure Authentication'
+      'Secure Authentication',
+      'Multi-Tenant or Branch Support',
+      'Configurable User Permissions',
+      'Data Import and Bulk Upload',
+      'Document and Attachment Management',
     ],
     technologies: ['Python', 'Django', 'HTML', 'CSS', 'JavaScript', 'PostgreSQL'],
     results: [
@@ -1178,7 +1190,11 @@ export const projects = [
       'Offline Draft and Sync Support',
       'In-App Activity Timeline',
       'Push Notifications',
-      'Secure Authentication'
+      'Secure Authentication',
+      'Multi-Tenant or Branch Support',
+      'Configurable User Permissions',
+      'Data Import and Bulk Upload',
+      'Document and Attachment Management',
     ],
     technologies: ['Laravel', 'PHP', 'React', 'MySQL', 'Redis', 'REST API'],
     results: [
@@ -1224,7 +1240,11 @@ export const projects = [
       'Offline Draft and Sync Support',
       'In-App Activity Timeline',
       'Push Notifications',
-      'Secure Authentication'
+      'Secure Authentication',
+      'Multi-Tenant or Branch Support',
+      'Configurable User Permissions',
+      'Data Import and Bulk Upload',
+      'Document and Attachment Management',
     ],
     technologies: ['Node.js', 'Express', 'React', 'MySQL', 'JWT', 'Cloudinary'],
     results: [
@@ -1271,7 +1291,11 @@ export const projects = [
       'Offline Draft and Sync Support',
       'In-App Activity Timeline',
       'Push Notifications',
-      'Secure Authentication'
+      'Secure Authentication',
+      'Multi-Tenant or Branch Support',
+      'Configurable User Permissions',
+      'Data Import and Bulk Upload',
+      'Document and Attachment Management',
     ],
     technologies: ['Python', 'Flask', 'Firebase', 'Transformers', 'Sentence-BERT', 'WebSocket'],
     results: [
@@ -1448,7 +1472,11 @@ export const projects = [
       'Offline Draft and Sync Support',
       'In-App Activity Timeline',
       'Push Notifications',
-      'Secure Authentication'
+      'Secure Authentication',
+      'Multi-Tenant or Branch Support',
+      'Configurable User Permissions',
+      'Data Import and Bulk Upload',
+      'Document and Attachment Management',
     ],
     technologies: ['Python', 'Django', 'React', 'MySQL', 'Firebase Storage', 'RBAC'],
     results: [
@@ -1552,7 +1580,11 @@ export const projects = [
       'Offline Draft and Sync Support',
       'In-App Activity Timeline',
       'Push Notifications',
-      'Secure Authentication'
+      'Secure Authentication',
+      'Multi-Tenant or Branch Support',
+      'Configurable User Permissions',
+      'Data Import and Bulk Upload',
+      'Document and Attachment Management',
     ],
     technologies: ['Laravel', 'Vue', 'MySQL', 'Redis', 'Queue Jobs', 'PDF Generation'],
     results: [
@@ -1625,7 +1657,11 @@ export const projects = [
       'Offline Draft and Sync Support',
       'In-App Activity Timeline',
       'Push Notifications',
-      'Secure Authentication'
+      'Secure Authentication',
+      'Multi-Tenant or Branch Support',
+      'Configurable User Permissions',
+      'Data Import and Bulk Upload',
+      'Document and Attachment Management',
     ],
     technologies: ['Python', 'Django', 'PostgreSQL', 'OpenCV', 'FaceNet', 'Twilio SMS', 'SMTP'],
     results: [
@@ -1681,7 +1717,11 @@ export const projects = [
       'Offline Draft and Sync Support',
       'In-App Activity Timeline',
       'Push Notifications',
-      'Secure Authentication'
+      'Secure Authentication',
+      'Multi-Tenant or Branch Support',
+      'Configurable User Permissions',
+      'Data Import and Bulk Upload',
+      'Document and Attachment Management',
     ],
     technologies: ['Laravel', 'React', 'MySQL', 'RBAC', 'Document Versioning'],
     results: [
@@ -1821,7 +1861,11 @@ export const projects = [
       'Offline Draft and Sync Support',
       'In-App Activity Timeline',
       'Push Notifications',
-      'Secure Authentication'
+      'Secure Authentication',
+      'Multi-Tenant or Branch Support',
+      'Configurable User Permissions',
+      'Data Import and Bulk Upload',
+      'Document and Attachment Management',
     ],
     technologies: ['Python', 'Django', 'MySQL', 'HTML', 'CSS', 'JavaScript', 'GCash API'],
     results: [
@@ -1869,7 +1913,11 @@ export const projects = [
       'Offline Draft and Sync Support',
       'In-App Activity Timeline',
       'Push Notifications',
-      'Secure Authentication'
+      'Secure Authentication',
+      'Multi-Tenant or Branch Support',
+      'Configurable User Permissions',
+      'Data Import and Bulk Upload',
+      'Document and Attachment Management',
     ],
     technologies: ['Python', 'Django', 'React', 'MySQL', 'JWT', 'MFA (TOTP)', 'Rate Limiting'],
     results: [
@@ -1924,7 +1972,11 @@ export const projects = [
       'Offline Draft and Sync Support',
       'In-App Activity Timeline',
       'Push Notifications',
-      'Secure Authentication'
+      'Secure Authentication',
+      'Multi-Tenant or Branch Support',
+      'Configurable User Permissions',
+      'Data Import and Bulk Upload',
+      'Document and Attachment Management',
     ],
     technologies: ['Node.js', 'Express', 'React', 'PostgreSQL', 'Redis', 'Chart.js'],
     results: [
@@ -1980,7 +2032,11 @@ export const projects = [
       'Offline Draft and Sync Support',
       'In-App Activity Timeline',
       'Push Notifications',
-      'Secure Authentication'
+      'Secure Authentication',
+      'Multi-Tenant or Branch Support',
+      'Configurable User Permissions',
+      'Data Import and Bulk Upload',
+      'Document and Attachment Management',
     ],
     technologies: ['Python', 'Django', 'React', 'MySQL', 'Celery', 'SMTP'],
     results: [
@@ -2078,7 +2134,11 @@ export const projects = [
       'Offline Draft and Sync Support',
       'In-App Activity Timeline',
       'Push Notifications',
-      'Secure Authentication'
+      'Secure Authentication',
+      'Multi-Tenant or Branch Support',
+      'Configurable User Permissions',
+      'Data Import and Bulk Upload',
+      'Document and Attachment Management',
     ],
     technologies: ['Laravel', 'React', 'MySQL', 'Calendar Scheduling', 'SMS Reminders'],
     results: [
@@ -2136,7 +2196,11 @@ export const projects = [
       'Offline Draft and Sync Support',
       'In-App Activity Timeline',
       'Push Notifications',
-      'Secure Authentication'
+      'Secure Authentication',
+      'Multi-Tenant or Branch Support',
+      'Configurable User Permissions',
+      'Data Import and Bulk Upload',
+      'Document and Attachment Management',
     ],
     technologies: ['Laravel', 'React', 'MySQL', 'QR Scanning', 'Audit Logs', 'RBAC'],
     results: [
@@ -2185,7 +2249,11 @@ export const projects = [
       'Offline Draft and Sync Support',
       'In-App Activity Timeline',
       'Push Notifications',
-      'Secure Authentication'
+      'Secure Authentication',
+      'Multi-Tenant or Branch Support',
+      'Configurable User Permissions',
+      'Data Import and Bulk Upload',
+      'Document and Attachment Management',
     ],
     technologies: ['Python', 'Django', 'HTML', 'CSS', 'JavaScript', 'MySQL', 'Reporting'],
     results: [
