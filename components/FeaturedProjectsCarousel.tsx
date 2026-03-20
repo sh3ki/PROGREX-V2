@@ -53,7 +53,7 @@ const PROJECTS = [
     category: 'Enterprise',
     industry: 'Logistics',
     tags: ['Laravel', 'React', 'MySQL'],
-    image: 'https://res.cloudinary.com/dlu2bqrda/image/upload/v1772851669/1_irwd77.png',
+    image: 'https://res.cloudinary.com/dlu2bqrda/image/upload/v1772851669/2_xiyuoh.png',
     shortDesc:
       'Container tracking and dispatch system for logistics operators, with status dashboards and movement audit history.',
   },
