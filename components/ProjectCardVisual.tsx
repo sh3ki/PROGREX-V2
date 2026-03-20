@@ -4,7 +4,7 @@ import type { JSX } from 'react'
 import PhoneMockup from './PhoneMockup'
 
 interface ProjectCardVisualProps {
-  category: string
+  category: string | string[] | null | undefined
   title: string
   image?: string
 }
@@ -138,8 +138,12 @@ const patterns: Record<string, JSX.Element> = {
 }
 
 export default function ProjectCardVisual({ category, title, image }: ProjectCardVisualProps) {
-  const isMobile = category?.toLowerCase() === 'mobile'
-  const key = Object.keys(patterns).find(k => category?.toLowerCase().includes(k.toLowerCase())) ?? 'Web'
+  const categoryText = Array.isArray(category)
+    ? category.find((item) => typeof item === 'string') ?? ''
+    : (typeof category === 'string' ? category : '')
+  const normalizedCategory = categoryText.toLowerCase()
+  const isMobile = normalizedCategory === 'mobile'
+  const key = Object.keys(patterns).find(k => normalizedCategory.includes(k.toLowerCase())) ?? 'Web'
 
   return (
     <div
@@ -175,7 +179,7 @@ export default function ProjectCardVisual({ category, title, image }: ProjectCar
 
       {/* Category tag bottom-left */}
       <div className="absolute bottom-3 left-3 font-mono text-[9px] text-nebula-400/70 uppercase tracking-widest">
-        [{category ?? 'PROJECT'}]
+        [{categoryText || 'PROJECT'}]
       </div>
     </div>
   )
