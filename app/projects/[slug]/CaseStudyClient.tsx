@@ -38,7 +38,7 @@ const CIRCUIT_BG = {
   WebkitMaskImage: 'radial-gradient(ellipse 110% 80% at 50% 10%, black 20%, transparent 90%)',
 } as React.CSSProperties
 
-const INTERVAL_MS = 3000
+const INTERVAL_MS = 1800
 
 // ─── Image Carousel ──────────────────────────────────────────────────────────
 function ImageCarousel({ images, isMobile = false }: { images: string[]; isMobile?: boolean }) {
