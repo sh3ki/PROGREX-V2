@@ -794,7 +794,7 @@ export const projects = [
     overview: 'Appoint2Day is a online tutor booking and appointment system built for Philippine organizations to streamline operations and improve service delivery.',
     problem: 'The client relied on manual processes and disconnected tools, resulting in delays, data errors, and limited visibility for management decisions.',
     solution: 'We delivered an end-to-end platform with role-based access, process automation, audit-ready records, and real-time dashboards tailored to the client workflow.',
-    features: ['Role-Based Access Control', 'Dashboard and KPI Overview', 'Advanced Search and Filters', 'Approval and Validation Workflow', 'Automated Notifications', 'Audit Trail and Activity Logs', 'Exportable Reports (PDF/CSV)', 'Mobile-Responsive Interface'],
+    features: ['Role-Based Access Control', 'Dashboard and KPI Overview', 'Advanced Search and Filters', 'Approval and Validation Workflow', 'Automated Notifications', 'Audit Trail and Activity Logs', 'Exportable Reports (PDF/CSV)', 'Multi-Tenant or Branch Support', 'Configurable User Permissions', 'Data Import and Bulk Upload', 'Document and Attachment Management', 'Calendar and Scheduling Module', 'Public-Facing Request or Booking Form', 'Analytics and Trend Insights', 'System Settings and Customization', 'Mobile-Responsive Interface'],
     technologies: ['Python', 'Flask', 'HTML', 'CSS', 'JavaScript', 'MySQL', 'Bootstrap', 'SMTP'],
     results: [{ metric: 'Process Time Reduction', value: '-58%' }, { metric: 'Data Accuracy', value: '99.2%' }, { metric: 'User Adoption', value: '93%' }, { metric: 'Client Satisfaction', value: '4.8/5' }],
     testimonial: {
@@ -860,7 +860,7 @@ export const projects = [
     overview: 'Christian International School is a school management system built for Philippine organizations to streamline operations and improve service delivery.',
     problem: 'The client relied on manual processes and disconnected tools, resulting in delays, data errors, and limited visibility for management decisions.',
     solution: 'We delivered an end-to-end platform with role-based access, process automation, audit-ready records, and real-time dashboards tailored to the client workflow.',
-    features: ['Role-Based Access Control', 'Dashboard and KPI Overview', 'Advanced Search and Filters', 'Approval and Validation Workflow', 'Automated Notifications', 'Audit Trail and Activity Logs', 'Exportable Reports (PDF/CSV)', 'Mobile-Responsive Interface'],
+    features: ['Role-Based Access Control', 'Dashboard and KPI Overview', 'Advanced Search and Filters', 'Approval and Validation Workflow', 'Automated Notifications', 'Audit Trail and Activity Logs', 'Exportable Reports (PDF/CSV)', 'Multi-Tenant or Branch Support', 'Configurable User Permissions', 'Data Import and Bulk Upload', 'Document and Attachment Management', 'Calendar and Scheduling Module', 'Public-Facing Request or Booking Form', 'Analytics and Trend Insights', 'System Settings and Customization', 'Mobile-Responsive Interface'],
     technologies: ['TypeScript', 'React', 'Node.js', 'Express', 'PostgreSQL', 'Prisma', 'JWT'],
     results: [{ metric: 'Process Time Reduction', value: '-58%' }, { metric: 'Data Accuracy', value: '99.2%' }, { metric: 'User Adoption', value: '93%' }, { metric: 'Client Satisfaction', value: '4.8/5' }],
     testimonial: {
@@ -999,7 +999,7 @@ export const projects = [
     overview: 'Evacuation Tracker is a disaster evacuation and risk mapping app built for Philippine organizations to streamline operations and improve service delivery.',
     problem: 'The client relied on manual processes and disconnected tools, resulting in delays, data errors, and limited visibility for management decisions.',
     solution: 'We delivered an end-to-end platform with role-based access, process automation, audit-ready records, and real-time dashboards tailored to the client workflow.',
-    features: ['Role-Based Access Control', 'Dashboard and KPI Overview', 'Advanced Search and Filters', 'Approval and Validation Workflow', 'Automated Notifications', 'Audit Trail and Activity Logs', 'Exportable Reports (PDF/CSV)', 'Mobile-Responsive Interface'],
+    features: ['Role-Based Access Control', 'Dashboard and KPI Overview', 'Advanced Search and Filters', 'Approval and Validation Workflow', 'Automated Notifications', 'Audit Trail and Activity Logs', 'Exportable Reports (PDF/CSV)', 'Offline Draft and Sync Support', 'In-App Activity Timeline', 'Push Notifications', 'Secure Authentication', 'Mobile-Responsive Interface'],
     technologies: ['Kotlin', 'Java', 'Firebase', 'Google Maps SDK', 'Fused Location Provider', 'FCM'],
     results: [{ metric: 'Process Time Reduction', value: '-58%' }, { metric: 'Data Accuracy', value: '99.2%' }, { metric: 'User Adoption', value: '93%' }, { metric: 'Client Satisfaction', value: '4.8/5' }],
     testimonial: {
@@ -1132,7 +1132,7 @@ export const projects = [
     overview: 'Nike\'s Catering Services Mobile is a catering ordering and booking mobile app built for Philippine organizations to streamline operations and improve service delivery.',
     problem: 'The client relied on manual processes and disconnected tools, resulting in delays, data errors, and limited visibility for management decisions.',
     solution: 'We delivered an end-to-end platform with role-based access, process automation, audit-ready records, and real-time dashboards tailored to the client workflow.',
-    features: ['Role-Based Access Control', 'Dashboard and KPI Overview', 'Advanced Search and Filters', 'Approval and Validation Workflow', 'Automated Notifications', 'Audit Trail and Activity Logs', 'Exportable Reports (PDF/CSV)', 'Mobile-Responsive Interface'],
+    features: ['Role-Based Access Control', 'Dashboard and KPI Overview', 'Advanced Search and Filters', 'Approval and Validation Workflow', 'Automated Notifications', 'Audit Trail and Activity Logs', 'Exportable Reports (PDF/CSV)', 'Offline Draft and Sync Support', 'In-App Activity Timeline', 'Push Notifications', 'Secure Authentication', 'Mobile-Responsive Interface'],
     technologies: ['React Native', 'TypeScript', 'Supabase', 'PostgreSQL', 'FCM', 'OpenAI API'],
     results: [{ metric: 'Process Time Reduction', value: '-58%' }, { metric: 'Data Accuracy', value: '99.2%' }, { metric: 'User Adoption', value: '93%' }, { metric: 'Client Satisfaction', value: '4.8/5' }],
     testimonial: {
@@ -1243,7 +1243,7 @@ export const projects = [
     overview: 'Pokedex is a pokemon records and trainer trading web app built for Philippine organizations to streamline operations and improve service delivery.',
     problem: 'The client relied on manual processes and disconnected tools, resulting in delays, data errors, and limited visibility for management decisions.',
     solution: 'We delivered an end-to-end platform with role-based access, process automation, audit-ready records, and real-time dashboards tailored to the client workflow.',
-    features: ['Role-Based Access Control', 'Dashboard and KPI Overview', 'Advanced Search and Filters', 'Approval and Validation Workflow', 'Automated Notifications', 'Audit Trail and Activity Logs', 'Exportable Reports (PDF/CSV)', 'Mobile-Responsive Interface'],
+    features: ['Role-Based Access Control', 'Dashboard and KPI Overview', 'Advanced Search and Filters', 'Approval and Validation Workflow', 'Automated Notifications', 'Audit Trail and Activity Logs', 'Exportable Reports (PDF/CSV)', 'Multi-Tenant or Branch Support', 'Configurable User Permissions', 'Data Import and Bulk Upload', 'Document and Attachment Management', 'Calendar and Scheduling Module', 'Public-Facing Request or Booking Form', 'Analytics and Trend Insights', 'System Settings and Customization', 'Mobile-Responsive Interface'],
     technologies: ['Laravel', 'PHP', 'MySQL', 'HTML', 'CSS', 'JavaScript', 'WebSocket'],
     results: [{ metric: 'Process Time Reduction', value: '-58%' }, { metric: 'Data Accuracy', value: '99.2%' }, { metric: 'User Adoption', value: '93%' }, { metric: 'Client Satisfaction', value: '4.8/5' }],
     testimonial: {
@@ -1402,7 +1402,7 @@ export const projects = [
     overview: 'Rapex Mobile is a neighborhood e-commerce and delivery app built for Philippine organizations to streamline operations and improve service delivery.',
     problem: 'The client relied on manual processes and disconnected tools, resulting in delays, data errors, and limited visibility for management decisions.',
     solution: 'We delivered an end-to-end platform with role-based access, process automation, audit-ready records, and real-time dashboards tailored to the client workflow.',
-    features: ['Role-Based Access Control', 'Dashboard and KPI Overview', 'Advanced Search and Filters', 'Approval and Validation Workflow', 'Automated Notifications', 'Audit Trail and Activity Logs', 'Exportable Reports (PDF/CSV)', 'Mobile-Responsive Interface'],
+    features: ['Role-Based Access Control', 'Dashboard and KPI Overview', 'Advanced Search and Filters', 'Approval and Validation Workflow', 'Automated Notifications', 'Audit Trail and Activity Logs', 'Exportable Reports (PDF/CSV)', 'Offline Draft and Sync Support', 'In-App Activity Timeline', 'Push Notifications', 'Secure Authentication', 'Mobile-Responsive Interface'],
     technologies: ['Flutter', 'Dart', 'Firebase Auth', 'Firestore', 'FCM', 'Google Maps SDK'],
     results: [{ metric: 'Process Time Reduction', value: '-58%' }, { metric: 'Data Accuracy', value: '99.2%' }, { metric: 'User Adoption', value: '93%' }, { metric: 'Client Satisfaction', value: '4.8/5' }],
     testimonial: {
@@ -1427,7 +1427,7 @@ export const projects = [
     overview: 'Raspi Signal Booster is a signal booster companion mobile app built for Philippine organizations to streamline operations and improve service delivery.',
     problem: 'The client relied on manual processes and disconnected tools, resulting in delays, data errors, and limited visibility for management decisions.',
     solution: 'We delivered an end-to-end platform with role-based access, process automation, audit-ready records, and real-time dashboards tailored to the client workflow.',
-    features: ['Role-Based Access Control', 'Dashboard and KPI Overview', 'Advanced Search and Filters', 'Approval and Validation Workflow', 'Automated Notifications', 'Audit Trail and Activity Logs', 'Exportable Reports (PDF/CSV)', 'Mobile-Responsive Interface'],
+    features: ['Role-Based Access Control', 'Dashboard and KPI Overview', 'Advanced Search and Filters', 'Approval and Validation Workflow', 'Automated Notifications', 'Audit Trail and Activity Logs', 'Exportable Reports (PDF/CSV)', 'Offline Draft and Sync Support', 'In-App Activity Timeline', 'Push Notifications', 'Secure Authentication', 'Mobile-Responsive Interface'],
     technologies: ['React Native', 'TypeScript', 'Firebase', 'BLE', 'MQTT', 'Device Telemetry'],
     results: [{ metric: 'Process Time Reduction', value: '-58%' }, { metric: 'Data Accuracy', value: '99.2%' }, { metric: 'User Adoption', value: '93%' }, { metric: 'Client Satisfaction', value: '4.8/5' }],
     testimonial: {
