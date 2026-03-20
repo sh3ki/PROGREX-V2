@@ -463,25 +463,25 @@ _Dashboard · Habit Detail · Heatmap · Routines_
 
 # Insightly
 
-> A personal CRM and relationship manager that helps you remember the people who matter.
+> A mobile analytics dashboard that surfaces business KPIs, trends, and actionable insights — all in one place.
 
 ---
 
 ## Overview
 
-Insightly is a mobile personal CRM built for individuals — not businesses. It helps users track contacts, log relationship touchpoints (calls, coffees, messages), set follow-up reminders, and surface who they haven't contacted in a while. It's a memory system for relationships.
+Insightly is a Flutter-based analytics dashboard app for tracking key business metrics. It provides real-time KPI summaries, revenue trend charts, goal tracking, and AI-style insight cards — giving users a 360° view of their data from a clean, modern mobile interface.
 
 ---
 
 ## Problem
 
-Staying genuinely connected to a network of friends, mentors, and colleagues requires consistent effort and memory. People lose touch not out of disinterest but because there's no system reminding them when to reach out and what was discussed last time.
+Business data is scattered across tools — spreadsheets, BI platforms, CRMs, and ad dashboards. Decision-makers need a single mobile surface that aggregates the numbers that matter, visualises trends, and flags anomalies requiring attention.
 
 ---
 
 ## Solution
 
-Insightly is a lightweight contact journal. Every contact has a relationship log, follow-up reminders, and personal notes (birthday, shared interests, conversation topics). The app surfaces connection gaps — contacts not reached in 30/60/90 days — and prompts action.
+Insightly aggregates metrics into an intuitive dashboard with interactive charts, goal-progress tracking, and a curated insights feed. Users can review performance at a glance, drill into weekly/monthly reports, set measurable goals, and receive AI-generated insight cards that explain *why* numbers moved.
 
 ---
 
@@ -489,64 +489,67 @@ Insightly is a lightweight contact journal. Every contact has a relationship log
 
 | Layer | Technology |
 |---|---|
-| Framework | React Native 0.74 (TypeScript) + Expo SDK 51 |
-| Auth | Clerk (email + OAuth: Google, Apple) |
-| Database | PlanetScale (MySQL, serverless branching) |
-| Backend API | Expo API Routes (serverless, Bun runtime) |
-| Server State | TanStack Query v5 |
-| Local State | Zustand |
-| Navigation | Expo Router v3 |
-| Notifications | Expo Notifications |
-| Storage | Expo SecureStore (session tokens) |
-| UI | NativeWind (Tailwind CSS for RN) |
+| Framework | Flutter 3 (Dart) |
+| Charts | fl_chart ^0.68 |
+| Localisation / Formatting | intl ^0.19 |
+| Animations | flutter_staggered_animations ^1.1 |
+| State management | Flutter built-in (StatelessWidget / StatefulWidget) |
+| Platforms | Android · iOS · Web · macOS · Linux · Windows |
 
 ---
 
 ## Features
 
-**Core**
-- Contact book with name, photo, company, role, email, phone, social links
-- Relationship tags: Friend, Mentor, Colleague, Client, Family
-- Timeline log: add touchpoint entries (call, coffee, message) with a date and brief note
-- Follow-up reminders: set a date-based or interval-based (every 2 weeks) reminder per contact
-- Reconnect surface: dashboard card listing contacts overdue by 30 / 60 / 90+ days
-- Quick-add note from contact card — voice-to-text via Expo Speech
+**Dashboard**
+- KPI metric cards (revenue, users, conversion, session time, churn, NPS)
+- Weekly revenue line chart with formatted axis labels
+- Date-stamped greeting header
 
-**Backend & Infrastructure**
-- Clerk Auth handles signup, login, and session management; JWT used for all API calls
-- PlanetScale MySQL schema: `users`, `contacts`, `touchpoints`, `reminders` — read/write through Expo API Routes, never from the client directly
-- Expo API Routes validate Clerk JWT on every request before database access
-- PlanetScale schema migrations via `pscale deploy-requests` in a branching workflow
-- TanStack Query manages data fetching, caching, background refetches, and optimistic mutations
-- Expo Notifications schedules recurring follow-up reminders locally with server-side sync for cross-device support
-- Contact photos stored as base64-compressed strings in PlanetScale (intentional simplicity, no CDN dep)
-- All API routes return 401 for invalid/expired Clerk tokens; client auto-redirects to login
+**Reports**
+- Monthly revenue bar chart
+- Traffic source breakdown (pie chart)
+- Period-over-period comparison with trend indicators
 
-**Dashboard & UX**
-- Relationship health score per contact based on touchpoint frequency vs configured goal
-- Weekly digest notification: "3 people you haven't reached out to this week"
-- Search with fuzzy matching across name, company, tags, and touchpoint notes
-- Bulk import from device contacts via Expo Contacts permission
-- Dark / light theme with NativeWind
+**Goals**
+- Measurable goals with progress bars and deadline tracking
+- Status badges: On Track, At Risk, Completed
 
-**Privacy**
-- Clerk session tokens stored in Expo SecureStore, never AsyncStorage
-- All PlanetScale queries run server-side via API Routes — schema never exposed to client
-- No third-party analytics; no data sold or shared
+**Insights**
+- Curated insight cards categorised as Positive, Warning, or Neutral
+- Each insight links to the relevant metric with a short explanation
+
+**Profile**
+- User avatar (network image) with name and role
+- Stats summary: reports generated, goals set, insights viewed
+- App settings: notifications, dark mode, language, privacy
 
 ---
 
-## Challenges
+## Screens
 
-- Keeping PlanetScale write latency acceptable for real-time typing inputs without debounce complexity
-- Designing flexible reminder intervals (specific date vs recurring interval) in a single MySQL schema
-- Managing Clerk JWT expiry gracefully inside TanStack Query's retry logic
+| Screen | Description |
+|---|---|
+| Splash | Animated branded entry with logo |
+| Dashboard | KPI metric grid + revenue chart |
+| Reports | Bar & pie charts with period selector |
+| Goals | Goal list with progress tracking |
+| Insights | Insight card feed with category filter |
+| Profile | User info, stats, and settings |
+
+---
+
+## Design
+
+- **Palette**: Midnight Teal (`#0D7377`) primary, Warm Gold (`#FDCB6E`) secondary, Mint Green (`#00B894`) accent
+- **Typography**: Rounded weight hierarchy (w900 → w500)
+- **Cards**: Elevated white cards with subtle shadow on a cool-gray surface
+- **Logo**: White-background rounded-corner icon used across splash, navigation, and footers
 
 ---
 
 ## Screenshots
 
-_Dashboard · Contact Detail · Timeline · Reconnect Feed_
+_Splash · Dashboard · Reports · Goals · Insights · Profile_
 
 ---
 
