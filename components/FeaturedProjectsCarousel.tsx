@@ -1,85 +1,85 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
+import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useTranslation } from '@/components/TranslationProvider'
 import PhoneMockup from '@/components/PhoneMockup'
 
 const PROJECTS = [
   {
     id: 1,
-    slug: 'nexus-erp',
-    title: 'Nexus ERP Platform',
-    systemType: 'Enterprise Resource Planning System',
-    category: 'Enterprise',
-    industry: 'Manufacturing',
-    tags: ['React', 'Node.js', 'PostgreSQL'],
-    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=900&q=80',
+    slug: 'pup-aaccup',
+    title: 'PUP_AACCUP',
+    systemType: 'Accreditation Document and Records System',
+    category: 'Academic',
+    industry: 'Education',
+    tags: ['Laravel', 'React', 'MySQL'],
+    image: 'https://res.cloudinary.com/dlu2bqrda/image/upload/v1773226929/1_j8r7dc.png',
     shortDesc:
-      'End-to-end enterprise resource planning system built for a 500-employee manufacturing company. Integrates procurement, HR, inventory, and real-time analytics into a single unified platform.',
+      'Accreditation document and records platform for schools, with centralized compliance files, workflow routing, and audit-ready reports.',
   },
   {
     id: 2,
-    slug: 'edutrack-lms',
-    title: 'EduTrack LMS',
-    systemType: 'Learning Management System',
-    category: 'Web',
-    industry: 'Education',
-    tags: ['Next.js', 'Prisma', 'PostgreSQL'],
-    image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=900&q=80',
+    slug: 'fredos-grilling-pos',
+    title: 'Fredo\'s Grilling',
+    systemType: 'POS, Sales and Inventory Management System',
+    category: 'Enterprise',
+    industry: 'Food and Beverage',
+    tags: ['Laravel', 'React', 'MySQL'],
+    image: 'https://res.cloudinary.com/dlu2bqrda/image/upload/v1772851619/1_avvvyf.png',
     shortDesc:
-      'Full-featured learning management system serving a network of 12 schools across the Philippines. Supports live classes, grading, attendance tracking, and student progress dashboards.',
+      'Restaurant operations system combining POS, inventory tracking, and sales analytics for fast-moving food service teams.',
   },
   {
     id: 3,
-    slug: 'swiftcart-ecommerce',
-    title: 'SwiftCart E-Commerce',
-    systemType: 'E-Commerce Platform',
-    category: 'E-commerce',
-    industry: 'Retail',
-    tags: ['Next.js', 'MongoDB', 'Stripe'],
-    image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=900&q=80',
+    slug: 'protech-detect-to-protect',
+    title: 'Protech: Detect to Protect',
+    systemType: 'Face Recognition School Monitoring System',
+    category: 'AI/ML',
+    industry: 'Education Security',
+    tags: ['Python', 'Django', 'PostgreSQL'],
+    image: 'https://res.cloudinary.com/dlu2bqrda/image/upload/v1773997018/1_hawmsx.png',
     shortDesc:
-      'High-conversion multi-vendor e-commerce platform with real-time inventory management, advanced analytics, and integrated Stripe payments. Handles 10,000+ daily active users at peak.',
+      'AI-enabled campus monitoring platform with facial recognition, attendance logs, and incident alerts for safer school operations.',
   },
   {
     id: 4,
-    slug: 'pulsecrm',
-    title: 'PulseCRM',
-    systemType: 'Customer Relationship Management System',
-    category: 'CRM',
-    industry: 'Sales & Marketing',
-    tags: ['React', 'FastAPI', 'Redis'],
-    image: 'https://images.unsplash.com/photo-1507925921958-8a62f3d1a50d?w=900&q=80',
+    slug: 'tbs-container',
+    title: 'TBS Container',
+    systemType: 'Shipping Container Management System',
+    category: 'Enterprise',
+    industry: 'Logistics',
+    tags: ['Laravel', 'React', 'MySQL'],
+    image: 'https://res.cloudinary.com/dlu2bqrda/image/upload/v1772851669/1_irwd77.png',
     shortDesc:
-      'Customer relationship management system with AI-powered lead scoring, pipeline visualization, and automated follow-up workflows. Reduced sales cycle time by 38% for the client.',
+      'Container tracking and dispatch system for logistics operators, with status dashboards and movement audit history.',
   },
   {
     id: 5,
-    slug: 'healthbridge',
-    title: 'HealthBridge Portal',
-    systemType: 'Patient Management Portal',
-    category: 'Healthcare',
-    industry: 'Medical',
-    tags: ['React Native', 'Django', 'PostgreSQL'],
-    image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=900&q=80',
+    slug: 'nikes-catering-web',
+    title: 'Nike\'s Catering Services Web',
+    systemType: 'Catering Ordering and Booking Web System',
+    category: 'AI/ML',
+    industry: 'Food Services',
+    tags: ['Python', 'Django', 'PostgreSQL'],
+    image: 'https://res.cloudinary.com/dlu2bqrda/image/upload/v1772907648/1_cyu7ne.png',
     shortDesc:
-      'Patient management portal connecting clinics, doctors, and patients with telemedicine, appointment scheduling, and digital prescription capabilities. Deployed across 8 medical centers.',
+      'Booking and order management system for catering operations with client workflows, schedule handling, and service dashboards.',
   },
   {
     id: 6,
-    slug: 'brainspark-app',
-    title: 'BrainSpark',
-    systemType: 'Flashcard & Quiz Learning App',
-    category: 'Mobile',
-    industry: 'Education',
-    tags: ['Flutter', 'Supabase', 'Dart'],
-    image: 'https://res.cloudinary.com/dlu2bqrda/image/upload/v1773217678/1_nxiqfg.png',
+    slug: 'premio-motor-loan',
+    title: 'Premio',
+    systemType: 'Motor Loan and Appointment Management System',
+    category: 'E-commerce',
+    industry: 'Automotive Retail',
+    tags: ['Laravel', 'Vue', 'MySQL'],
+    image: 'https://res.cloudinary.com/dlu2bqrda/image/upload/v1772851637/1_fmdit1.png',
     shortDesc:
-      'Adaptive flashcard and quiz learning app using spaced-repetition, mastery tracking, and timed quiz sessions. Built with Flutter and Supabase for iOS and Android.',
+      'Motor loan application and appointment platform that improves dealership processing speed and applicant visibility.',
   },
 ]
 
@@ -122,7 +122,6 @@ function getCardStyle(offset: number) {
 export default function FeaturedProjectsCarousel() {
   const { t, translations } = useTranslation()
   const [current, setCurrent] = useState(0)
-  const [direction, setDirection] = useState(0)
   const [dragging, setDragging] = useState(false)
 
   const tp = translations.data.featuredProjects as Record<string, { title: string; shortDesc: string }>
@@ -130,7 +129,6 @@ export default function FeaturedProjectsCarousel() {
 
   const go = useCallback(
     (delta: number) => {
-      setDirection(delta)
       setCurrent((c) => (c + delta + total) % total)
     },
     [total]
@@ -163,7 +161,7 @@ export default function FeaturedProjectsCarousel() {
       <div className="pointer-events-none absolute inset-y-0 left-0 w-24 z-20"  />
       <div className="pointer-events-none absolute inset-y-0 right-0 w-24 z-20"  />
       <div
-        className="relative w-full h-[580px] sm:h-[620px]"
+        className="relative w-full h-145 sm:h-155"
         style={{ perspective: '1100px' }}
       >
         {PROJECTS.map((project, i) => {
@@ -216,7 +214,7 @@ export default function FeaturedProjectsCarousel() {
                 const inner = (
                   <>
                     {/* Image — 16:9 */}
-                    <div className="relative aspect-[16/9] overflow-hidden">
+                    <div className="relative aspect-video overflow-hidden">
                       {project.category === 'Mobile' ? (
                         <PhoneMockup src={project.image} alt={tp[project.slug]?.title ?? project.title} />
                       ) : (
@@ -242,7 +240,7 @@ export default function FeaturedProjectsCarousel() {
 
                       {/* Top-edge gradient line */}
                       <div
-                        className="absolute inset-x-0 top-0 h-[2px]"
+                        className="absolute inset-x-0 top-0 h-0.5"
                         style={{
                           background: isCenter
                             ? 'linear-gradient(to right, transparent, #0EA5E9, #7C3AED, transparent)'
@@ -362,7 +360,7 @@ export default function FeaturedProjectsCarousel() {
           {PROJECTS.map((_, i) => (
             <button
               key={i}
-              onClick={() => { setDirection(i > current ? 1 : -1); setCurrent(i) }}
+              onClick={() => setCurrent(i)}
               className="transition-all duration-300 rounded-full"
               style={{
                 width: i === current ? 24 : 6,
