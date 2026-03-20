@@ -13,12 +13,22 @@ export default function ProjectsClient() {
   const { t, translations } = useTranslation()
   const translatedCategories = translations.projects.categories as unknown as string[]
   const allLabel = translatedCategories[0] || 'All'
-  const categories = [allLabel, ...Array.from(new Set(projects.map((p) => p.category))) ]
+  const categories = [
+    allLabel,
+    ...Array.from(
+      new Set(
+        projects.flatMap((p) => (Array.isArray(p.category) ? p.category : [p.category]))
+      )
+    ),
+  ]
   const [activeFilter, setActiveFilter] = useState(allLabel)
 
   const filtered = activeFilter === allLabel
     ? projects
-    : projects.filter((p) => p.category === activeFilter)
+    : projects.filter((p) => {
+        const projectCategories = Array.isArray(p.category) ? p.category : [p.category]
+        return projectCategories.includes(activeFilter)
+      })
 
   return (
     <>
