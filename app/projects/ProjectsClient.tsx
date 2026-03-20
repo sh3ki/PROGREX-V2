@@ -11,10 +11,12 @@ import { useTranslation } from '@/components/TranslationProvider'
 
 export default function ProjectsClient() {
   const { t, translations } = useTranslation()
-  const categories = translations.projects.categories as unknown as string[]
-  const [activeFilter, setActiveFilter] = useState(categories[0] || 'All')
+  const translatedCategories = translations.projects.categories as unknown as string[]
+  const allLabel = translatedCategories[0] || 'All'
+  const categories = [allLabel, ...Array.from(new Set(projects.map((p) => p.category))) ]
+  const [activeFilter, setActiveFilter] = useState(allLabel)
 
-  const filtered = activeFilter === categories[0]
+  const filtered = activeFilter === allLabel
     ? projects
     : projects.filter((p) => p.category === activeFilter)
 
