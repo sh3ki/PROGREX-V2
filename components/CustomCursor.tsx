@@ -8,13 +8,9 @@ function subscribe() {
 }
 
 function getSnapshot() {
-  // Returns true if should render (desktop device)
-  return !(
-    window.matchMedia('(hover: none)').matches ||
-    window.matchMedia('(pointer: coarse)').matches ||
-    'ontouchstart' in window ||
-    navigator.maxTouchPoints > 0
-  )
+  // Render on fine-pointer environments. Avoid touch capability checks because
+  // hybrid laptops can report touch support even when a mouse is active.
+  return window.matchMedia('(hover: hover) and (pointer: fine)').matches
 }
 
 function getServerSnapshot() {
@@ -38,14 +34,19 @@ export default function CustomCursor() {
     let rx = 0, ry = 0
     let rafId: number
 
-    const onMove = (e: MouseEvent) => {
+    const onMove = (e: PointerEvent) => {
       mx = e.clientX
       my = e.clientY
       setVisible(true)
       const t = e.target as HTMLElement
       setIsHovering(!!t.closest('a,button,[role="button"],input,textarea,select,label,[tabindex]'))
     }
+    const onEnter = () => setVisible(true)
     const onLeave = () => setVisible(false)
+    const onBlur = () => setVisible(false)
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') setVisible(false)
+    }
     const onDown  = () => setIsClicking(true)
     const onUp    = () => setIsClicking(false)
 
@@ -64,14 +65,20 @@ export default function CustomCursor() {
     }
     rafId = requestAnimationFrame(loop)
 
-    window.addEventListener('mousemove', onMove, { passive: true })
+    window.addEventListener('pointermove', onMove, { passive: true })
+    window.addEventListener('pointerenter', onEnter)
     window.addEventListener('mouseleave', onLeave)
+    window.addEventListener('blur', onBlur)
+    document.addEventListener('visibilitychange', onVisibility)
     window.addEventListener('mousedown', onDown)
     window.addEventListener('mouseup', onUp)
     return () => {
       cancelAnimationFrame(rafId)
-      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerenter', onEnter)
       window.removeEventListener('mouseleave', onLeave)
+      window.removeEventListener('blur', onBlur)
+      document.removeEventListener('visibilitychange', onVisibility)
       window.removeEventListener('mousedown', onDown)
       window.removeEventListener('mouseup', onUp)
     }
