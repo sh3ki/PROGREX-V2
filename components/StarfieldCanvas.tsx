@@ -44,8 +44,21 @@ export default function StarfieldCanvas() {
     let rafId: number
     let time = 0
 
-    const colors = ['#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF',
-                    '#67E8F9', '#67E8F9', '#A78BFA']
+    const getAccentColor = () =>
+      getComputedStyle(document.documentElement).getPropertyValue('--global-accent').trim() || '#67E8F9'
+
+    const getThemeMode = () =>
+      getComputedStyle(document.documentElement).getPropertyValue('--global-theme-mode').trim() || 'dark'
+
+    const hexToRgb = (hex: string) => {
+      const value = hex.replace('#', '')
+      const r = parseInt(value.slice(0, 2), 16)
+      const g = parseInt(value.slice(2, 4), 16)
+      const b = parseInt(value.slice(4, 6), 16)
+      return { r, g, b }
+    }
+
+    const colors = ['#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF', '#67E8F9', '#67E8F9', '#A78BFA']
 
     // Generate stars — slightly larger dots
     const stars: Star[] = Array.from({ length: STAR_COUNT }, () => ({
@@ -145,6 +158,11 @@ export default function StarfieldCanvas() {
 
       ctx.clearRect(0, 0, width, height)
 
+      const themeMode = getThemeMode()
+      const accent = getAccentColor()
+      const accentRgb = hexToRgb(accent)
+      const isLightMode = themeMode === 'light'
+
       // Draw stars
       for (const star of stars) {
         const twinkle = Math.sin(time * star.speed + star.phase) * 0.35 + 0.65
@@ -163,7 +181,9 @@ export default function StarfieldCanvas() {
         const r = parseInt(star.color.slice(1, 3), 16)
         const g = parseInt(star.color.slice(3, 5), 16)
         const b = parseInt(star.color.slice(5, 7), 16)
-        ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`
+        ctx.fillStyle = isLightMode
+          ? `rgba(15,23,42,${Math.min(0.72, alpha * 0.9)})`
+          : `rgba(${r},${g},${b},${alpha})`
         ctx.fill()
       }
 
@@ -189,9 +209,9 @@ export default function StarfieldCanvas() {
 
         // Core streak
         const grad = ctx.createLinearGradient(startX, startY, endX, endY)
-        grad.addColorStop(0, `rgba(103,232,249,0)`)
-        grad.addColorStop(0.55, `rgba(103,232,249,${opacity * 0.95})`)
-        grad.addColorStop(1, `rgba(167,139,250,${opacity * 0.55})`)
+        grad.addColorStop(0, `rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0)`)
+        grad.addColorStop(0.55, `rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},${opacity * (isLightMode ? 0.95 : 0.9)})`)
+        grad.addColorStop(1, `rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},${opacity * 0.45})`)
         ctx.beginPath()
         ctx.moveTo(startX, startY)
         ctx.lineTo(endX, endY)
@@ -201,9 +221,9 @@ export default function StarfieldCanvas() {
 
         // Glow halo — scales with lineWidth
         const glowGrad = ctx.createLinearGradient(startX, startY, endX, endY)
-        glowGrad.addColorStop(0, `rgba(103,232,249,0)`)
-        glowGrad.addColorStop(0.5, `rgba(103,232,249,${opacity * 0.22})`)
-        glowGrad.addColorStop(1, `rgba(167,139,250,${opacity * 0.10})`)
+        glowGrad.addColorStop(0, `rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0)`)
+        glowGrad.addColorStop(0.5, `rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},${opacity * (isLightMode ? 0.3 : 0.22)})`)
+        glowGrad.addColorStop(1, `rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},${opacity * 0.1})`)
         ctx.beginPath()
         ctx.moveTo(startX, startY)
         ctx.lineTo(endX, endY)
@@ -214,9 +234,9 @@ export default function StarfieldCanvas() {
         // Wide soft bloom — only for thicker stars
         if (ss.lineWidth > 2) {
           const bloomGrad = ctx.createLinearGradient(startX, startY, endX, endY)
-          bloomGrad.addColorStop(0, `rgba(103,232,249,0)`)
-          bloomGrad.addColorStop(0.5, `rgba(103,232,249,${opacity * 0.055})`)
-          bloomGrad.addColorStop(1, `rgba(167,139,250,0)`)
+          bloomGrad.addColorStop(0, `rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0)`)
+          bloomGrad.addColorStop(0.5, `rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},${opacity * (isLightMode ? 0.08 : 0.055)})`)
+          bloomGrad.addColorStop(1, `rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},0)`)
           ctx.beginPath()
           ctx.moveTo(startX, startY)
           ctx.lineTo(endX, endY)
