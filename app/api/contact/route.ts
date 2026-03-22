@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import nodemailer from 'nodemailer'
+import { sql } from '@/lib/server/db'
+import { assertSameOrigin, getClientIp, hitRateLimit } from '@/lib/server/request-security'
 
 export async function POST(req: NextRequest) {
   try {
+    if (!assertSameOrigin(req)) {
+      return NextResponse.json({ error: 'Invalid request origin.' }, { status: 403 })
+    }
+
+    const ip = getClientIp(req)
+    if (hitRateLimit(`contact-submit:${ip}`, 8, 60_000)) {
+      return NextResponse.json({ error: 'Too many requests. Please try again shortly.' }, { status: 429 })
+    }
+
     const body = await req.json()
     const { name, email, phone, company, service, budget, message, attachment } = body
 
@@ -45,6 +56,29 @@ export async function POST(req: NextRequest) {
         <p style="color:#475569;font-size:11px;margin-top:24px;">Sent from PROGREX Contact Form — ${new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' })} PHT</p>
       </div>
     `
+
+    await sql(
+      `insert into contact_submissions(name, email, phone, company, service, budget, message, attachment_name, attachment_content_type, attachment_base64, status)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'new')`,
+      [
+        name,
+        email,
+        phone ?? null,
+        company ?? null,
+        service ?? null,
+        budget ?? null,
+        message,
+        attachment?.name ?? null,
+        attachment?.contentType ?? null,
+        attachment?.data ?? null,
+      ]
+    )
+
+    await sql(
+      `insert into bookings(name, email, phone, company, service, budget, message, source, status)
+       values ($1, $2, $3, $4, $5, $6, $7, 'contact-form', 'new')`,
+      [name, email, phone ?? null, company ?? null, service ?? null, budget ?? null, message]
+    )
 
     await transporter.sendMail({
       from: `"PROGREX Contact Form" <${process.env.SMTP_USER}>`,
