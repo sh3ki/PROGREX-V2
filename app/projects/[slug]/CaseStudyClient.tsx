@@ -383,29 +383,30 @@ export default function CaseStudyClient({
           subtitle="Continue exploring nearby case studies from our project lineup."
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {[
             { label: 'Previous Project', project: previousProject },
+            { label: 'Current Project', project: project, isCurrent: true },
             { label: 'Next Project', project: nextProject },
-          ].map(({ label, project: adjacentProject }, index) => (
+          ].map(({ label, project: adjacentProject, isCurrent }, index) => (
             <div key={adjacentProject.slug}>
               <div className="font-mono text-[10px] uppercase tracking-widest text-white/45 mb-2">{label}</div>
               <ProjectCard
-                title={
-                  (translations.data?.projects as Record<string, { title?: string; shortDesc?: string }>)?.[adjacentProject.slug]?.title
-                  || adjacentProject.title
-                }
-                systemType={adjacentProject.systemType}
-                category={adjacentProject.category}
-                industry={adjacentProject.industry}
-                shortDesc={
-                  (translations.data?.projects as Record<string, { title?: string; shortDesc?: string }>)?.[adjacentProject.slug]?.shortDesc
-                  || adjacentProject.shortDesc
-                }
-                slug={adjacentProject.slug}
-                tags={adjacentProject.tags}
-                image={adjacentProject.image}
-                index={index}
+          title={
+            (translations.data?.projects as Record<string, { title?: string; shortDesc?: string }>)?.[adjacentProject.slug]?.title
+            || adjacentProject.title
+          }
+          systemType={adjacentProject.systemType}
+          category={adjacentProject.category}
+          industry={adjacentProject.industry}
+          shortDesc={
+            (translations.data?.projects as Record<string, { title?: string; shortDesc?: string }>)?.[adjacentProject.slug]?.shortDesc
+            || adjacentProject.shortDesc
+          }
+          slug={adjacentProject.slug}
+          tags={adjacentProject.tags}
+          image={adjacentProject.image}
+          index={isCurrent ? 1 : index}
               />
             </div>
           ))}
