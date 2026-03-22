@@ -167,6 +167,18 @@ const PROJECTS = [
   },
 ]
 
+type FeaturedProject = {
+  id: string | number
+  slug: string
+  title: string
+  systemType: string
+  category: string | string[]
+  industry: string
+  tags: string[]
+  image: string
+  shortDesc: string
+}
+
 function getCardStyle(offset: number) {
   const abs = Math.abs(offset)
   if (abs > 2) return null
@@ -203,13 +215,14 @@ function getCardStyle(offset: number) {
   }
 }
 
-export default function FeaturedProjectsCarousel() {
+export default function FeaturedProjectsCarousel({ projectsData }: { projectsData?: FeaturedProject[] }) {
   const { t, translations } = useTranslation()
   const [current, setCurrent] = useState(0)
   const [dragging, setDragging] = useState(false)
 
   const tp = translations.data.featuredProjects as Record<string, { title: string; shortDesc: string }>
-  const total = PROJECTS.length
+  const projects = projectsData && projectsData.length > 0 ? projectsData : PROJECTS
+  const total = projects.length
 
   const go = useCallback(
     (delta: number) => {
@@ -248,7 +261,7 @@ export default function FeaturedProjectsCarousel() {
         className="relative w-full h-145 sm:h-155"
         style={{ perspective: '1100px' }}
       >
-        {PROJECTS.map((project, i) => {
+        {projects.map((project, i) => {
           const offset = ((i - current + total) % total + Math.floor(total / 2)) % total - Math.floor(total / 2)
           const style = getCardStyle(offset)
           if (!style) return null
@@ -299,7 +312,7 @@ export default function FeaturedProjectsCarousel() {
                   <>
                     {/* Image — 16:9 */}
                     <div className="relative aspect-video overflow-hidden">
-                      {project.category === 'Mobile' ? (
+                      {Array.isArray(project.category) ? project.category.includes('Mobile') : project.category === 'Mobile' ? (
                         <PhoneMockup src={project.image} alt={tp[project.slug]?.title ?? project.title} />
                       ) : (
                         <>
@@ -342,7 +355,7 @@ export default function FeaturedProjectsCarousel() {
                             color: '#93E6FB',
                           }}
                         >
-                          {project.category}
+                          {Array.isArray(project.category) ? project.category.join(', ') : project.category}
                         </span>
                       </div>
                       <div className="absolute top-4 right-4 z-10">
