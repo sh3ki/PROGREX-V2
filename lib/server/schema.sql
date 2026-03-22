@@ -1,0 +1,204 @@
+create extension if not exists "pgcrypto";
+
+create table if not exists roles (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  description text,
+  is_system boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists permissions (
+  key text primary key,
+  label text not null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists role_permissions (
+  role_id uuid not null references roles(id) on delete cascade,
+  permission_key text not null references permissions(key) on delete cascade,
+  can_read boolean not null default false,
+  can_write boolean not null default false,
+  can_delete boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key(role_id, permission_key)
+);
+
+create table if not exists admin_users (
+  id uuid primary key default gen_random_uuid(),
+  email text not null unique,
+  full_name text not null,
+  password_hash text not null,
+  role_id uuid references roles(id) on delete set null,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists services (
+  id uuid primary key default gen_random_uuid(),
+  slug text not null unique,
+  title text not null,
+  short_desc text,
+  icon text,
+  color text,
+  details jsonb not null default '{}'::jsonb,
+  sort_order int not null default 0,
+  is_published boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists projects (
+  id uuid primary key default gen_random_uuid(),
+  slug text not null unique,
+  title text not null,
+  system_type text,
+  industry text,
+  categories text[] not null default '{}',
+  tags text[] not null default '{}',
+  image text,
+  short_desc text,
+  details jsonb not null default '{}'::jsonb,
+  is_featured boolean not null default false,
+  feature_order int not null default 999,
+  is_published boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists team_members (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  role text not null,
+  bio text,
+  avatar text,
+  linkedin text,
+  github text,
+  portfolio text,
+  sort_order int not null default 0,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists blogs (
+  id uuid primary key default gen_random_uuid(),
+  slug text not null unique,
+  title text not null,
+  category text,
+  author_name text,
+  author_role text,
+  author_avatar text,
+  published_at text,
+  read_time text,
+  image text,
+  excerpt text,
+  tags text[] not null default '{}',
+  content text,
+  related_posts text[] not null default '{}',
+  meta_title text,
+  meta_description text,
+  keywords text[] not null default '{}',
+  is_published boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists ready_made_systems (
+  id uuid primary key default gen_random_uuid(),
+  slug text not null unique,
+  name text not null,
+  category text,
+  industry text,
+  tagline text,
+  short_desc text,
+  image text,
+  has_demo boolean not null default false,
+  details jsonb not null default '{}'::jsonb,
+  sort_order int not null default 0,
+  is_published boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists testimonials (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  role text,
+  avatar text,
+  quote text,
+  rating int,
+  company text,
+  sort_order int not null default 0,
+  is_published boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists site_faqs (
+  id uuid primary key default gen_random_uuid(),
+  question text not null,
+  answer text not null,
+  sort_order int not null default 0,
+  is_published boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists calendar_events (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text,
+  start_at timestamptz not null,
+  end_at timestamptz not null,
+  location text,
+  meeting_link text,
+  status text not null default 'available',
+  created_by uuid references admin_users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists bookings (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  email text not null,
+  phone text,
+  company text,
+  service text,
+  budget text,
+  message text,
+  preferred_date date,
+  preferred_time text,
+  status text not null default 'new',
+  source text not null default 'website',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists contact_submissions (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  email text not null,
+  phone text,
+  company text,
+  service text,
+  budget text,
+  message text,
+  attachment_name text,
+  attachment_content_type text,
+  attachment_base64 text,
+  status text not null default 'new',
+  admin_reply text,
+  replied_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_projects_featured on projects(is_featured, feature_order);
+create index if not exists idx_calendar_events_start_at on calendar_events(start_at);
+create index if not exists idx_bookings_created_at on bookings(created_at desc);
+create index if not exists idx_contact_submissions_created_at on contact_submissions(created_at desc);
