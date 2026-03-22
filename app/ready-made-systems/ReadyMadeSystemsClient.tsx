@@ -6,12 +6,26 @@ import { CheckCircle, ChevronDown, Monitor, ArrowRight, Users, LifeBuoy, PlayCir
 import Image from 'next/image'
 import Hero from '@/components/Hero'
 import ConstellationDecor from '@/components/ConstellationDecor'
-import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
+import SectionWrapper from '@/components/SectionWrapper'
 import CTASection from '@/components/CTASection'
-import { systems } from '@/lib/mockData'
 import { useTranslation } from '@/components/TranslationProvider'
 
-export default function ReadyMadeSystemsClient() {
+type ReadySystem = {
+  id: string
+  slug: string
+  category: string
+  industry: string
+  name: string
+  tagline: string
+  shortDesc: string
+  image: string
+  hasDemo: boolean
+  features: string[]
+  faqs: Array<{ q: string; a: string }>
+  pricing: Array<{ plan: string; price: string; type: string; support: string; students?: string; users?: string; employees?: string }>
+}
+
+export default function ReadyMadeSystemsClient({ systemsData }: { systemsData: ReadySystem[] }) {
   const { t, translations } = useTranslation()
   const [openFaq, setOpenFaq] = useState<{ sys: string; idx: number } | null>(null)
 
@@ -34,7 +48,7 @@ export default function ReadyMadeSystemsClient() {
       />
 
       {/* Systems */}
-      {systems.map((sys, si) => {
+      {systemsData.map((sys, si) => {
         const tSys = translations.data.systems[sys.slug as keyof typeof translations.data.systems]
         const tFeatures = tSys?.features as unknown as string[] | undefined
         const tFaqs = tSys?.faqs as unknown as string[][] | undefined
@@ -119,7 +133,7 @@ export default function ReadyMadeSystemsClient() {
               className={`space-y-4 ${si % 2 === 1 ? 'lg:order-1' : ''}`}
             >
               {/* Screenshot — 16:9 */}
-              <div className="relative aspect-[16/9] rounded-2xl overflow-hidden mb-4 border border-nebula-700/20"
+              <div className="relative aspect-video rounded-2xl overflow-hidden mb-4 border border-nebula-700/20"
                 style={{ boxShadow: '0 0 40px rgba(14,165,233,0.08), 0 16px 48px rgba(0,0,0,0.5)' }}
               >
                 {sys.image ? (
@@ -134,7 +148,7 @@ export default function ReadyMadeSystemsClient() {
                     {/* dark overlay for readability */}
                     <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(3,3,15,0.08) 0%, rgba(3,3,15,0.55) 100%)' }} />
                     {/* top accent line */}
-                    <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: 'linear-gradient(to right, transparent, #0EA5E9, #7C3AED, transparent)' }} />
+                    <div className="absolute inset-x-0 top-0 h-0.5" style={{ background: 'linear-gradient(to right, transparent, #0EA5E9, #7C3AED, transparent)' }} />
                     {/* label badge */}
                     <div className="absolute bottom-3 left-3">
                       <span className="font-mono text-[10px] px-2.5 py-1 rounded-full backdrop-blur-sm"
@@ -150,7 +164,7 @@ export default function ReadyMadeSystemsClient() {
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="text-center">
                         <Monitor size={32} className="text-nebula-600/60 mx-auto mb-2" />
-                        <div className="text-white/30 text-xs font-mono">{sysName} // preview</div>
+                        <div className="text-white/30 text-xs font-mono">{sysName} / preview</div>
                       </div>
                     </div>
                   </>
@@ -181,7 +195,7 @@ export default function ReadyMadeSystemsClient() {
                 >
                   {pi === 1 && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <span className="px-3 py-1 rounded-full bg-gradient-to-r from-nebula-700 to-aurora-600 text-white text-xs font-bold shadow-nebula-sm">
+                      <span className="px-3 py-1 rounded-full bg-linear-to-r from-nebula-700 to-aurora-600 text-white text-xs font-bold shadow-nebula-sm">
                         {t('readyMade.mostPopular')}
                       </span>
                     </div>
