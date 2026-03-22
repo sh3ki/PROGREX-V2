@@ -5,16 +5,22 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { ArrowRight, Star, Quote, ChevronLeft, ChevronRight, Monitor, Check, Send, CheckCircle, Bot, Paperclip, X as XIcon } from 'lucide-react'
 import Image from 'next/image'
-import TechConstellation from '@/components/TechConstellation'
 import Hero from '@/components/Hero'
 import ConstellationDecor from '@/components/ConstellationDecor'
 import ServiceCard from '@/components/ServiceCard'
 import FeaturedProjectsCarousel from '@/components/FeaturedProjectsCarousel'
 import TechMarqueeSection from '@/components/TechMarqueeSection'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
-import { services, systems, testimonials, faqs } from '@/lib/mockData'
 import IntroLoader from '@/components/IntroLoader'
 import { useTranslation } from '@/components/TranslationProvider'
+
+type HomeClientProps = {
+  servicesData: Array<{ id: string; title: string; shortDesc: string; icon: string; slug: string; color: string }>
+  systemsData: Array<{ id: string; slug: string; category: string; industry: string; name: string; shortDesc: string; image: string; features: string[] }>
+  testimonialsData: Array<{ rating: number; quote: string; name: string; role: string; company: string }>
+  faqsData: Array<{ id: string; question: string; answer: string }>
+  featuredProjectsData: Array<{ id: string; slug: string; title: string; systemType: string; category: string[]; industry: string; tags: string[]; image: string; shortDesc: string }>
+}
 
 function CtaSelect({ value, onChange, options, placeholder }: {
   value: string
@@ -93,11 +99,16 @@ function CtaSelect({ value, onChange, options, placeholder }: {
   )
 }
 
-export default function HomeClient() {
+export default function HomeClient({ servicesData, systemsData, testimonialsData, faqsData, featuredProjectsData }: HomeClientProps) {
   const { t, translations } = useTranslation()
   const [activeTestimonial, setActiveTestimonial] = useState(0)
   const [direction, setDirection] = useState(1)
-  const [openFaq, setOpenFaq] = useState<number | null>(null)
+  const [openFaq, setOpenFaq] = useState<string | null>(null)
+  const testimonialsCount = testimonialsData.length
+  const hasTestimonials = testimonialsCount > 0
+  const currentTestimonial = hasTestimonials
+    ? testimonialsData[Math.min(activeTestimonial, testimonialsCount - 1)]
+    : null
 
   const [ctaForm, setCtaForm] = useState({ name: '', email: '', phone: '', company: '', service: '', budget: '', message: '' })
   const [ctaErrors, setCtaErrors] = useState<{ name?: string; email?: string; message?: string }>({})
@@ -161,27 +172,32 @@ export default function HomeClient() {
   const DURATION = 7 // seconds auto-advance
 
   const goTo = (i: number) => {
+    if (!hasTestimonials) return
     setDirection(i > activeTestimonial ? 1 : -1)
     setActiveTestimonial(i)
   }
   const prevTestimonial = () => {
-    const i = (activeTestimonial - 1 + testimonials.length) % testimonials.length
+    if (!hasTestimonials) return
+    const i = (activeTestimonial - 1 + testimonialsCount) % testimonialsCount
     setDirection(-1)
     setActiveTestimonial(i)
   }
   const nextTestimonial = () => {
-    const i = (activeTestimonial + 1) % testimonials.length
+    if (!hasTestimonials) return
+    const i = (activeTestimonial + 1) % testimonialsCount
     setDirection(1)
     setActiveTestimonial(i)
   }
 
   useEffect(() => {
+    if (testimonialsCount === 0) return
+
     const id = setInterval(() => {
       setDirection(1)
-      setActiveTestimonial((p) => (p + 1) % testimonials.length)
+      setActiveTestimonial((p) => (p + 1) % testimonialsCount)
     }, DURATION * 1000)
     return () => clearInterval(id)
-  }, [DURATION])
+  }, [DURATION, testimonialsCount])
 
   return (
     <>
@@ -218,7 +234,7 @@ export default function HomeClient() {
           viewport={{ once: true }}
           transition={{ duration: 0.7, delay: 0.2 }}
         >
-          <FeaturedProjectsCarousel />
+          <FeaturedProjectsCarousel projectsData={featuredProjectsData} />
         </motion.div>
 
         <motion.div
@@ -247,7 +263,7 @@ export default function HomeClient() {
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {services.slice(0, 6).map((service, i) => (
+          {servicesData.slice(0, 6).map((service, i) => (
             <ServiceCard
               key={service.id}
               title={service.title}
@@ -288,7 +304,7 @@ export default function HomeClient() {
           subtitle={t('home.systemsSubtitle')}
         />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {systems.map((sys, i) => (
+          {systemsData.map((sys, i) => (
             <motion.div
               key={sys.id}
               initial={{ opacity: 0, y: 30 }}
@@ -315,7 +331,7 @@ export default function HomeClient() {
                 }}
               >
                 {/* 16:9 image */}
-                <div className="relative aspect-[16/9] overflow-hidden">
+                <div className="relative aspect-video overflow-hidden">
                   {sys.image ? (
                     <>
                       <Image
@@ -326,7 +342,7 @@ export default function HomeClient() {
                         sizes="(max-width: 768px) 100vw, 33vw"
                       />
                       <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(3,3,15,0.08) 0%, rgba(3,3,15,0.60) 100%)' }} />
-                      <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: 'linear-gradient(to right, transparent, #0EA5E9, #7C3AED, transparent)' }} />
+                      <div className="absolute inset-x-0 top-0 h-0.5" style={{ background: 'linear-gradient(to right, transparent, #0EA5E9, #7C3AED, transparent)' }} />
                       {/* Category badge — top left */}
                       <div className="absolute top-3 left-3 z-10">
                         <span className="font-mono text-[10px] px-2.5 py-1 rounded-full backdrop-blur-sm"
@@ -415,7 +431,7 @@ export default function HomeClient() {
 
         <div className="max-w-3xl mx-auto">
           {/* Card */}
-          <div className="relative overflow-hidden rounded-2xl min-h-[280px] sm:min-h-[320px]">
+          <div className="relative overflow-hidden rounded-2xl min-h-70 sm:min-h-80">
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
                 key={activeTestimonial}
@@ -448,7 +464,7 @@ export default function HomeClient() {
 
                 {/* Stars */}
                 <div className="flex gap-1 mb-5">
-                  {Array.from({ length: testimonials[activeTestimonial].rating }).map((_, i) => (
+                  {Array.from({ length: currentTestimonial?.rating ?? 0 }).map((_, i) => (
                     <motion.div
                       key={i}
                       initial={{ opacity: 0, scale: 0 }}
@@ -462,21 +478,21 @@ export default function HomeClient() {
 
                 {/* Quote text */}
                 <p className="text-white/80 text-base sm:text-lg leading-relaxed mb-8 italic relative z-10">
-                  &ldquo;{translations.data.testimonials[activeTestimonial]?.quote ?? testimonials[activeTestimonial].quote}&rdquo;
+                  &ldquo;{translations.data.testimonials[activeTestimonial]?.quote ?? currentTestimonial?.quote ?? ''}&rdquo;
                 </p>
 
                 {/* Author row */}
                 <div className="flex items-center gap-4 relative z-10">
                   <div>
-                    <div className="font-bold text-white">{translations.data.testimonials[activeTestimonial]?.name ?? testimonials[activeTestimonial].name}</div>
-                    <div className="font-mono text-xs text-nebula-400/70 mt-0.5">{translations.data.testimonials[activeTestimonial]?.role ?? testimonials[activeTestimonial].role}</div>
+                    <div className="font-bold text-white">{translations.data.testimonials[activeTestimonial]?.name ?? currentTestimonial?.name ?? ''}</div>
+                    <div className="font-mono text-xs text-nebula-400/70 mt-0.5">{translations.data.testimonials[activeTestimonial]?.role ?? currentTestimonial?.role ?? ''}</div>
                   </div>
                   <div className="ml-auto shrink-0">
                     <span
                       className="font-mono text-[10px] px-3 py-1 rounded-full"
                       style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', color: '#a78bfa' }}
                     >
-                      {translations.data.testimonials[activeTestimonial]?.company ?? testimonials[activeTestimonial].company}
+                      {translations.data.testimonials[activeTestimonial]?.company ?? currentTestimonial?.company ?? ''}
                     </span>
                   </div>
                 </div>
@@ -498,7 +514,7 @@ export default function HomeClient() {
             </motion.button>
 
             <div className="flex gap-1.5 flex-wrap justify-center">
-              {testimonials.map((_, i) => (
+              {testimonialsData.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => goTo(i)}
@@ -529,7 +545,7 @@ export default function HomeClient() {
 
           {/* Counter */}
           <p className="text-center font-mono text-[11px] text-white/25 mt-3 tracking-widest">
-            {String(activeTestimonial + 1).padStart(2, '0')} / {String(testimonials.length).padStart(2, '0')}
+            {String(activeTestimonial + 1).padStart(2, '0')} / {String(testimonialsData.length).padStart(2, '0')}
           </p>
         </div>
       </SectionWrapper>
@@ -545,7 +561,7 @@ export default function HomeClient() {
           subtitle={t('home.faqsSubtitle')}
         />
         <div className="max-w-3xl mx-auto space-y-3">
-          {faqs.map((faq, i) => {
+            {faqsData.map((faq, i) => {
             const isOpen = openFaq === faq.id
             const tFaq = translations.data.generalFaqs[i] as unknown as string[] | undefined
             const question = tFaq?.[0] ?? faq.question
