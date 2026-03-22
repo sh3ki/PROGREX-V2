@@ -4,7 +4,17 @@ import { useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { ChevronLeft, ChevronRight, Globe, Github, Linkedin } from 'lucide-react'
-import { team } from '@/lib/mockData'
+
+type TeamMember = {
+  id: string | number
+  name: string
+  role: string
+  bio: string
+  avatar: string
+  linkedin: string
+  github: string
+  portfolio?: string
+}
 
 function getCardStyle(offset: number) {
   const abs = Math.abs(offset)
@@ -34,18 +44,23 @@ function getCardStyle(offset: number) {
   }
 }
 
-export default function TeamCarousel() {
+export default function TeamCarousel({ teamData }: { teamData: TeamMember[] }) {
   const [current, setCurrent] = useState(0)
   const [dragging, setDragging] = useState(false)
 
-  const total = team.length
+  const total = teamData.length
 
   const go = useCallback(
     (delta: number) => {
+      if (total === 0) return
       setCurrent((c) => (c + delta + total) % total)
     },
     [total]
   )
+
+  if (total === 0) {
+    return <div className="text-center text-sm text-slate-500">No team members available.</div>
+  }
 
   const handleDragEnd = (_: unknown, info: { offset: { x: number } }) => {
     setDragging(false)
@@ -83,7 +98,7 @@ export default function TeamCarousel() {
           className="relative w-full h-175 sm:h-187.5"
           style={{ perspective: '1100px' }}
         >
-          {team.map((member, i) => {
+          {teamData.map((member, i) => {
             const offset =
               ((i - current + total) % total + Math.floor(total / 2)) % total -
               Math.floor(total / 2)
@@ -274,7 +289,7 @@ export default function TeamCarousel() {
 
         {/* Dot indicators */}
         <div className="flex gap-2">
-          {team.map((_, i) => (
+          {teamData.map((_, i) => (
             <button
               key={i}
               onClick={() => setCurrent(i)}
