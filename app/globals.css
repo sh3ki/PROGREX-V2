@@ -61,6 +61,13 @@
     background-color: var(--space-950);
     color: var(--star-200);
     overflow-x: hidden;
+    caret-color: transparent;
+  }
+
+  input,
+  textarea,
+  [contenteditable="true"] {
+    caret-color: auto;
   }
 
   ::selection {
@@ -318,6 +325,252 @@
     height: 1px;
     background: rgba(34,211,238,0.5);
     flex-shrink: 0;
+  }
+
+  /* Admin Apex UI theme layer */
+  .admin-theme {
+    --apx-bg: #f8fafc;
+    --apx-surface: #ffffff;
+    --apx-surface-alt: #f8fafc;
+    --apx-text: #0f172a;
+    --apx-muted: #64748b;
+    --apx-border: #e2e8f0;
+    --apx-sidebar: #020d0f;
+    --apx-sidebar-border: #142629;
+    --apx-sidebar-text: #94a3b8;
+    --apx-sidebar-hover: #0b1618;
+    --apx-sidebar-active: var(--apx-primary);
+    --apx-primary: #2563eb;
+    --apx-primary-soft: rgba(37, 99, 235, 0.16);
+    --apx-focus: 0 0 0 3px rgba(37, 99, 235, 0.2);
+  }
+
+  .admin-theme.admin-theme-dark {
+    --apx-bg: #0b1117;
+    --apx-surface: #111a23;
+    --apx-surface-alt: #0d1520;
+    --apx-text: #e2e8f0;
+    --apx-muted: #9aa8bd;
+    --apx-border: #223043;
+    --apx-sidebar: #020d0f;
+    --apx-sidebar-border: #1d3238;
+    --apx-sidebar-text: #93a7bb;
+    --apx-sidebar-hover: #112227;
+    --apx-sidebar-active: var(--apx-primary);
+    --apx-primary: #2563eb;
+    --apx-primary-soft: rgba(37, 99, 235, 0.22);
+    --apx-focus: 0 0 0 3px rgba(37, 99, 235, 0.25);
+  }
+
+  .apx-bg {
+    background-color: var(--apx-bg);
+  }
+
+  .apx-text {
+    color: var(--apx-text);
+  }
+
+  .apx-muted {
+    color: var(--apx-muted);
+  }
+
+  .apx-card {
+    border-radius: 16px;
+    border: 1px solid var(--apx-border);
+    background: var(--apx-surface);
+    box-shadow: 0 1px 2px rgba(2, 6, 23, 0.05);
+  }
+
+  .apx-input,
+  .apx-textarea,
+  .apx-select {
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid var(--apx-border);
+    background: var(--apx-surface-alt);
+    color: var(--apx-text);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    padding: 0.5rem 0.75rem;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .apx-input::placeholder,
+  .apx-textarea::placeholder {
+    color: var(--apx-muted);
+  }
+
+  .apx-input:focus,
+  .apx-textarea:focus,
+  .apx-select:focus {
+    border-color: var(--apx-primary);
+    box-shadow: var(--apx-focus);
+  }
+
+  .apx-btn-primary,
+  .apx-btn-outline,
+  .apx-btn-danger {
+    border-radius: 10px;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 600;
+    transition: all 0.15s ease;
+    padding: 0.45rem 0.7rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+  }
+
+  .apx-btn-primary svg,
+  .apx-btn-outline svg,
+  .apx-btn-danger svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .apx-btn-primary {
+    border: 1px solid var(--apx-primary);
+    background: var(--apx-primary);
+    color: #fff;
+  }
+
+  .apx-btn-primary:hover {
+    filter: brightness(0.95);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px color-mix(in oklab, var(--apx-primary) 30%, transparent);
+  }
+
+  .apx-btn-outline {
+    border: 1px solid var(--apx-border);
+    background: transparent;
+    color: var(--apx-text);
+  }
+
+  .apx-btn-outline:hover {
+    background: var(--apx-surface-alt);
+    transform: translateY(-1px);
+    border-color: color-mix(in oklab, var(--apx-primary) 35%, var(--apx-border));
+    color: var(--apx-primary);
+  }
+
+  .apx-btn-danger {
+    border: 1px solid rgba(244, 63, 94, 0.5);
+    background: transparent;
+    color: #e11d48;
+  }
+
+  .apx-btn-danger:hover {
+    background: rgba(244, 63, 94, 0.08);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(244, 63, 94, 0.2);
+  }
+
+  .apx-icon-action,
+  .apx-icon-action-danger {
+    border-radius: 10px;
+    padding: 0.45rem;
+    border: 1px solid var(--apx-border);
+    background: transparent;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .apx-icon-action:hover {
+    background: var(--apx-surface-alt);
+    transform: translateY(-1px);
+    border-color: color-mix(in oklab, var(--apx-primary) 35%, var(--apx-border));
+    color: var(--apx-primary);
+  }
+
+  .apx-icon-action-danger {
+    border-color: rgba(244, 63, 94, 0.5);
+    color: #e11d48;
+  }
+
+  .apx-icon-action-danger:hover {
+    background: rgba(244, 63, 94, 0.08);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(244, 63, 94, 0.2);
+  }
+
+  .apx-icon-action svg,
+  .apx-icon-action-danger svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .apx-table-row {
+    transition: background-color 0.15s ease;
+  }
+
+  .apx-table-row:hover {
+    background: color-mix(in oklab, var(--apx-primary) 12%, transparent);
+  }
+
+  .apx-table-row-selected {
+    background: color-mix(in oklab, var(--apx-primary) 20%, transparent);
+  }
+
+  .apx-list-hover:hover,
+  .apx-dropdown-option:hover {
+    background: color-mix(in oklab, var(--apx-primary) 14%, transparent);
+    color: var(--apx-primary);
+  }
+
+  .apx-badge,
+  .apx-badge-success,
+  .apx-badge-danger,
+  .apx-badge-warning {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+
+  .apx-badge {
+    background: var(--apx-surface-alt);
+    color: var(--apx-muted);
+  }
+
+  .apx-badge-success {
+    background: rgba(16, 185, 129, 0.16);
+    color: #047857;
+  }
+
+  .apx-badge-danger {
+    background: rgba(244, 63, 94, 0.16);
+    color: #be123c;
+  }
+
+  .apx-badge-warning {
+    background: rgba(245, 158, 11, 0.2);
+    color: #b45309;
+  }
+
+  .admin-theme.admin-theme-dark .apx-badge-success {
+    color: #6ee7b7;
+  }
+
+  .admin-theme.admin-theme-dark .apx-badge-danger {
+    color: #fda4af;
+  }
+
+  .admin-theme.admin-theme-dark .apx-badge-warning {
+    color: #fcd34d;
+  }
+
+  .apx-sidebar-link:hover {
+    background-color: rgba(2, 6, 23, 0.08);
+  }
+
+  .admin-theme.admin-theme-dark .apx-sidebar-link:hover {
+    background-color: rgba(248, 250, 252, 0.12);
   }
 
   /* ── Bracket-style tags ── */
