@@ -13,7 +13,18 @@ import { useTranslation } from '@/components/TranslationProvider'
 const VALUE_ICONS = [Zap, Shield, Award, Users, Lightbulb, Eye]
 const PROCESS_ICONS = [Search, Map, Palette, Code2, Rocket, TrendingUp]
 
-export default function AboutClient() {
+type TeamMember = {
+  id: string
+  name: string
+  role: string
+  bio: string
+  avatar: string
+  linkedin: string
+  github: string
+  portfolio?: string
+}
+
+export default function AboutClient({ teamData }: { teamData: TeamMember[] }) {
   const { t, translations } = useTranslation()
 
   const stats = (translations.data.stats as unknown as string[][]).map(([value, label]) => ({ value, label }))
@@ -46,7 +57,7 @@ export default function AboutClient() {
           viewport={{ once: true }}
           transition={{ duration: 0.7, delay: 0.2 }}
         >
-          <TeamCarousel />
+          <TeamCarousel teamData={teamData} />
         </motion.div>
       </SectionWrapper>
 
