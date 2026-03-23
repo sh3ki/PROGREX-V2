@@ -615,9 +615,22 @@ export default function AdminUsersTemplateView({
                             setConfirmOpen(true)
                           }}
                           className="apx-icon-action"
+                          style={
+                            user.isActive
+                              ? {
+                                  borderColor: 'rgba(234, 88, 12, 0.45)',
+                                  color: '#c2410c',
+                                  backgroundColor: 'rgba(249, 115, 22, 0.08)',
+                                }
+                              : {
+                                  borderColor: 'rgba(22, 163, 74, 0.5)',
+                                  color: '#15803d',
+                                  backgroundColor: 'rgba(22, 163, 74, 0.12)',
+                                }
+                          }
                           aria-label={`Toggle ${user.fullName} active status`}
                         >
-                          <Power className="apx-muted" />
+                          <Power className="h-4 w-4" />
                         </button>
                         <button
                           type="button"
