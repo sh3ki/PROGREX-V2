@@ -64,10 +64,9 @@ const NAV_SECTIONS: NavSection[] = [
     title: 'Core',
     items: [
       { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-      { href: '/admin/users', label: 'Users', icon: Users },
-      { href: '/admin/roles', label: 'Roles', icon: ShieldCheck },
       { href: '/admin/calendar', label: 'Calendar', icon: Calendar },
       { href: '/admin/bookings', label: 'Bookings', icon: CalendarCheck },
+      { href: '/admin/users', label: 'Users', icon: Users },
     ],
   },
   {
@@ -107,12 +106,14 @@ function getPageTitle(pathname: string) {
 export default function AdminLayoutShell({
   children,
   adminName,
+  adminEmail,
   initialIsDark,
   initialColorPreset,
   initialDensity,
 }: {
   children: React.ReactNode
   adminName: string
+  adminEmail: string
   initialIsDark: boolean
   initialColorPreset: ColorPreset
   initialDensity: Density
@@ -413,15 +414,15 @@ export default function AdminLayoutShell({
                     <div className="absolute right-0 mt-2 w-60 overflow-hidden rounded-xl border shadow-xl" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
                       <div className="border-b px-4 py-3" style={{ borderColor: 'var(--apx-border)' }}>
                         <p className="text-sm font-semibold apx-text">{adminName}</p>
-                        <p className="text-xs apx-muted">Admin Account</p>
+                        <p className="text-xs apx-muted">{adminEmail}</p>
                       </div>
 
                       <div className="p-2">
-                        <button className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm apx-text hover:bg-black/5">
+                        <button className="apx-list-hover flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm apx-text">
                           <Settings className="h-4 w-4" />
                           Settings
                         </button>
-                        <button className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm apx-text hover:bg-black/5">
+                        <button className="apx-list-hover flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm apx-text">
                           <Bell className="h-4 w-4" />
                           Notifications
                         </button>
@@ -430,7 +431,8 @@ export default function AdminLayoutShell({
                             setProfileMenuOpen(false)
                             setConfirmLogoutOpen(true)
                           }}
-                          className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-rose-600 hover:bg-rose-50"
+                          className="apx-list-hover flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm"
+                          style={{ color: isDark ? '#fda4af' : '#be123c' }}
                         >
                           <LogOut className="h-4 w-4" />
                           Log out
