@@ -37,6 +37,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <AdminLayoutShell
       adminName={admin.fullName}
+      adminEmail={admin.email}
       initialIsDark={initialIsDark}
       initialColorPreset={initialColorPreset}
       initialDensity={initialDensity}
