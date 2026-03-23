@@ -9,6 +9,7 @@ create table if not exists roles (
   name text not null unique,
   description text,
   is_system boolean not null default false,
+  is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
