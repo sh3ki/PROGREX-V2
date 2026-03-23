@@ -1,16 +1,7 @@
 import { revalidatePath } from 'next/cache'
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
-import {
-  ApexButton,
-  ApexCard,
-  ApexCardBody,
-  ApexCardHeader,
-  ApexFormGrid,
-  ApexInput,
-  ApexPageHeader,
-  ApexTextarea,
-} from '@/components/admin/apex/AdminPrimitives'
+import AdminTeamsTemplateView from '@/components/admin/teams/AdminTeamsTemplateView'
 
 async function saveTeam(formData: FormData) {
   'use server'
@@ -25,24 +16,72 @@ async function saveTeam(formData: FormData) {
   const github = String(formData.get('github') ?? '').trim()
   const portfolio = String(formData.get('portfolio') ?? '').trim()
   const sortOrder = Number(formData.get('sortOrder') ?? 0)
+  const status = String(formData.get('status') ?? 'active')
+  const isActive = status !== 'inactive'
 
   if (!name || !role) return
 
   if (id) {
     await sql(
       `update team_members
-       set name = $2, role = $3, bio = $4, avatar = $5, linkedin = $6, github = $7, portfolio = $8, sort_order = $9, updated_at = now()
+       set name = $2, role = $3, bio = $4, avatar = $5, linkedin = $6, github = $7, portfolio = $8, sort_order = $9, is_active = $10, updated_at = now()
        where id = $1`,
-      [id, name, role, bio, avatar, linkedin, github, portfolio, sortOrder]
+      [id, name, role, bio, avatar, linkedin, github, portfolio, sortOrder, isActive]
     )
   } else {
     await sql(
       `insert into team_members(name, role, bio, avatar, linkedin, github, portfolio, sort_order, is_active)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, true)`,
-      [name, role, bio, avatar, linkedin, github, portfolio, sortOrder]
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [name, role, bio, avatar, linkedin, github, portfolio, sortOrder, isActive]
     )
   }
 
+  revalidatePath('/admin/teams')
+  revalidatePath('/about')
+}
+
+async function toggleTeamActive(formData: FormData) {
+  'use server'
+  await requirePermission('teams', 'write')
+
+  const id = String(formData.get('id') ?? '').trim()
+  if (!id) return
+
+  await sql('update team_members set is_active = not is_active, updated_at = now() where id = $1', [id])
+  revalidatePath('/admin/teams')
+  revalidatePath('/about')
+}
+
+async function bulkDeleteTeam(formData: FormData) {
+  'use server'
+  await requirePermission('teams', 'delete')
+
+  const raw = String(formData.get('ids') ?? '')
+  const ids = raw
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+
+  if (ids.length === 0) return
+
+  await sql('delete from team_members where id = any($1::uuid[])', [ids])
+  revalidatePath('/admin/teams')
+  revalidatePath('/about')
+}
+
+async function bulkSetInactiveTeam(formData: FormData) {
+  'use server'
+  await requirePermission('teams', 'write')
+
+  const raw = String(formData.get('ids') ?? '')
+  const ids = raw
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+
+  if (ids.length === 0) return
+
+  await sql('update team_members set is_active = false, updated_at = now() where id = any($1::uuid[])', [ids])
   revalidatePath('/admin/teams')
   revalidatePath('/about')
 }
@@ -69,55 +108,31 @@ export default async function AdminTeamsPage() {
     github: string
     portfolio: string
     sort_order: number
-  }>('select id, name, role, bio, avatar, linkedin, github, portfolio, sort_order from team_members order by sort_order asc, created_at asc')
+    is_active: boolean
+    updated_at: string | null
+  }>('select id, name, role, bio, avatar, linkedin, github, portfolio, sort_order, is_active, updated_at::text from team_members order by sort_order asc, created_at asc')
 
   return (
-    <div className="space-y-5">
-      <ApexPageHeader title="Teams" subtitle="Maintain About page team cards and links." />
-
-      <ApexCard>
-        <ApexCardHeader title="Add Team Member" />
-        <ApexCardBody>
-          <form action={saveTeam}>
-            <ApexFormGrid>
-              <ApexInput name="name" placeholder="name" required />
-              <ApexInput name="role" placeholder="role" required />
-              <ApexInput name="avatar" placeholder="avatar URL" className="md:col-span-2" />
-              <ApexTextarea name="bio" rows={3} placeholder="bio" className="md:col-span-2" />
-              <ApexInput name="linkedin" placeholder="linkedin" />
-              <ApexInput name="github" placeholder="github" />
-              <ApexInput name="portfolio" placeholder="portfolio" />
-              <ApexInput name="sortOrder" type="number" defaultValue={0} />
-              <ApexButton type="submit" className="md:col-span-2">Save</ApexButton>
-            </ApexFormGrid>
-          </form>
-        </ApexCardBody>
-      </ApexCard>
-
-      <div className="space-y-3">
-        {team.map((member) => (
-          <ApexCard key={member.id}>
-            <ApexCardHeader title={member.name} subtitle={member.role} />
-            <ApexCardBody>
-            <form action={saveTeam} className="grid gap-3 md:grid-cols-2">
-              <input type="hidden" name="id" value={member.id} />
-              <ApexInput name="name" defaultValue={member.name} required />
-              <ApexInput name="role" defaultValue={member.role} required />
-              <ApexInput name="avatar" defaultValue={member.avatar ?? ''} className="md:col-span-2" />
-              <ApexTextarea name="bio" rows={3} defaultValue={member.bio ?? ''} className="md:col-span-2" />
-              <ApexInput name="linkedin" defaultValue={member.linkedin ?? ''} />
-              <ApexInput name="github" defaultValue={member.github ?? ''} />
-              <ApexInput name="portfolio" defaultValue={member.portfolio ?? ''} />
-              <ApexInput name="sortOrder" type="number" defaultValue={member.sort_order ?? 0} />
-              <div className="md:col-span-2 flex gap-2">
-                <ApexButton variant="outline" type="submit">Update</ApexButton>
-                <ApexButton formAction={deleteTeam} variant="danger" type="submit">Delete</ApexButton>
-              </div>
-            </form>
-            </ApexCardBody>
-          </ApexCard>
-        ))}
-      </div>
-    </div>
+    <AdminTeamsTemplateView
+      team={team.map((member) => ({
+        id: member.id,
+        name: member.name,
+        role: member.role,
+        bio: member.bio ?? '',
+        avatar: member.avatar ?? '',
+        linkedin: member.linkedin ?? '',
+        github: member.github ?? '',
+        portfolio: member.portfolio ?? '',
+        sortOrder: member.sort_order ?? 0,
+        isActive: member.is_active,
+        updatedAt: member.updated_at,
+      }))}
+      createTeamAction={saveTeam}
+      updateTeamAction={saveTeam}
+      deleteTeamAction={deleteTeam}
+      bulkDeleteTeamAction={bulkDeleteTeam}
+      bulkSetInactiveTeamAction={bulkSetInactiveTeam}
+      toggleTeamActiveAction={toggleTeamActive}
+    />
   )
 }
