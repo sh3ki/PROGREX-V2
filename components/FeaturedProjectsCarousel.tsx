@@ -312,7 +312,9 @@ export default function FeaturedProjectsCarousel({ projectsData }: { projectsDat
                   <>
                     {/* Image — 16:9 */}
                     <div className="relative aspect-video overflow-hidden">
-                      {Array.isArray(project.category) ? project.category.includes('Mobile') : project.category === 'Mobile' ? (
+                      {(Array.isArray(project.category)
+                        ? project.category.some((item) => item.toLowerCase() === 'mobile')
+                        : String(project.category).toLowerCase() === 'mobile') ? (
                         <PhoneMockup src={project.image} alt={tp[project.slug]?.title ?? project.title} />
                       ) : (
                         <>
