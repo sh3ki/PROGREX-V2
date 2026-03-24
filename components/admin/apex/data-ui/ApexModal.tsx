@@ -22,18 +22,19 @@ export function ApexModal({
   title: string
   subtitle?: string
   onClose: () => void
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'xl'
   layer?: 'base' | 'top'
   children: ReactNode
 }) {
   if (!open) return null
 
-  const maxWidthClass = size === 'sm' ? 'max-w-md' : size === 'md' ? 'max-w-xl' : 'max-w-2xl'
+  const maxWidthClass =
+    size === 'sm' ? 'max-w-md' : size === 'md' ? 'max-w-xl' : size === 'xl' ? 'max-w-5xl' : 'max-w-2xl'
   const layerClass = layer === 'top' ? 'z-[120]' : 'z-90'
 
   return (
     <div className={['fixed inset-0 flex items-center justify-center bg-black/45 p-4 backdrop-blur-[2px]', layerClass].join(' ')}>
-      <div className={['w-full rounded-2xl border p-4 shadow-2xl', maxWidthClass].join(' ')} style={APX_MODAL_CONTAINER_STYLE}>
+      <div className={['flex max-h-[90vh] w-full flex-col rounded-2xl border p-4 shadow-2xl', maxWidthClass].join(' ')} style={APX_MODAL_CONTAINER_STYLE}>
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <h3 className="text-lg font-semibold apx-text">{title}</h3>
@@ -43,7 +44,7 @@ export function ApexModal({
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="pt-2">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto pt-2">{children}</div>
       </div>
     </div>
   )
