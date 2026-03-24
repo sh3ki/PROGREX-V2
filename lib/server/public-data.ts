@@ -59,7 +59,12 @@ export async function getPublicProjects(): Promise<PublicProject[]> {
     `select id, slug, title, system_type, categories, industry, tags, image, short_desc, details, is_featured, feature_order
      from projects
      where is_published = true
-     order by created_at desc`
+     order by
+       case
+         when (details ->> 'positionOrder') ~ '^\\d+$' then (details ->> 'positionOrder')::int
+         else 999999
+       end asc,
+       created_at desc`
   )
 
   return rows.map((r) => ({
