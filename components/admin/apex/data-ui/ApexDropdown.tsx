@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronDown, Check } from 'lucide-react'
 
 type Option = { value: string; label: string }
@@ -19,7 +19,18 @@ export function ApexDropdown({
   disabled?: boolean
 }) {
   const [open, setOpen] = useState(false)
+  const [openUp, setOpenUp] = useState(false)
   const rootRef = useRef<HTMLDivElement | null>(null)
+
+  const computeDirection = useCallback(() => {
+    if (!rootRef.current) return
+    const rect = rootRef.current.getBoundingClientRect()
+    const viewportHeight = window.innerHeight
+    const estimatedMenuHeight = Math.min(options.length * 36 + 12, 220)
+    const spaceBelow = viewportHeight - rect.bottom
+    const spaceAbove = rect.top
+    setOpenUp(spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow)
+  }, [options.length])
 
   useEffect(() => {
     function onDocumentClick(event: MouseEvent) {
@@ -31,6 +42,20 @@ export function ApexDropdown({
     return () => document.removeEventListener('mousedown', onDocumentClick)
   }, [])
 
+  useEffect(() => {
+    if (!open) return
+
+    function onResizeOrScroll() {
+      computeDirection()
+    }
+    window.addEventListener('resize', onResizeOrScroll)
+    window.addEventListener('scroll', onResizeOrScroll, true)
+    return () => {
+      window.removeEventListener('resize', onResizeOrScroll)
+      window.removeEventListener('scroll', onResizeOrScroll, true)
+    }
+  }, [computeDirection, open])
+
   const selected = options.find((option) => option.value === value)
 
   return (
@@ -38,7 +63,10 @@ export function ApexDropdown({
       <button
         type="button"
         disabled={disabled}
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => {
+          if (!open) computeDirection()
+          setOpen((prev) => !prev)
+        }}
         className="flex h-10 w-full items-center justify-between rounded-xl border px-3 text-sm transition disabled:opacity-50"
         style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface-alt)', color: 'var(--apx-text)' }}
       >
@@ -47,7 +75,13 @@ export function ApexDropdown({
       </button>
 
       {open ? (
-        <div className="absolute left-0 right-0 z-50 mt-2 overflow-hidden rounded-xl border py-1 shadow-xl" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
+        <div
+          className={[
+            'absolute left-0 right-0 z-50 overflow-hidden rounded-xl border py-1 shadow-xl',
+            openUp ? 'bottom-full mb-2' : 'mt-2',
+          ].join(' ')}
+          style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}
+        >
           {options.map((option) => {
             const isSelected = option.value === value
             return (
