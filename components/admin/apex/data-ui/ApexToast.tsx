@@ -12,17 +12,17 @@ export function ApexToastStack({ toasts, onRemove }: { toasts: ApexToast[]; onRe
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className="rounded-xl border px-3 py-2 text-sm shadow-lg"
+          className="rounded-xl px-3 py-2 text-sm shadow-xl"
           style={{ width: `${Math.min(460, Math.max(250, 160 + toast.message.length * 7))}px` }}
         >
           <div
             className="rounded-lg px-2 py-1"
           style={
             toast.tone === 'success'
-              ? { borderColor: 'rgba(16,185,129,0.45)', backgroundColor: 'rgba(16,185,129,0.12)', color: '#065f46' }
+              ? { backgroundColor: '#052e26', color: '#6ee7b7' }
               : toast.tone === 'danger'
-              ? { borderColor: 'rgba(244,63,94,0.45)', backgroundColor: 'rgba(244,63,94,0.12)', color: '#9f1239' }
-              : { borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)', color: 'var(--apx-text)' }
+              ? { backgroundColor: '#3b0a18', color: '#fda4af' }
+              : { backgroundColor: '#0f172a', color: '#e2e8f0' }
           }
         >
           <div className="flex items-center justify-between gap-3">
