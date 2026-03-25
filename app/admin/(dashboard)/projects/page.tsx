@@ -181,6 +181,7 @@ async function saveProject(formData: FormData) {
   const problem = String(formData.get('problem') ?? '').trim()
   const solution = String(formData.get('solution') ?? '').trim()
   const featureItems = parseJson<string[]>(String(formData.get('featuresJson') ?? '[]'), []).filter(Boolean)
+  const technologies = parseCommaSeparated(String(formData.get('technologies') ?? ''))
   const resultsItems = parseJson<Array<{ value: string; metric: string }>>(
     String(formData.get('resultsJson') ?? '[]'),
     []
@@ -222,6 +223,7 @@ async function saveProject(formData: FormData) {
     problem,
     solution,
     features: featureItems,
+    technologies,
     results: resultsItems,
     testimonial: {
       author: testimonialAuthor,
