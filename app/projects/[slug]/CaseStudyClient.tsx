@@ -206,7 +206,7 @@ export default function CaseStudyClient({
             )}
             <p className="text-white/50 text-lg leading-relaxed mb-4 max-w-3xl">{pShortDesc}</p>
             <div className="flex flex-wrap gap-2 mb-6">
-              {project.technologies.map((tech) => (<span key={tech} className="font-mono text-[11px] px-3 py-1 rounded" style={{ background: 'rgba(103,232,249,0.06)', border: '1px solid rgba(103,232,249,0.15)', color: 'rgba(103,232,249,0.65)' }}>{tech}</span>))}
+              {(project.technologies ?? []).map((tech) => (<span key={tech} className="font-mono text-[11px] px-3 py-1 rounded" style={{ background: 'rgba(103,232,249,0.06)', border: '1px solid rgba(103,232,249,0.15)', color: 'rgba(103,232,249,0.65)' }}>{tech}</span>))}
             </div>
           </motion.div>
         </div>
