@@ -32,20 +32,52 @@ export default async function ProjectPage({ params }: Props) {
 
   type CaseStudyProps = React.ComponentProps<typeof CaseStudyClient>
 
-  const normalizedProject = {
-    ...project,
-    ...((project.details ?? {}) as Record<string, unknown>),
-  } as unknown as CaseStudyProps['project']
+  function asStringArray(value: unknown): string[] {
+    if (!Array.isArray(value)) return []
+    return value
+      .map((item) => String(item ?? '').trim())
+      .filter(Boolean)
+  }
 
-  const normalizedPrev = {
-    ...previousProject,
-    ...((previousProject.details ?? {}) as Record<string, unknown>),
-  } as unknown as CaseStudyProps['previousProject']
+  function normalizeCaseStudyProject(
+    value: (typeof projects)[number]
+  ): CaseStudyProps['project'] {
+    const details = ((value.details ?? {}) as Record<string, unknown>)
+    const tags = asStringArray(value.tags)
+    const features = asStringArray(details.features)
+    const technologies = asStringArray(details.technologies)
 
-  const normalizedNext = {
-    ...nextProject,
-    ...((nextProject.details ?? {}) as Record<string, unknown>),
-  } as unknown as CaseStudyProps['nextProject']
+    const rawResults = Array.isArray(details.results) ? details.results : []
+    const results = rawResults
+      .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
+      .map((item) => ({
+        metric: String(item.metric ?? '').trim(),
+        value: String(item.value ?? '').trim(),
+      }))
+      .filter((item) => item.metric || item.value)
+
+    const testimonialRaw = (details.testimonial ?? {}) as Record<string, unknown>
+
+    return {
+      ...value,
+      ...details,
+      tags,
+      features,
+      technologies,
+      results,
+      testimonial: {
+        quote: String(testimonialRaw.quote ?? '').trim(),
+        author: String(testimonialRaw.author ?? '').trim(),
+        role: String(testimonialRaw.role ?? '').trim(),
+      },
+      images: asStringArray(details.images),
+      category: Array.isArray(value.category) ? value.category : [value.category].filter(Boolean),
+    } as CaseStudyProps['project']
+  }
+
+  const normalizedProject = normalizeCaseStudyProject(project)
+  const normalizedPrev = normalizeCaseStudyProject(previousProject) as CaseStudyProps['previousProject']
+  const normalizedNext = normalizeCaseStudyProject(nextProject) as CaseStudyProps['nextProject']
 
   return (
     <CaseStudyClient
