@@ -70,6 +70,7 @@ type ProjectFormState = {
   categories: string[]
   shortDesc: string
   tags: string
+  technologies: string
   status: 'active' | 'inactive'
   positionOrder: number
   isFeatured: boolean
@@ -136,6 +137,13 @@ function getDetailsFeatures(project: ProjectRow) {
     : []
 }
 
+function getDetailsTechnologies(project: ProjectRow) {
+  const details = getDetailsObject(project.details)
+  return Array.isArray(details.technologies)
+    ? details.technologies.map((item) => String(item)).filter(Boolean)
+    : []
+}
+
 function getDetailsResults(project: ProjectRow): ResultPair[] {
   const details = getDetailsObject(project.details)
   const rows = Array.isArray(details.results)
@@ -182,6 +190,7 @@ function defaultForm(positionOrder = 1, featureOrder = 1): ProjectFormState {
     categories: [],
     shortDesc: '',
     tags: '',
+    technologies: '',
     status: 'active',
     positionOrder,
     isFeatured: false,
@@ -215,6 +224,7 @@ function formFromProject(project: ProjectRow): ProjectFormState {
   const selectedPrimary = imageItems.find((item) => item.url === project.image)?.id || imageItems[0]?.id || ''
   const testimonial = getDetailsTestimonial(project)
   const features = getDetailsFeatures(project)
+  const technologies = getDetailsTechnologies(project)
 
   return {
     id: project.id,
@@ -224,6 +234,7 @@ function formFromProject(project: ProjectRow): ProjectFormState {
     categories: project.categories ?? [],
     shortDesc: project.shortDesc,
     tags: parseTags(project.tags ?? []),
+    technologies: technologies.join(', '),
     status: project.isPublished ? 'active' : 'inactive',
     positionOrder: toProjectOrderValue(project),
     isFeatured: project.isFeatured,
@@ -391,6 +402,7 @@ function ProjectFormModal({
 
     const hasFeatures = form.features.length > 0
     if (!hasFeatures || form.features.some((feature) => !feature.trim())) return 'All Features fields are required.'
+    if (!form.technologies.trim()) return 'Technologies are required.'
     if (!form.testimonialAuthor.trim()) return 'Testimonial Author is required.'
     if (!form.testimonialRole.trim()) return 'Testimonial Role is required.'
     if (!form.testimonialQuote.trim()) return 'Testimonial Quote is required.'
@@ -779,6 +791,15 @@ function ProjectFormModal({
               ))}
             </div>
             </div>
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-xs font-medium apx-muted">Technologies (comma-separated)</label>
+            <ApexInput
+              value={form.technologies}
+              onChange={(event) => onChange({ ...form, technologies: event.target.value })}
+              placeholder="React, Next.js, PostgreSQL"
+            />
           </div>
 
           <div className="md:col-span-2 grid gap-3 md:grid-cols-3">
@@ -1244,6 +1265,7 @@ export default function AdminProjectsTemplateView({
     formData.set('solution', form.solution)
     formData.set('resultsJson', JSON.stringify(form.results))
     formData.set('featuresJson', JSON.stringify(form.features.map((item) => item.trim()).filter(Boolean)))
+    formData.set('technologies', form.technologies)
     formData.set('testimonialAuthor', form.testimonialAuthor)
     formData.set('testimonialRole', form.testimonialRole)
     formData.set('testimonialQuote', form.testimonialQuote)
