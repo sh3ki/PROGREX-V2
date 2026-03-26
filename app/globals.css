@@ -408,6 +408,26 @@
     box-shadow: var(--apx-focus);
   }
 
+  .apx-input[type='date'],
+  .apx-input[type='time'],
+  .apx-input[type='datetime-local'] {
+    color-scheme: light dark;
+  }
+
+  .apx-input[type='date']::-webkit-calendar-picker-indicator,
+  .apx-input[type='time']::-webkit-calendar-picker-indicator,
+  .apx-input[type='datetime-local']::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.85;
+    filter: drop-shadow(0 0 0 transparent);
+  }
+
+  .apx-input[type='date']:focus::-webkit-calendar-picker-indicator,
+  .apx-input[type='time']:focus::-webkit-calendar-picker-indicator,
+  .apx-input[type='datetime-local']:focus::-webkit-calendar-picker-indicator {
+    opacity: 1;
+  }
+
   .apx-btn-primary,
   .apx-btn-outline,
   .apx-btn-danger {
