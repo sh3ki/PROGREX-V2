@@ -371,7 +371,7 @@ export default function AdminCalendarTemplateView({
               <>
                 <div className="mb-3 flex items-start justify-between gap-2">
                   <div>
-                    <h3 className="text-[30px] leading-none font-bold apx-text">{selectedLabel}</h3>
+                    <h3 className="text-xl leading-none font-bold apx-text">{selectedLabel}</h3>
                     <p className="mt-1 text-sm apx-muted">{selectedDateEvents.length} event{selectedDateEvents.length === 1 ? '' : 's'}</p>
                   </div>
                   <ApexButton
