@@ -6,7 +6,7 @@ import Hero from '@/components/Hero'
 import ConstellationDecor from '@/components/ConstellationDecor'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
 import CTASection from '@/components/CTASection'
-import TeamCarousel from '@/components/TeamCarousel'
+import TeamCarousel from '../../components/TeamCarousel'
 import { useTranslation } from '@/components/TranslationProvider'
 
 // Icons mapped to each core value (same order as data.coreValues)
@@ -19,8 +19,7 @@ type TeamMember = {
   role: string
   bio: string
   avatar: string
-  linkedin: string
-  github: string
+  email: string
   portfolio?: string
 }
 
