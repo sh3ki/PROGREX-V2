@@ -61,11 +61,12 @@ export default function BlogsClient({ blogsData }: { blogsData: BlogPost[] }) {
       setTimeout(() => { dragMoved.current = 0 }, 100)
     }
 
-    // Vertical wheel → horizontal scroll
+    // Horizontal wheel/trackpad movement scrolls the strip.
+    // Vertical movement should keep normal page scrolling behavior.
     const onWheel = (e: WheelEvent) => {
-      if (e.deltaY === 0) return
+      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return
       e.preventDefault()
-      el.scrollLeft += e.deltaY * 1.5
+      el.scrollLeft += e.deltaX
     }
 
     // Block link/card clicks if the user was dragging
@@ -242,14 +243,14 @@ export default function BlogsClient({ blogsData }: { blogsData: BlogPost[] }) {
                     cursor: 'grab',
                     scrollbarWidth: 'none',
                     msOverflowStyle: 'none',
-                    touchAction: 'pan-y',
+                    touchAction: 'pan-x',
                     paddingBottom: '4px',
                   } as React.CSSProperties}
                 >
                   {rest.map((blog, i) => (
                     <div
                       key={blog.id}
-                      className="shrink-0 w-[280px] sm:w-80"
+                      className="shrink-0 w-70 sm:w-80"
                     >
                       <BlogCard
                         title={blog.title}
