@@ -88,12 +88,11 @@ export async function getProjectBySlug(slug: string): Promise<PublicProject | nu
   return projects.find((p) => p.slug === slug) ?? null
 }
 
-export async function getFeaturedProjects(limit = 13): Promise<PublicProject[]> {
+export async function getFeaturedProjects(): Promise<PublicProject[]> {
   const rows = await getPublicProjects()
   return rows
     .filter((p) => p.isFeatured)
     .sort((a, b) => a.featureOrder - b.featureOrder)
-    .slice(0, limit)
 }
 
 export async function getPublicTeam() {
@@ -103,11 +102,10 @@ export async function getPublicTeam() {
     role: string
     bio: string
     avatar: string
-    linkedin: string
-    github: string
+    email: string
     portfolio: string
   }>(
-    `select id, name, role, bio, avatar, linkedin, github, portfolio
+    `select id, name, role, bio, avatar, email, portfolio
      from team_members
      where is_active = true
      order by sort_order asc, created_at asc`
@@ -119,8 +117,7 @@ export async function getPublicTeam() {
     role: r.role,
     bio: r.bio,
     avatar: r.avatar,
-    linkedin: r.linkedin,
-    github: r.github,
+    email: r.email,
     portfolio: r.portfolio,
   }))
 }
@@ -131,6 +128,7 @@ export async function getPublicBlogs() {
     slug: string
     title: string
     category: string
+    team_member_id: string | null
     author_name: string
     author_role: string
     author_avatar: string
@@ -145,10 +143,16 @@ export async function getPublicBlogs() {
     meta_description: string
     keywords: string[]
   }>(
-    `select id, slug, title, category, author_name, author_role, author_avatar, published_at, read_time, image, excerpt, tags, content, related_posts, meta_title, meta_description, keywords
-     from blogs
-     where is_published = true
-     order by created_at desc`
+    `select b.id, b.slug, b.title, b.category, b.team_member_id,
+            coalesce(tm.name, b.author_name) as author_name,
+            coalesce(tm.role, b.author_role) as author_role,
+            coalesce(tm.avatar, b.author_avatar) as author_avatar,
+            b.published_at, b.read_time, b.image, b.excerpt, b.tags,
+            b.content, b.related_posts, b.meta_title, b.meta_description, b.keywords
+     from blogs b
+     left join team_members tm on tm.id = b.team_member_id
+     where b.is_published = true
+     order by b.created_at desc`
   )
 
   return rows.map((r) => ({
