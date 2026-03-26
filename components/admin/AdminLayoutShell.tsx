@@ -107,6 +107,7 @@ export default function AdminLayoutShell({
   children,
   adminName,
   adminEmail,
+  adminAvatar,
   initialIsDark,
   initialColorPreset,
   initialDensity,
@@ -114,6 +115,7 @@ export default function AdminLayoutShell({
   children: React.ReactNode
   adminName: string
   adminEmail: string
+  adminAvatar?: string | null
   initialIsDark: boolean
   initialColorPreset: ColorPreset
   initialDensity: Density
@@ -404,10 +406,15 @@ export default function AdminLayoutShell({
                   <button
                     aria-label="User menu"
                     onClick={() => setProfileMenuOpen((prev) => !prev)}
-                    className="ms-1 flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-colors"
-                    style={{ backgroundColor: 'var(--apx-primary-soft)', color: 'var(--apx-primary)' }}
+                    className="ms-1 flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border text-xs font-semibold transition-colors"
+                    style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-primary-soft)', color: 'var(--apx-primary)' }}
                   >
-                    {initials}
+                    {adminAvatar ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={adminAvatar} alt={adminName} className="h-full w-full object-cover" />
+                    ) : (
+                      initials
+                    )}
                   </button>
 
                   {profileMenuOpen ? (
