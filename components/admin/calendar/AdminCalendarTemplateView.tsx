@@ -32,12 +32,14 @@ type EventFormState = {
 type ConfirmKind = 'create' | 'update' | 'delete'
 
 const COLOR_OPTIONS = [
-  { value: 'primary', label: 'Primary (Theme)' },
-  { value: 'blue', label: 'Blue' },
-  { value: 'emerald', label: 'Emerald' },
-  { value: 'amber', label: 'Amber' },
-  { value: 'rose', label: 'Rose' },
-  { value: 'violet', label: 'Violet' },
+  { value: 'primary', label: 'Primary (Theme)', color: 'var(--apx-primary)' },
+  { value: 'red', label: 'Red', color: '#dc2626' },
+  { value: 'orange', label: 'Orange', color: '#ea580c' },
+  { value: 'yellow', label: 'Yellow', color: '#ca8a04' },
+  { value: 'green', label: 'Green', color: '#16a34a' },
+  { value: 'blue', label: 'Blue', color: '#2563eb' },
+  { value: 'violet', label: 'Violet', color: '#7c3aed' },
+  { value: 'gray', label: 'Gray', color: '#64748b' },
 ]
 
 function startOfMonth(date: Date) {
@@ -65,11 +67,13 @@ function toDateShort(value: string) {
 }
 
 function colorTheme(color: string) {
+  if (color === 'red' || color === 'rose') return { chipBg: 'rgba(225,29,72,0.2)', chipText: '#be123c', cardBg: 'rgba(225,29,72,0.11)', border: 'rgba(225,29,72,0.35)' }
+  if (color === 'orange') return { chipBg: 'rgba(234,88,12,0.2)', chipText: '#c2410c', cardBg: 'rgba(234,88,12,0.11)', border: 'rgba(234,88,12,0.35)' }
+  if (color === 'yellow' || color === 'amber') return { chipBg: 'rgba(217,119,6,0.2)', chipText: '#b45309', cardBg: 'rgba(217,119,6,0.11)', border: 'rgba(217,119,6,0.35)' }
+  if (color === 'green' || color === 'emerald') return { chipBg: 'rgba(5,150,105,0.18)', chipText: '#047857', cardBg: 'rgba(5,150,105,0.1)', border: 'rgba(5,150,105,0.35)' }
   if (color === 'blue') return { chipBg: 'rgba(37,99,235,0.18)', chipText: '#1d4ed8', cardBg: 'rgba(37,99,235,0.1)', border: 'rgba(37,99,235,0.35)' }
-  if (color === 'emerald') return { chipBg: 'rgba(5,150,105,0.18)', chipText: '#047857', cardBg: 'rgba(5,150,105,0.1)', border: 'rgba(5,150,105,0.35)' }
-  if (color === 'amber') return { chipBg: 'rgba(217,119,6,0.2)', chipText: '#b45309', cardBg: 'rgba(217,119,6,0.11)', border: 'rgba(217,119,6,0.35)' }
-  if (color === 'rose') return { chipBg: 'rgba(225,29,72,0.2)', chipText: '#be123c', cardBg: 'rgba(225,29,72,0.11)', border: 'rgba(225,29,72,0.35)' }
   if (color === 'violet') return { chipBg: 'rgba(124,58,237,0.2)', chipText: '#6d28d9', cardBg: 'rgba(124,58,237,0.11)', border: 'rgba(124,58,237,0.35)' }
+  if (color === 'gray') return { chipBg: 'rgba(100,116,139,0.2)', chipText: '#334155', cardBg: 'rgba(100,116,139,0.11)', border: 'rgba(100,116,139,0.35)' }
   return {
     chipBg: 'var(--apx-primary-soft)',
     chipText: 'var(--apx-primary)',
@@ -271,7 +275,7 @@ export default function AdminCalendarTemplateView({
         </button>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(360px,0.92fr)]">
         <section className="rounded-2xl border p-4" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
           <div className="mb-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -312,6 +316,7 @@ export default function AdminCalendarTemplateView({
               const key = toDateKey(cell.date)
               const isToday = key === todayKey
               const isSelected = key === selectedDate
+              const isHighlighted = isSelected || (!selectedDate && isToday)
               const dayEvents = eventsByDate.get(key) ?? []
 
               return (
@@ -319,20 +324,20 @@ export default function AdminCalendarTemplateView({
                   key={cell.key}
                   type="button"
                   onClick={() => setSelectedDate(key)}
-                  className="h-28 rounded-xl border p-2 text-left transition"
+                  className="aspect-square min-h-28 rounded-xl border p-2 text-left transition"
                   style={{
-                    borderColor: isSelected || isToday ? 'var(--apx-primary)' : 'var(--apx-border)',
-                    backgroundColor: isSelected || isToday ? 'var(--apx-primary-soft)' : 'var(--apx-surface-alt)',
+                    borderColor: isHighlighted ? 'var(--apx-primary)' : 'var(--apx-border)',
+                    backgroundColor: isHighlighted ? 'var(--apx-primary-soft)' : 'var(--apx-surface-alt)',
                   }}
                 >
                   <div className="mb-1 flex items-center justify-between">
+                    {dayEvents.length > 0 ? <span className="text-[10px] apx-muted">{dayEvents.length} event{dayEvents.length > 1 ? 's' : ''}</span> : <span />}
                     <span
                       className="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold"
-                      style={isSelected || isToday ? { backgroundColor: 'var(--apx-primary)', color: '#fff' } : { color: 'var(--apx-text)' }}
+                      style={isHighlighted ? { backgroundColor: 'var(--apx-primary)', color: '#fff' } : { color: 'var(--apx-text)' }}
                     >
                       {cell.date.getDate()}
                     </span>
-                    {dayEvents.length > 0 ? <span className="text-[10px] apx-muted">{dayEvents.length} event{dayEvents.length > 1 ? 's' : ''}</span> : null}
                   </div>
 
                   <div className="space-y-1 overflow-hidden">
@@ -423,6 +428,7 @@ export default function AdminCalendarTemplateView({
                                   || 'Time not specified'}
                               </p>
                             </div>
+                            <span className="mt-1 h-2.5 w-2.5 rounded-full" style={{ backgroundColor: theme.chipText }} />
                             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                               <button
                                 type="button"
@@ -470,7 +476,10 @@ export default function AdminCalendarTemplateView({
               <div className="space-y-2">
                 {tomorrowEvents.map((event) => (
                   <article key={event.id} className="rounded-lg border px-3 py-2" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface-alt)' }}>
-                    <p className="text-sm font-semibold apx-text">{event.title}</p>
+                    <p className="inline-flex items-center gap-2 text-sm font-semibold apx-text">
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: colorTheme(event.color).chipText }} />
+                      {event.title}
+                    </p>
                     <p className="text-xs apx-muted">{toDateShort(event.eventDate)}</p>
                     <p className="text-xs apx-muted">
                       {[formatTime(event.startTime), event.endTime ? `- ${formatTime(event.endTime)}` : ''].filter(Boolean).join(' ')
