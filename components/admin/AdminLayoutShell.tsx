@@ -14,6 +14,9 @@ import {
   UserSquare2,
   Newspaper,
   Boxes,
+  Building2,
+  FolderOpen,
+  Inbox,
   Bell,
   Menu,
   X,
@@ -66,7 +69,9 @@ const NAV_SECTIONS: NavSection[] = [
       { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
       { href: '/admin/calendar', label: 'Calendar', icon: Calendar },
       { href: '/admin/bookings', label: 'Bookings', icon: CalendarCheck },
-      { href: '/admin/users', label: 'Users', icon: Users },
+      { href: '/admin/clients', label: 'Clients', icon: Building2 },
+      { href: '/admin/ongoing-projects', label: 'Ongoing Projects', icon: FolderOpen },
+      { href: '/admin/contact-submissions', label: 'Contact Submissions', icon: Inbox },
     ],
   },
   {
@@ -81,6 +86,7 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: 'System',
     items: [
+      { href: '/admin/users', label: 'Users', icon: Users },
       { href: '/admin/roles', label: 'Roles & Permissions', icon: ShieldCheck },
     ],
   },
@@ -232,6 +238,14 @@ export default function AdminLayoutShell({
             >
               <Icon className="h-4.5 w-4.5 shrink-0 transition-colors" style={active ? { color: 'var(--apx-primary)' } : { color: '#7f90a5' }} />
               {!collapsed && <span className="flex-1">{item.label}</span>}
+              {collapsed ? (
+                <span
+                  className="pointer-events-none absolute left-full top-1/2 z-50 ms-3 -translate-y-1/2 rounded-md border px-2 py-1 text-xs whitespace-nowrap opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+                  style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)', color: 'var(--apx-text)' }}
+                >
+                  {item.label}
+                </span>
+              ) : null}
             </Link>
           )
         })}
