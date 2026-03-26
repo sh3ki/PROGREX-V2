@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { ApexButton, ApexInput, ApexTextarea } from '@/components/admin/apex/AdminPrimitives'
 import {
+  ApexBlockingSpinner,
   ApexBreadcrumbs,
   ApexCheckbox,
   ApexColumnsToggle,
@@ -49,8 +50,8 @@ type ProjectRow = {
   updatedAt: string | null
 }
 
-type ColumnKey = 'project' | 'type' | 'industry' | 'order' | 'status' | 'actions'
-type SortKey = 'project' | 'type' | 'industry' | 'order' | 'status'
+type ColumnKey = 'project' | 'type' | 'industry' | 'category' | 'order' | 'status' | 'actions'
+type SortKey = 'project' | 'type' | 'industry' | 'category' | 'order' | 'status'
 type StatusFilter = 'all' | 'featured' | 'active' | 'inactive'
 
 type ProjectImageItem = {
@@ -157,8 +158,8 @@ function getDetailsResults(project: ProjectRow): ResultPair[] {
     : []
 
   const normalized = [...rows]
-  while (normalized.length < 3) normalized.push({ value: '', metric: '' })
-  return normalized.slice(0, 3)
+  while (normalized.length < 4) normalized.push({ value: '', metric: '' })
+  return normalized.slice(0, 4)
 }
 
 function getDetailsTestimonial(project: ProjectRow) {
@@ -199,6 +200,7 @@ function defaultForm(positionOrder = 1, featureOrder = 1): ProjectFormState {
     overview: '',
     solution: '',
     results: [
+      { value: '', metric: '' },
       { value: '', metric: '' },
       { value: '', metric: '' },
       { value: '', metric: '' },
@@ -854,6 +856,7 @@ function ProjectViewModal({
   const activeImage = images[previewIndex] || images[0] || ''
   const results = getDetailsResults(project)
   const features = getDetailsFeatures(project)
+  const technologies = getDetailsTechnologies(project)
   const testimonial = getDetailsTestimonial(project)
   const details = getDetailsObject(project.details)
 
@@ -877,6 +880,9 @@ function ProjectViewModal({
               <p className="text-xs uppercase tracking-wide apx-muted">Project Images</p>
               <div className="overflow-hidden rounded-lg">
                 <div className="relative mx-auto aspect-video w-full max-w-3xl bg-black/10">
+                  <div className="absolute top-2 right-2 z-10 rounded-md px-2 py-1 text-[10px] font-mono" style={{ backgroundColor: 'rgba(0,0,0,0.45)', color: '#fff', border: '1px solid rgba(255,255,255,0.18)' }}>
+                    {images.length > 0 ? `${previewIndex + 1}/${images.length}` : '0/0'}
+                  </div>
                   {activeImage ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={activeImage} alt={`${project.title} preview`} className="h-full w-full object-contain" />
@@ -977,7 +983,7 @@ function ProjectViewModal({
 
             <div>
               <p className="text-xs uppercase tracking-wide apx-muted">Results</p>
-              <div className="mt-2 grid gap-2 md:grid-cols-3">
+              <div className="mt-2 grid gap-2 md:grid-cols-4">
                 {results.map((result, index) => (
                   <div key={`view-result-${index}`} className="rounded-lg px-3 py-2" style={{ backgroundColor: 'var(--apx-surface-alt)' }}>
                     <p className="text-sm font-semibold apx-text">{result.value || '-'}</p>
@@ -1005,6 +1011,20 @@ function ProjectViewModal({
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs uppercase tracking-wide apx-muted">Technologies</p>
+                <span className="text-xs apx-muted">{technologies.length} item(s)</span>
+              </div>
+              <div className="grid gap-2 md:grid-cols-2">
+                {(technologies.length > 0 ? technologies : ['-']).map((technology, index) => (
+                  <div key={`view-tech-${index}`} className="rounded-lg px-3 py-2 text-sm apx-text" style={{ backgroundColor: 'var(--apx-surface-alt)' }}>
+                    {technology || '-'}
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -1100,6 +1120,7 @@ export default function AdminProjectsTemplateView({
     project: true,
     type: true,
     industry: true,
+    category: true,
     order: true,
     status: true,
     actions: true,
@@ -1110,6 +1131,8 @@ export default function AdminProjectsTemplateView({
   const [reorderIds, setReorderIds] = useState<string[]>([])
   const [dragRowId, setDragRowId] = useState<string | null>(null)
   const [featuredPositionInput, setFeaturedPositionInput] = useState(1)
+  const [categoryFilterOpen, setCategoryFilterOpen] = useState(false)
+  const [selectedCategoryFilters, setSelectedCategoryFilters] = useState<string[]>(categories)
 
   const nextPositionOrder = useMemo(() => {
     const maxFromRows = projects.reduce((max, project) => {
@@ -1159,10 +1182,14 @@ export default function AdminProjectsTemplateView({
         keyword.length === 0
           ? true
           : [project.title, project.slug, project.systemType, project.industry].join(' ').toLowerCase().includes(keyword)
+      const categoryMatch =
+        selectedCategoryFilters.length === 0
+          ? true
+          : project.categories.some((category) => selectedCategoryFilters.includes(category))
 
-      return statusMatch && searchMatch
+      return statusMatch && searchMatch && categoryMatch
     })
-  }, [projects, search, status])
+  }, [projects, search, selectedCategoryFilters, status])
 
   const sorted = useMemo(() => {
     const items = [...filtered]
@@ -1184,6 +1211,12 @@ export default function AdminProjectsTemplateView({
       if (sortKey === 'industry') {
         const direction = sortDir === 'asc' ? 1 : -1
         return a.industry.localeCompare(b.industry) * direction
+      }
+      if (sortKey === 'category') {
+        const direction = sortDir === 'asc' ? 1 : -1
+        const aLabel = (a.categories[0] || '').toLowerCase()
+        const bLabel = (b.categories[0] || '').toLowerCase()
+        return aLabel.localeCompare(bLabel) * direction
       }
       if (sortKey === 'order') {
         const direction = sortDir === 'asc' ? 1 : -1
@@ -1246,6 +1279,30 @@ export default function AdminProjectsTemplateView({
   function toggleSelectOne(id: string) {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
   }
+
+  function toggleCategoryFilter(category: string) {
+    setSelectedCategoryFilters((prev) => {
+      if (prev.includes(category)) {
+        return prev.filter((item) => item !== category)
+      }
+      return [...prev, category]
+    })
+  }
+
+  function selectAllCategoryFilters() {
+    setSelectedCategoryFilters(categories)
+  }
+
+  function clearCategoryFilters() {
+    setSelectedCategoryFilters([])
+  }
+
+  const categoryFilterLabel =
+    selectedCategoryFilters.length === categories.length
+      ? 'All Categories'
+      : selectedCategoryFilters.length === 0
+      ? 'No Category'
+      : `${selectedCategoryFilters.length} Selected`
 
   function toFormData(form: ProjectFormState): FormData {
     const formData = new FormData()
@@ -1322,12 +1379,13 @@ export default function AdminProjectsTemplateView({
       item.slug,
       item.systemType,
       item.industry,
+      item.categories.join(', '),
       item.isPublished ? 'Active' : 'Inactive',
       item.isFeatured ? `Featured #${item.featureOrder}` : 'No',
       String(toProjectOrderValue(item)),
       toRelative(item.updatedAt),
     ])
-    downloadCsv('projects-export.csv', [['Project', 'Slug', 'System Type', 'Industry', 'Status', 'Featured', 'Order', 'Updated'], ...rows])
+    downloadCsv('projects-export.csv', [['Project', 'Slug', 'System Type', 'Industry', 'Category', 'Status', 'Featured', 'Order', 'Updated'], ...rows])
     addToast('Projects CSV exported', 'success')
   }
 
@@ -1437,6 +1495,7 @@ export default function AdminProjectsTemplateView({
 
   return (
     <div className="space-y-4">
+      {pendingAction && confirmConfig?.kind === 'add' ? <ApexBlockingSpinner label="Saving project..." /> : null}
       <ApexToastStack toasts={toasts} onRemove={(id) => setToasts((prev) => prev.filter((toast) => toast.id !== id))} />
 
       <ApexBreadcrumbs items={[{ label: 'Dashboard', href: '/admin' }, { label: 'Projects' }]} />
@@ -1558,11 +1617,45 @@ export default function AdminProjectsTemplateView({
             </ApexButton>
           )}
 
+          <div className="relative">
+              <button
+              type="button"
+                className="inline-flex h-8 min-w-30 items-center justify-between gap-2 rounded-lg border px-3 text-xs"
+              style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}
+              onClick={() => setCategoryFilterOpen((prev) => !prev)}
+            >
+              <span className="truncate">{categoryFilterLabel}</span>
+              <ArrowDown className={['h-3 w-3 transition-transform', categoryFilterOpen ? 'rotate-180' : 'rotate-0'].join(' ')} />
+            </button>
+
+            {categoryFilterOpen ? (
+              <div className="absolute right-0 z-20 mt-2 w-64 rounded-xl border p-2 shadow-xl" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <button type="button" className="text-xs font-semibold apx-text" onClick={selectAllCategoryFilters}>All</button>
+                  <button type="button" className="text-xs font-semibold apx-muted" onClick={clearCategoryFilters}>None</button>
+                </div>
+                <div className="max-h-60 overflow-y-auto">
+                  {categories.map((category) => (
+                    <label key={`filter-${category}`} className="flex items-center gap-2 rounded-lg px-2 py-2 text-xs apx-text hover:bg-black/5">
+                      <ApexCheckbox
+                        checked={selectedCategoryFilters.includes(category)}
+                        onChange={() => toggleCategoryFilter(category)}
+                        ariaLabel={`Toggle ${category} filter`}
+                      />
+                      {category}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+
           <ApexColumnsToggle
             columns={[
               { key: 'project', label: 'Project', visible: columns.project },
               { key: 'type', label: 'System Type', visible: columns.type },
               { key: 'industry', label: 'Industry', visible: columns.industry },
+              { key: 'category', label: 'Category', visible: columns.category },
               { key: 'order', label: 'Order', visible: columns.order },
               { key: 'status', label: 'Status', visible: columns.status },
               { key: 'actions', label: 'Actions', visible: columns.actions },
@@ -1606,6 +1699,14 @@ export default function AdminProjectsTemplateView({
                   <button onClick={() => onSort('industry')} className="inline-flex items-center gap-1.5" type="button">
                     Industry
                     {renderSortIcon('industry')}
+                  </button>
+                </th>
+              ) : null}
+              {columns.category ? (
+                <th className="px-4 py-3 font-semibold apx-text">
+                  <button onClick={() => onSort('category')} className="inline-flex items-center gap-1.5" type="button">
+                    Category
+                    {renderSortIcon('category')}
                   </button>
                 </th>
               ) : null}
@@ -1682,7 +1783,7 @@ export default function AdminProjectsTemplateView({
                   {columns.project ? (
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="aspect-video w-24 overflow-hidden rounded-md border" style={{ borderColor: 'var(--apx-border)' }}>
+                        <div className="aspect-video h-14 w-24 shrink-0 overflow-hidden rounded-md border" style={{ borderColor: 'var(--apx-border)' }}>
                           {displayImage ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={displayImage} alt={project.title} className="h-full w-full object-contain" />
@@ -1692,13 +1793,13 @@ export default function AdminProjectsTemplateView({
                         </div>
                         <div>
                           <p className="font-semibold apx-text">{project.title}</p>
-                          <p className="text-xs apx-muted">{project.slug}</p>
                         </div>
                       </div>
                     </td>
                   ) : null}
                   {columns.type ? <td className="px-4 py-3 apx-text">{project.systemType || '-'}</td> : null}
                   {columns.industry ? <td className="px-4 py-3 apx-text">{project.industry || '-'}</td> : null}
+                  {columns.category ? <td className="px-4 py-3 apx-text">{project.categories.length > 0 ? project.categories.join(', ') : '-'}</td> : null}
                   {columns.order ? (
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap items-center gap-1.5">
