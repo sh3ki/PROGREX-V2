@@ -223,6 +223,14 @@ export default function FeaturedProjectsCarousel({ projectsData }: { projectsDat
   const tp = translations.data.featuredProjects as Record<string, { title: string; shortDesc: string }>
   const projects = projectsData && projectsData.length > 0 ? projectsData : PROJECTS
   const total = projects.length
+  const maxBodyChars = projects.reduce((max, project) => {
+    const title = tp[project.slug]?.title ?? project.title
+    const shortDesc = tp[project.slug]?.shortDesc ?? project.shortDesc
+    const systemType = project.systemType ?? ''
+    const combined = `${title} ${systemType} ${shortDesc}`
+    return Math.max(max, combined.length)
+  }, 0)
+  const cardBodyMinHeight = `${Math.max(280, Math.ceil(maxBodyChars / 3.6))}px`
 
   const go = useCallback(
     (delta: number) => {
@@ -259,7 +267,7 @@ export default function FeaturedProjectsCarousel({ projectsData }: { projectsDat
       <div className="pointer-events-none absolute inset-y-0 right-0 w-24 z-20"  />
       <div
         className="relative w-full h-145 sm:h-155"
-        style={{ perspective: '1100px' }}
+        style={{ perspective: '1100px'}}
       >
         {projects.map((project, i) => {
           const offset = ((i - current + total) % total + Math.floor(total / 2)) % total - Math.floor(total / 2)
@@ -305,6 +313,7 @@ export default function FeaturedProjectsCarousel({ projectsData }: { projectsDat
                   boxShadow: isCenter
                     ? '0 0 60px rgba(14,165,233,0.15), 0 0 100px rgba(124,58,237,0.08), 0 24px 60px rgba(0,0,0,0.6)'
                     : '0 8px 32px rgba(0,0,0,0.4)',
+                  height: '100%',
                 }}
               >
               {(() => {
@@ -369,13 +378,13 @@ export default function FeaturedProjectsCarousel({ projectsData }: { projectsDat
                       {/* Index indicator */}
                       <div className="absolute bottom-4 right-4 z-10">
                         <span className="font-mono text-[10px] text-nebula-400/50">
-                          {String(current + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
+                          {String(i + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
                         </span>
                       </div>
                     </div>
 
                     {/* Content */}
-                    <div className="p-5 sm:p-6">
+                    <div className="flex flex-col p-5 sm:p-6" style={{ minHeight: cardBodyMinHeight }}>
                       <h3
                         className="font-display font-bold text-xl sm:text-2xl mb-0.5"
                         style={{
@@ -387,11 +396,11 @@ export default function FeaturedProjectsCarousel({ projectsData }: { projectsDat
                       {project.systemType && (
                         <p className="font-mono text-base text-cyan-400/60 mb-3 tracking-wide">{project.systemType}</p>
                       )}
-                      <p className="text-white/50 text-sm leading-relaxed mb-5">
+                      <p className="text-white/50 text-lg leading-relaxed mb-5">
                         {tp[project.slug]?.shortDesc ?? project.shortDesc}
                       </p>
 
-                      <div className="flex items-center justify-between gap-4">
+                      <div className="mt-auto flex items-center justify-between gap-4">
                         {/* Tags */}
                         <div className="flex flex-wrap gap-1.5">
                           {project.tags.map((tag) => (
@@ -456,7 +465,7 @@ export default function FeaturedProjectsCarousel({ projectsData }: { projectsDat
 
         {/* Dot indicators */}
         <div className="flex gap-2">
-          {PROJECTS.map((_, i) => (
+          {projects.map((_, i) => (
             <button
               key={i}
               onClick={() => setCurrent(i)}
