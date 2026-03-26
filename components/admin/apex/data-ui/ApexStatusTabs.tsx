@@ -5,7 +5,7 @@ export function ApexStatusTabs({
   active,
   onChange,
 }: {
-  tabs: Array<{ key: string; label: string; count?: number }>
+  tabs: Array<{ key: string; label: string; count?: number; indicatorColor?: string }>
   active: string
   onChange: (key: string) => void
 }) {
@@ -24,6 +24,13 @@ export function ApexStatusTabs({
                 : { color: 'var(--apx-muted)' }
             }
           >
+            {tab.indicatorColor ? (
+              <span
+                aria-hidden="true"
+                className="me-1 inline-block h-1.5 w-1.5 rounded-full align-middle"
+                style={{ backgroundColor: tab.indicatorColor }}
+              />
+            ) : null}
             {tab.label}
             {typeof tab.count === 'number' ? <span className="ms-1 opacity-80">{tab.count}</span> : null}
           </button>
