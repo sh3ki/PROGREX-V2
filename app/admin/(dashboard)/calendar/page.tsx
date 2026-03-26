@@ -1,16 +1,7 @@
 import { revalidatePath } from 'next/cache'
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
-import {
-  ApexButton,
-  ApexCard,
-  ApexCardBody,
-  ApexCardHeader,
-  ApexFormGrid,
-  ApexInput,
-  ApexPageHeader,
-  ApexTextarea,
-} from '@/components/admin/apex/AdminPrimitives'
+import AdminCalendarTemplateView from '@/components/admin/calendar/AdminCalendarTemplateView'
 
 async function createEvent(formData: FormData) {
   'use server'
@@ -28,7 +19,7 @@ async function createEvent(formData: FormData) {
   await sql(
     `insert into calendar_events(title, description, start_at, end_at, location, meeting_link)
      values ($1, $2, $3::timestamptz, $4::timestamptz, $5, $6)`,
-    [title, description, startAt, endAt, location, meetingLink],
+    [title, description, startAt, endAt, location, meetingLink]
   )
 
   revalidatePath('/admin/calendar')
@@ -56,56 +47,22 @@ export default async function AdminCalendarPage() {
   }>(
     `select id, title, description, start_at::text, end_at::text, location, meeting_link
      from calendar_events
-     order by start_at asc`,
+     order by start_at asc`
   )
 
   return (
-    <div className="space-y-5">
-      <ApexPageHeader title="Calendar" subtitle="Plan events, schedules, and appointment windows." />
-
-      <ApexCard>
-        <ApexCardHeader title="New Event" subtitle="Use exact date-time to keep booking windows accurate." />
-        <ApexCardBody>
-          <form action={createEvent}>
-            <ApexFormGrid>
-              <ApexInput name="title" placeholder="Event title" required />
-              <ApexInput name="location" placeholder="Location" />
-              <ApexInput name="startAt" type="datetime-local" required />
-              <ApexInput name="endAt" type="datetime-local" required />
-              <ApexInput name="meetingLink" placeholder="Meeting link" className="md:col-span-2" />
-              <ApexTextarea name="description" rows={3} placeholder="Description" className="md:col-span-2" />
-              <ApexButton type="submit" className="md:col-span-2">
-                Add Event
-              </ApexButton>
-            </ApexFormGrid>
-          </form>
-        </ApexCardBody>
-      </ApexCard>
-
-      <div className="space-y-3">
-        {events.map((event) => (
-          <ApexCard key={event.id}>
-            <ApexCardBody className="pt-5">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-sm font-semibold apx-text">{event.title}</h3>
-                  <p className="text-xs apx-muted">
-                    {new Date(event.start_at).toLocaleString()} - {new Date(event.end_at).toLocaleString()}
-                  </p>
-                  {event.location && <p className="mt-1 text-sm apx-muted">{event.location}</p>}
-                  {event.description && <p className="mt-1 text-sm apx-muted">{event.description}</p>}
-                </div>
-                <form action={deleteEvent}>
-                  <input type="hidden" name="id" value={event.id} />
-                  <ApexButton variant="danger" type="submit">
-                    Delete
-                  </ApexButton>
-                </form>
-              </div>
-            </ApexCardBody>
-          </ApexCard>
-        ))}
-      </div>
-    </div>
+    <AdminCalendarTemplateView
+      events={events.map((event) => ({
+        id: event.id,
+        title: event.title,
+        description: event.description ?? '',
+        startAt: event.start_at,
+        endAt: event.end_at,
+        location: event.location ?? '',
+        meetingLink: event.meeting_link ?? '',
+      }))}
+      createEventAction={createEvent}
+      deleteEventAction={deleteEvent}
+    />
   )
 }
