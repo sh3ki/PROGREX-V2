@@ -1,12 +1,13 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Edit2, Eye, Plus, Power, Trash2 } from 'lucide-react'
+import { Edit2, Plus, Power, Trash2 } from 'lucide-react'
 import { ApexButton, ApexInput, ApexTextarea } from '@/components/admin/apex/AdminPrimitives'
 import {
 	ApexBlockingSpinner,
 	ApexBreadcrumbs,
 	ApexCheckbox,
+	ApexColumnsToggle,
 	ApexConfirmationModal,
 	ApexDropdown,
 	ApexExportButton,
@@ -18,6 +19,8 @@ import {
 	ApexToast,
 	ApexToastStack,
 } from '@/components/admin/apex/ApexDataUi'
+
+type BlogColumnKey = 'image' | 'title' | 'category' | 'author' | 'date' | 'status' | 'actions'
 
 type BlogRow = {
 	id: string
@@ -138,12 +141,24 @@ function buildFormData(form: BlogFormState, imageFile: File | null) {
 	return body
 }
 
+function withProgrexRole(role: string) {
+	const value = role.trim()
+	if (!value) return 'PROGREX'
+	return value.toLowerCase().includes('progrex') ? value : `${value}, PROGREX`
+}
+
+function categoryBadgeStyle() {
+	return { backgroundColor: 'var(--apx-primary-soft)', color: 'var(--apx-primary)' }
+}
+
 export default function AdminBlogsTemplateView({
 	blogs,
 	teamOptions,
 	createBlogAction,
 	updateBlogAction,
 	deleteBlogAction,
+	bulkDeleteBlogAction,
+	bulkSetDraftBlogAction,
 	togglePublishAction,
 }: {
 	blogs: BlogRow[]
@@ -151,6 +166,8 @@ export default function AdminBlogsTemplateView({
 	createBlogAction: (formData: FormData) => Promise<void>
 	updateBlogAction: (formData: FormData) => Promise<void>
 	deleteBlogAction: (formData: FormData) => Promise<void>
+	bulkDeleteBlogAction: (formData: FormData) => Promise<void>
+	bulkSetDraftBlogAction: (formData: FormData) => Promise<void>
 	togglePublishAction: (formData: FormData) => Promise<void>
 }) {
 	const [search, setSearch] = useState('')
@@ -178,8 +195,17 @@ export default function AdminBlogsTemplateView({
 		description: string
 		confirmLabel: string
 		tone: 'primary' | 'danger'
-		kind: 'create' | 'update' | 'delete' | 'toggle'
+		kind: 'create' | 'update' | 'delete' | 'toggle' | 'bulkDelete' | 'bulkDraft'
 	} | null>(null)
+	const [columns, setColumns] = useState<Record<BlogColumnKey, boolean>>({
+		image: true,
+		title: true,
+		category: true,
+		author: true,
+		date: true,
+		status: true,
+		actions: true,
+	})
 
 	const filtered = useMemo(() => {
 		const needle = search.trim().toLowerCase()
@@ -204,9 +230,14 @@ export default function AdminBlogsTemplateView({
 	}, [blogs])
 
 	const teamDropdownOptions = useMemo(
-		() => teamOptions.map((item) => ({ value: item.id, label: `${item.name} - ${item.role}` })),
+		() => teamOptions.map((item) => ({ value: item.id, label: `${item.name} - ${withProgrexRole(item.role)}` })),
 		[teamOptions]
 	)
+
+	function toggleColumn(key: string) {
+		const typedKey = key as BlogColumnKey
+		setColumns((prev) => ({ ...prev, [typedKey]: !prev[typedKey] }))
+	}
 
 	function addToast(message: string, tone: ApexToast['tone'] = 'default') {
 		const id = Date.now() + Math.floor(Math.random() * 1000)
@@ -260,6 +291,22 @@ export default function AdminBlogsTemplateView({
 				addToast('Blog deleted.', 'success')
 			}
 
+			if (confirmConfig.kind === 'bulkDelete') {
+				const body = new FormData()
+				body.set('ids', selectedIds.join(','))
+				await bulkDeleteBlogAction(body)
+				setSelectedIds([])
+				addToast('Selected blogs deleted.', 'success')
+			}
+
+			if (confirmConfig.kind === 'bulkDraft') {
+				const body = new FormData()
+				body.set('ids', selectedIds.join(','))
+				await bulkSetDraftBlogAction(body)
+				setSelectedIds([])
+				addToast('Selected blogs set to draft.', 'success')
+			}
+
 			if (confirmConfig.kind === 'toggle' && pendingToggleId) {
 				const body = new FormData()
 				body.set('id', pendingToggleId)
@@ -305,8 +352,8 @@ export default function AdminBlogsTemplateView({
 			<ApexStatusTabs
 				tabs={[
 					{ key: 'all', label: 'All', count: statusCounts.all },
-					{ key: 'published', label: 'Published', count: statusCounts.published },
-					{ key: 'draft', label: 'Draft', count: statusCounts.draft },
+					{ key: 'published', label: 'Published', count: statusCounts.published, indicatorColor: '#16a34a' },
+					{ key: 'draft', label: 'Draft', count: statusCounts.draft, indicatorColor: '#64748b' },
 				]}
 				active={status}
 				onChange={(key) => {
@@ -319,21 +366,75 @@ export default function AdminBlogsTemplateView({
 				<div className="w-full md:max-w-md">
 					<ApexSearchField value={search} onChange={(value) => { setSearch(value); setPage(1) }} placeholder="Search blogs..." />
 				</div>
-				<ApexExportButton
-					onClick={() => {
-						const header = ['Title', 'Slug', 'Category', 'Author', 'Date', 'Status']
-						const rows = filtered.map((item) => [item.title, item.slug, item.category, item.authorName, item.publishedAt, item.isPublished ? 'Published' : 'Draft'])
-						const csv = [header, ...rows].map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(',')).join('\n')
-						const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-						const url = URL.createObjectURL(blob)
-						const link = document.createElement('a')
-						link.href = url
-						link.download = 'blogs-export.csv'
-						link.click()
-						URL.revokeObjectURL(url)
-						addToast('Blogs CSV exported.', 'success')
-					}}
-				/>
+				<div className="flex flex-wrap items-center justify-end gap-2">
+					{selectedIds.length > 0 ? (
+						<>
+							<ApexButton
+								type="button"
+								variant="outline"
+								onClick={() => {
+									setConfirmConfig({
+										title: 'Set Selected Blog Posts to Draft',
+										description: `Set ${selectedIds.length} selected blog post(s) to draft?`,
+										confirmLabel: 'Set Draft',
+										tone: 'primary',
+										kind: 'bulkDraft',
+									})
+									setConfirmOpen(true)
+								}}
+							>
+								<Power className="h-4 w-4" />
+								Set Draft
+							</ApexButton>
+							<ApexButton
+								type="button"
+								variant="danger"
+								onClick={() => {
+									setConfirmConfig({
+										title: 'Delete Selected Blog Posts',
+										description: `Delete ${selectedIds.length} selected blog post(s)? This cannot be undone.`,
+										confirmLabel: 'Delete Selected',
+										tone: 'danger',
+										kind: 'bulkDelete',
+									})
+									setConfirmOpen(true)
+								}}
+							>
+								<Trash2 className="h-4 w-4" />
+								Delete Selected
+							</ApexButton>
+						</>
+					) : null}
+
+					<ApexColumnsToggle
+						columns={[
+							{ key: 'image', label: 'Image', visible: columns.image },
+							{ key: 'title', label: 'Title', visible: columns.title },
+							{ key: 'category', label: 'Category', visible: columns.category },
+							{ key: 'author', label: 'Author', visible: columns.author },
+							{ key: 'date', label: 'Date', visible: columns.date },
+							{ key: 'status', label: 'Status', visible: columns.status },
+							{ key: 'actions', label: 'Actions', visible: columns.actions },
+						]}
+						onToggle={toggleColumn}
+					/>
+
+					<ApexExportButton
+						onClick={() => {
+							const header = ['Title', 'Slug', 'Category', 'Author', 'Date', 'Status']
+							const rows = filtered.map((item) => [item.title, item.slug, item.category, item.authorName, item.publishedAt, item.isPublished ? 'Published' : 'Draft'])
+							const csv = [header, ...rows].map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(',')).join('\n')
+							const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+							const url = URL.createObjectURL(blob)
+							const link = document.createElement('a')
+							link.href = url
+							link.download = 'blogs-export.csv'
+							link.click()
+							URL.revokeObjectURL(url)
+							addToast('Blogs CSV exported.', 'success')
+						}}
+					/>
+				</div>
 			</div>
 
 			<div className="overflow-x-auto rounded-2xl border" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
@@ -343,22 +444,33 @@ export default function AdminBlogsTemplateView({
 							<th className="w-10 px-2 py-3">
 								<ApexCheckbox checked={currentAllSelected} onChange={toggleSelectAllCurrentPage} ariaLabel="Select all visible blogs" />
 							</th>
-							<th className="px-4 py-3 font-semibold apx-text">Image</th>
-							<th className="px-4 py-3 font-semibold apx-text">Title</th>
-							<th className="px-4 py-3 font-semibold apx-text">Category</th>
-							<th className="px-4 py-3 font-semibold apx-text">Author</th>
-							<th className="px-4 py-3 font-semibold apx-text">Date</th>
-							<th className="px-4 py-3 font-semibold apx-text">Status</th>
-							<th className="px-4 py-3 text-right font-semibold apx-text">Actions</th>
+							{columns.image ? <th className="px-4 py-3 font-semibold apx-text">Image</th> : null}
+							{columns.title ? <th className="px-4 py-3 font-semibold apx-text">Title</th> : null}
+							{columns.category ? <th className="px-4 py-3 font-semibold apx-text">Category</th> : null}
+							{columns.author ? <th className="px-4 py-3 font-semibold apx-text">Author</th> : null}
+							{columns.date ? <th className="px-4 py-3 font-semibold apx-text">Date</th> : null}
+							{columns.status ? <th className="px-4 py-3 font-semibold apx-text">Status</th> : null}
+							{columns.actions ? <th className="px-4 py-3 text-right font-semibold apx-text">Actions</th> : null}
 						</tr>
 					</thead>
 					<tbody>
 						{paged.map((blog) => (
-							<tr key={blog.id} className="apx-table-row border-b last:border-b-0" style={{ borderColor: 'var(--apx-border)' }}>
+							<tr
+								key={blog.id}
+								className="apx-table-row cursor-pointer border-b last:border-b-0"
+								style={{ borderColor: 'var(--apx-border)' }}
+								onClick={() => {
+									setSelectedBlog(blog)
+									setViewOpen(true)
+								}}
+							>
 								<td className="px-2 py-3">
-									<ApexCheckbox checked={selectedIds.includes(blog.id)} onChange={() => toggleOne(blog.id)} ariaLabel={`Select ${blog.title}`} />
+									<div onClick={(event) => event.stopPropagation()}>
+										<ApexCheckbox checked={selectedIds.includes(blog.id)} onChange={() => toggleOne(blog.id)} ariaLabel={`Select ${blog.title}`} />
+									</div>
 								</td>
-								<td className="px-4 py-3">
+								{columns.image ? (
+									<td className="px-4 py-3">
 									<div className="h-14 w-24 overflow-hidden rounded-md border" style={{ borderColor: 'var(--apx-border)' }}>
 										{blog.image ? (
 											// eslint-disable-next-line @next/next/no-img-element
@@ -367,23 +479,37 @@ export default function AdminBlogsTemplateView({
 											<div className="flex h-full w-full items-center justify-center text-[10px] apx-muted">No image</div>
 										)}
 									</div>
-								</td>
-								<td className="px-4 py-3">
+									</td>
+								) : null}
+								{columns.title ? (
+									<td className="px-4 py-3">
 									<p className="font-semibold apx-text">{blog.title}</p>
 									{/* <p className="text-xs apx-muted">{blog.slug}</p> */}
-								</td>
-								<td className="px-4 py-3 apx-text">{blog.category || '-'}</td>
-								<td className="px-4 py-3">
+									</td>
+								) : null}
+								{columns.category ? (
+									<td className="px-4 py-3">
+										<span className="inline-flex rounded-full px-2 py-1 text-xs font-semibold" style={categoryBadgeStyle()}>
+											{blog.category || '-'}
+										</span>
+									</td>
+								) : null}
+								{columns.author ? (
+									<td className="px-4 py-3">
 									<p className="apx-text">{blog.authorName || '-'}</p>
 									<p className="text-xs apx-muted">{blog.authorRole || '-'}</p>
-								</td>
-								<td className="px-4 py-3 apx-text">{blog.publishedAt || '-'}</td>
-								<td className="px-4 py-3">
+									</td>
+								) : null}
+								{columns.date ? <td className="px-4 py-3 apx-text">{blog.publishedAt || '-'}</td> : null}
+								{columns.status ? (
+									<td className="px-4 py-3">
 									<span className="inline-flex rounded-full px-2 py-1 text-xs font-semibold" style={blog.isPublished ? { backgroundColor: 'rgba(22,163,74,0.15)', color: '#15803d' } : { backgroundColor: 'rgba(100,116,139,0.2)', color: '#334155' }}>
 										{blog.isPublished ? 'Published' : 'Draft'}
 									</span>
-								</td>
-								<td className="px-4 py-3">
+									</td>
+								) : null}
+								{columns.actions ? (
+									<td className="px-4 py-3">
 									<div className="flex items-center justify-end gap-2">
 										{/* <button
 											type="button"
@@ -398,7 +524,8 @@ export default function AdminBlogsTemplateView({
 										</button> */}
 										<button
 											type="button"
-											onClick={() => {
+											onClick={(event) => {
+												event.stopPropagation()
 												setSelectedBlog(blog)
 												setEditForm(formFromBlog(blog))
 												setEditImageFile(null)
@@ -412,7 +539,8 @@ export default function AdminBlogsTemplateView({
 										</button>
 										<button
 											type="button"
-											onClick={() => {
+											onClick={(event) => {
+												event.stopPropagation()
 												setPendingToggleId(blog.id)
 												setConfirmConfig({
 													title: blog.isPublished ? 'Unpublish Blog Post' : 'Publish Blog Post',
@@ -430,7 +558,8 @@ export default function AdminBlogsTemplateView({
 										</button>
 										<button
 											type="button"
-											onClick={() => {
+											onClick={(event) => {
+												event.stopPropagation()
 												setPendingDeleteId(blog.id)
 												setConfirmConfig({
 													title: 'Delete Blog Post',
@@ -447,7 +576,8 @@ export default function AdminBlogsTemplateView({
 											<Trash2 className="h-4 w-4" />
 										</button>
 									</div>
-								</td>
+									</td>
+								) : null}
 							</tr>
 						))}
 					</tbody>
