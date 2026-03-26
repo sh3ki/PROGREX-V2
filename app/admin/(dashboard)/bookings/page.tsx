@@ -4,13 +4,10 @@ import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
 import {
   ApexButton,
-  ApexCard,
-  ApexCardBody,
-  ApexCardHeader,
-  ApexPageHeader,
   ApexSelect,
   ApexTextarea,
 } from '@/components/admin/apex/AdminPrimitives'
+import { ApexBreadcrumbs } from '@/components/admin/apex/ApexDataUi'
 
 async function updateBookingStatus(formData: FormData) {
   'use server'
@@ -84,12 +81,20 @@ export default async function AdminBookingsPage() {
   ])
 
   return (
-    <div className="space-y-5">
-      <ApexPageHeader title="Orders & Inquiries" subtitle="Track booking requests and send contact replies." />
+    <div className="space-y-4">
+      <ApexBreadcrumbs items={[{ label: 'Dashboard', href: '/admin' }, { label: 'Bookings' }]} />
 
-      <ApexCard>
-        <ApexCardHeader title="Bookings" subtitle={`${bookings.length} entry(ies)`} />
-        <ApexCardBody className="space-y-3">
+      <div>
+        <h1 className="text-[42px] leading-none font-bold tracking-tight apx-text">Bookings</h1>
+        <p className="mt-1 text-sm apx-muted">Track booking requests and contact inquiries from one place.</p>
+      </div>
+
+      <section className="rounded-2xl border p-4" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold apx-text">Bookings</h2>
+          <p className="text-xs apx-muted">{bookings.length} entry(ies)</p>
+        </div>
+        <div className="space-y-3">
         {bookings.map((item) => (
           <div key={item.id} className="rounded-xl border p-4" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface-alt)' }}>
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -110,12 +115,15 @@ export default async function AdminBookingsPage() {
             </div>
           </div>
         ))}
-        </ApexCardBody>
-      </ApexCard>
+        </div>
+      </section>
 
-      <ApexCard>
-        <ApexCardHeader title="Contact Submissions" subtitle={`${contacts.length} message(s)`} />
-        <ApexCardBody className="space-y-3">
+      <section className="rounded-2xl border p-4" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold apx-text">Contact Submissions</h2>
+          <p className="text-xs apx-muted">{contacts.length} message(s)</p>
+        </div>
+        <div className="space-y-3">
         {contacts.map((item) => (
           <div key={item.id} className="rounded-xl border p-4" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface-alt)' }}>
             <p className="font-semibold apx-text">{item.name} <span className="apx-muted">({item.email})</span></p>
@@ -143,8 +151,8 @@ export default async function AdminBookingsPage() {
             </div>
           </div>
         ))}
-        </ApexCardBody>
-      </ApexCard>
+        </div>
+      </section>
     </div>
   )
 }
