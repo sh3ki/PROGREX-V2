@@ -24,7 +24,7 @@ export default function ProjectCard({
   const primaryCategory = Array.isArray(category) ? category[0] ?? 'Project' : category
 
   return (
-    <Link href={`/projects/${slug}`} className="block group">
+    <Link href={`/projects/${slug}`} className="block h-full group">
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -33,7 +33,7 @@ export default function ProjectCard({
         whileHover={{ y: -6, scale: 1.02 }}
         onHoverStart={() => setHovered(true)}
         onHoverEnd={() => setHovered(false)}
-        className="relative rounded-xl overflow-hidden cursor-pointer"
+        className="relative flex h-full flex-col rounded-xl overflow-hidden cursor-pointer"
         style={{
           background: 'rgba(6,6,22,0.95)',
           border: hovered ? '1px solid rgba(103,232,249,0.35)' : '1px solid rgba(103,232,249,0.1)',
@@ -69,7 +69,7 @@ export default function ProjectCard({
         </div>
 
         {/* Content */}
-        <div className="p-5">
+        <div className="flex flex-1 flex-col p-5">
           <h3 className="font-display font-bold text-white text-base mb-0.5 group-hover:text-nebula-300 transition-colors duration-200">
             {title}
           </h3>
@@ -97,7 +97,7 @@ export default function ProjectCard({
             ))}
           </div>
 
-          <div className="inline-flex items-center gap-2 text-sm font-mono text-nebula-400/70 group-hover:text-nebula-300 transition-colors duration-200">
+          <div className="mt-auto inline-flex items-center gap-2 text-sm font-mono text-nebula-400/70 group-hover:text-nebula-300 transition-colors duration-200">
             View Case Study
             <span className="translate-x-0 group-hover:translate-x-1 transition-transform duration-200">&rarr;</span>
           </div>
