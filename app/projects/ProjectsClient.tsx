@@ -110,6 +110,7 @@ export default function ProjectsClient({ projectsData }: { projectsData: Project
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.3, delay: i * 0.05 }}
+                className="h-full"
               >
                 <ProjectCard
                   title={
