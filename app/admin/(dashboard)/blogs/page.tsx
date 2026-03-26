@@ -23,25 +23,83 @@ function tokenize(text: string) {
     .filter((token) => token.length > 2)
 }
 
-function pickRelatedPostsBySimilarity(input: { title: string; excerpt: string; content: string; tags: string[] }, candidates: Array<{ slug: string; title: string; excerpt: string; content: string; tags: string[] }>, limit = 3) {
-  const sourceTokens = new Set([...tokenize(input.title), ...tokenize(input.excerpt), ...tokenize(input.content), ...input.tags.map((tag) => tag.toLowerCase())])
+function normalizeRoleWithProgrex(role: string) {
+  const value = role.trim()
+  if (!value) return 'PROGREX'
+  return value.toLowerCase().includes('progrex') ? value : `${value}, PROGREX`
+}
+
+function pickRelatedByTitleFallback(inputTitle: string, candidates: Array<{ slug: string; title: string }>, limit = 2) {
+  const source = new Set(tokenize(inputTitle))
 
   return candidates
     .map((candidate) => {
-      const candidateTokens = new Set([...tokenize(candidate.title), ...tokenize(candidate.excerpt), ...tokenize(candidate.content), ...(candidate.tags ?? []).map((tag) => tag.toLowerCase())])
-      let overlap = 0
-      sourceTokens.forEach((token) => {
-        if (candidateTokens.has(token)) overlap += 1
-      })
-
-      const titleOverlap = tokenize(candidate.title).filter((token) => sourceTokens.has(token)).length
-      const score = overlap + titleOverlap * 2
-      return { slug: candidate.slug, score }
+      const candidateTokens = tokenize(candidate.title)
+      const overlap = candidateTokens.filter((token) => source.has(token)).length
+      const startsWithBoost = candidate.title.toLowerCase().startsWith(inputTitle.toLowerCase().slice(0, 8)) ? 1 : 0
+      return { slug: candidate.slug, score: overlap * 3 + startsWithBoost }
     })
-    .filter((entry) => entry.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
     .map((entry) => entry.slug)
+}
+
+async function pickRelatedByGroq(inputTitle: string, category: string, candidates: Array<{ slug: string; title: string }>, limit = 2) {
+  if (candidates.length === 0) return []
+
+  const fallback = pickRelatedByTitleFallback(inputTitle, candidates, limit)
+  const apiKey = process.env.GROQ_API_KEY
+  if (!apiKey) return fallback
+
+  const promptCandidates = candidates.map((item) => `- slug: ${item.slug}\n  title: ${item.title}`).join('\n')
+
+  try {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        temperature: 0.1,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a strict JSON generator. Return only valid JSON.',
+          },
+          {
+            role: 'user',
+            content: `Pick the 2 most related blog posts by title similarity within the same category.\nCategory: ${category}\nNew blog title: ${inputTitle}\nCandidates:\n${promptCandidates}\n\nReturn exactly this JSON shape: {"relatedSlugs":["slug-1","slug-2"]}`,
+          },
+        ],
+      }),
+    })
+
+    if (!response.ok) return fallback
+
+    const payload = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>
+    }
+
+    const content = payload.choices?.[0]?.message?.content?.trim() || ''
+    const jsonMatch = content.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) return fallback
+
+    const parsed = JSON.parse(jsonMatch[0]) as { relatedSlugs?: string[] }
+    const allowed = new Set(candidates.map((item) => item.slug))
+    const slugs = (parsed.relatedSlugs || []).filter((slug) => allowed.has(slug)).slice(0, limit)
+    if (slugs.length === 0) return fallback
+
+    if (slugs.length < limit) {
+      const fill = fallback.filter((slug) => !slugs.includes(slug)).slice(0, limit - slugs.length)
+      return [...slugs, ...fill]
+    }
+
+    return slugs
+  } catch {
+    return fallback
+  }
 }
 
 async function ensureBlogColumns() {
@@ -66,6 +124,21 @@ async function ensureBlogColumns() {
           on delete set null;
       end if;
     end $$;
+  `)
+
+  // Backfill missing team member IDs for older records using author identity.
+  await sql(`
+    update blogs b
+    set team_member_id = tm.id
+    from team_members tm
+    where b.team_member_id is null
+      and lower(trim(coalesce(b.author_name, ''))) = lower(trim(tm.name));
+  `)
+
+  await sql(`
+    update blogs
+    set published_at = to_char(coalesce(created_at, now())::date, 'YYYY-MM-DD')
+    where coalesce(trim(published_at), '') = '';
   `)
 }
 
@@ -141,13 +214,22 @@ async function saveBlog(formData: FormData) {
   const member = members[0]
   if (!member) throw new Error('Selected team member was not found.')
 
-  const candidates = await sql<{ slug: string; title: string; excerpt: string; content: string; tags: string[] }>(
-    `select slug, title, excerpt, content, tags
-     from blogs
-     where ($1::uuid is null or id <> $1::uuid)` ,
-    [id || null]
-  )
-  const relatedPosts = pickRelatedPostsBySimilarity({ title, excerpt, content, tags }, candidates, 3)
+  let relatedPosts: string[] = []
+  if (id) {
+    const existing = await sql<{ related_posts: string[] }>('select related_posts from blogs where id = $1::uuid limit 1', [id])
+    relatedPosts = existing[0]?.related_posts || []
+  } else {
+    const candidates = await sql<{ slug: string; title: string }>(
+      `select slug, title
+       from blogs
+       where category = $1
+       order by created_at desc`,
+      [category]
+    )
+    relatedPosts = await pickRelatedByGroq(title, category, candidates, 2)
+  }
+
+  const authorRole = normalizeRoleWithProgrex(member.role)
 
   if (id) {
     await sql(
@@ -166,7 +248,7 @@ async function saveBlog(formData: FormData) {
         category,
         teamMemberId,
         member.name,
-        member.role,
+        authorRole,
         member.avatar,
         date,
         readTime,
@@ -185,7 +267,7 @@ async function saveBlog(formData: FormData) {
     await sql(
       `insert into blogs(slug, title, category, team_member_id, author_name, author_role, author_avatar, published_at, read_time, image, excerpt, tags, keywords, related_posts, content, meta_title, meta_description, is_published)
        values ($1, $2, $3, $4::uuid, $5, $6, $7, $8, $9, $10, $11, $12::text[], $13::text[], $14::text[], $15, $16, $17, $18)`,
-      [slug, title, category, teamMemberId, member.name, member.role, member.avatar, date, readTime, image, excerpt, tags, keywords, relatedPosts, content, metaTitle, metaDescription, status === 'published']
+      [slug, title, category, teamMemberId, member.name, authorRole, member.avatar, date, readTime, image, excerpt, tags, keywords, relatedPosts, content, metaTitle, metaDescription, status === 'published']
     )
   }
 
@@ -210,6 +292,38 @@ async function deleteBlog(formData: FormData) {
   await requirePermission('blogs', 'delete')
   const id = String(formData.get('id') ?? '')
   await sql('delete from blogs where id = $1', [id])
+  revalidatePath('/admin/blogs')
+  revalidatePath('/blogs')
+}
+
+async function bulkDeleteBlogs(formData: FormData) {
+  'use server'
+  await requirePermission('blogs', 'delete')
+
+  const ids = String(formData.get('ids') ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+
+  if (ids.length === 0) return
+
+  await sql('delete from blogs where id = any($1::uuid[])', [ids])
+  revalidatePath('/admin/blogs')
+  revalidatePath('/blogs')
+}
+
+async function bulkSetBlogsDraft(formData: FormData) {
+  'use server'
+  await requirePermission('blogs', 'write')
+
+  const ids = String(formData.get('ids') ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+
+  if (ids.length === 0) return
+
+  await sql('update blogs set is_published = false, updated_at = now() where id = any($1::uuid[])', [ids])
   revalidatePath('/admin/blogs')
   revalidatePath('/blogs')
 }
@@ -243,7 +357,14 @@ export default async function AdminBlogsPage() {
             coalesce(tm.name, b.author_name) as author_name,
             coalesce(tm.role, b.author_role) as author_role,
             coalesce(tm.avatar, b.author_avatar) as author_avatar,
-            b.published_at, b.read_time, b.image,
+            case
+              when coalesce(trim(b.published_at), '') = '' then to_char(coalesce(b.created_at, now())::date, 'YYYY-MM-DD')
+              when b.published_at ~ '^\\d{4}-\\d{2}-\\d{2}$' then b.published_at
+              when b.published_at ~ '^\\d{1,2}/\\d{1,2}/\\d{4}$' then to_char(to_date(b.published_at, 'MM/DD/YYYY'), 'YYYY-MM-DD')
+              when b.published_at ~ '^[A-Za-z]+\\s+\\d{1,2},\\s+\\d{4}$' then to_char(to_date(b.published_at, 'FMMonth DD, YYYY'), 'YYYY-MM-DD')
+              else to_char(coalesce(b.created_at, now())::date, 'YYYY-MM-DD')
+            end as published_at,
+            b.read_time, b.image,
             b.excerpt, b.tags, b.keywords, b.related_posts, b.content,
             b.meta_title, b.meta_description, b.is_published
      from blogs b
@@ -292,6 +413,8 @@ export default async function AdminBlogsPage() {
       createBlogAction={saveBlog}
       updateBlogAction={saveBlog}
       deleteBlogAction={deleteBlog}
+      bulkDeleteBlogAction={bulkDeleteBlogs}
+      bulkSetDraftBlogAction={bulkSetBlogsDraft}
       togglePublishAction={toggleBlogPublish}
     />
   )
