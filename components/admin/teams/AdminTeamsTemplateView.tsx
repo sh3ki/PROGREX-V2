@@ -33,7 +33,7 @@ type TeamRow = {
 	updatedAt: string | null
 }
 
-type ColumnKey = 'member' | 'role' | 'email' | 'status' | 'actions'
+type ColumnKey = 'member' | 'role' | 'email' | 'portfolio' | 'order' | 'status' | 'actions'
 type StatusFilter = 'all' | 'active' | 'inactive'
 
 type TeamFormState = {
@@ -136,7 +136,7 @@ export default function AdminTeamsTemplateView({
 	const [rearrangeMode, setRearrangeMode] = useState(false)
 	const [dragRowId, setDragRowId] = useState<string | null>(null)
 	const [reorderIds, setReorderIds] = useState<string[]>([])
-	const [columns, setColumns] = useState<Record<ColumnKey, boolean>>({ member: true, role: true, email: true, status: true, actions: true })
+	const [columns, setColumns] = useState<Record<ColumnKey, boolean>>({ member: true, role: true, email: true, portfolio: true, order: true, status: true, actions: true })
 	const [confirmConfig, setConfirmConfig] = useState<{
 		title: string
 		description: string
@@ -203,8 +203,8 @@ export default function AdminTeamsTemplateView({
 	}
 
 	function exportCsv() {
-		const rows = sorted.map((member) => [member.name, member.role, member.email, member.isActive ? 'Active' : 'Inactive', String(member.sortOrder || 1)])
-		downloadCsv('teams-export.csv', [['Name', 'Role', 'Email', 'Status', 'Postion / Order'], ...rows])
+		const rows = sorted.map((member) => [member.name, member.role, member.email, member.portfolio || '', String(member.sortOrder || 1), member.isActive ? 'Active' : 'Inactive'])
+		downloadCsv('teams-export.csv', [['Name', 'Role', 'Email', 'Portfolio', 'Position / Order', 'Status'], ...rows])
 		addToast('Team CSV exported', 'success')
 	}
 
@@ -420,6 +420,8 @@ export default function AdminTeamsTemplateView({
 							{ key: 'member', label: 'Member', visible: columns.member },
 							{ key: 'role', label: 'Role', visible: columns.role },
 							{ key: 'email', label: 'Email', visible: columns.email },
+							{ key: 'portfolio', label: 'Portfolio', visible: columns.portfolio },
+							{ key: 'order', label: 'Order', visible: columns.order },
 							{ key: 'status', label: 'Status', visible: columns.status },
 							{ key: 'actions', label: 'Actions', visible: columns.actions },
 						]}
@@ -443,6 +445,8 @@ export default function AdminTeamsTemplateView({
 							{columns.member ? <th className="px-4 py-3 font-semibold apx-text">Member</th> : null}
 							{columns.role ? <th className="px-4 py-3 font-semibold apx-text">Role</th> : null}
 							{columns.email ? <th className="px-4 py-3 font-semibold apx-text">Email</th> : null}
+							{columns.portfolio ? <th className="px-4 py-3 font-semibold apx-text">Portfolio</th> : null}
+							{columns.order ? <th className="px-4 py-3 font-semibold apx-text">Order</th> : null}
 							{columns.status ? <th className="px-4 py-3 font-semibold apx-text">Status</th> : null}
 							{columns.actions ? <th className="px-4 py-3 text-right font-semibold apx-text">Actions</th> : null}
 						</tr>
@@ -498,13 +502,30 @@ export default function AdminTeamsTemplateView({
 											</div>
 											<div>
 												<p className="font-semibold apx-text">{member.name}</p>
-												<p className="text-xs apx-muted">Postion / Order: {member.sortOrder || '-'}</p>
+												<p className="text-xs apx-muted">{member.role || '-'}</p>
 											</div>
 										</div>
 									</td>
 								) : null}
 								{columns.role ? <td className="px-4 py-3 apx-text">{member.role || '-'}</td> : null}
 								{columns.email ? <td className="px-4 py-3 apx-text">{member.email || '-'}</td> : null}
+								{columns.portfolio ? (
+									<td className="px-4 py-3 apx-text">
+										{member.portfolio ? (
+											<a
+												href={member.portfolio}
+												target="_blank"
+												rel="noreferrer"
+												onClick={(event) => event.stopPropagation()}
+												className="hover:underline"
+												style={{ color: 'var(--apx-primary)' }}
+											>
+												{member.portfolio}
+											</a>
+										) : '-'}
+									</td>
+								) : null}
+								{columns.order ? <td className="px-4 py-3 apx-text">{member.sortOrder || '-'}</td> : null}
 								{columns.status ? (
 									<td className="px-4 py-3">
 										<span className="inline-flex rounded-full px-2 py-1 text-xs font-semibold" style={member.isActive ? { backgroundColor: 'rgba(22,163,74,0.15)', color: '#15803d' } : { backgroundColor: 'rgba(100,116,139,0.2)', color: '#334155' }}>
