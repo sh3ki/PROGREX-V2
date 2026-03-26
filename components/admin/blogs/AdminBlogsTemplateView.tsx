@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Edit2, Plus, Power, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, Edit2, Plus, Power, Trash2 } from 'lucide-react'
 import { ApexButton, ApexInput, ApexTextarea } from '@/components/admin/apex/AdminPrimitives'
 import {
 	ApexBlockingSpinner,
@@ -21,6 +21,7 @@ import {
 } from '@/components/admin/apex/ApexDataUi'
 
 type BlogColumnKey = 'image' | 'title' | 'category' | 'author' | 'date' | 'status' | 'actions'
+type SortKey = Exclude<BlogColumnKey, 'image' | 'actions'>
 
 type BlogRow = {
 	id: string
@@ -160,6 +161,7 @@ export default function AdminBlogsTemplateView({
 	bulkDeleteBlogAction,
 	bulkSetDraftBlogAction,
 	togglePublishAction,
+	generateBlogDraftAction,
 }: {
 	blogs: BlogRow[]
 	teamOptions: TeamOption[]
@@ -169,9 +171,25 @@ export default function AdminBlogsTemplateView({
 	bulkDeleteBlogAction: (formData: FormData) => Promise<void>
 	bulkSetDraftBlogAction: (formData: FormData) => Promise<void>
 	togglePublishAction: (formData: FormData) => Promise<void>
+	generateBlogDraftAction: (formData: FormData) => Promise<{
+		title: string
+		slug: string
+		category: string
+		publishedAt: string
+		readTime: string
+		excerpt: string
+		tags: string
+		keywords: string
+		content: string
+		metaTitle: string
+		metaDescription: string
+		image: string
+	}>
 }) {
 	const [search, setSearch] = useState('')
 	const [status, setStatus] = useState<'all' | 'published' | 'draft'>('all')
+	const [sortKey, setSortKey] = useState<SortKey>('date')
+	const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
 	const [page, setPage] = useState(1)
 	const [perPage, setPerPage] = useState(10)
 	const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -180,6 +198,7 @@ export default function AdminBlogsTemplateView({
 	const [viewOpen, setViewOpen] = useState(false)
 	const [confirmOpen, setConfirmOpen] = useState(false)
 	const [pending, setPending] = useState(false)
+	const [generatingBlog, setGeneratingBlog] = useState(false)
 	const [selectedBlog, setSelectedBlog] = useState<BlogRow | null>(null)
 	const [toasts, setToasts] = useState<ApexToast[]>([])
 	const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
@@ -218,9 +237,29 @@ export default function AdminBlogsTemplateView({
 		})
 	}, [blogs, search, status])
 
-	const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
+	const sorted = useMemo(() => {
+		const items = [...filtered]
+		items.sort((a, b) => {
+			const direction = sortDir === 'asc' ? 1 : -1
+			if (sortKey === 'title') return a.title.localeCompare(b.title) * direction
+			if (sortKey === 'category') return a.category.localeCompare(b.category) * direction
+			if (sortKey === 'author') return a.authorName.localeCompare(b.authorName) * direction
+			if (sortKey === 'status') {
+				const aValue = a.isPublished ? 1 : 0
+				const bValue = b.isPublished ? 1 : 0
+				return (aValue - bValue) * direction
+			}
+
+			const aDate = new Date(a.publishedAt || '1970-01-01').getTime()
+			const bDate = new Date(b.publishedAt || '1970-01-01').getTime()
+			return (aDate - bDate) * direction
+		})
+		return items
+	}, [filtered, sortDir, sortKey])
+
+	const totalPages = Math.max(1, Math.ceil(sorted.length / perPage))
 	const safePage = Math.min(page, totalPages)
-	const paged = filtered.slice((safePage - 1) * perPage, safePage * perPage)
+	const paged = sorted.slice((safePage - 1) * perPage, safePage * perPage)
 	const currentIds = paged.map((item) => item.id)
 	const currentAllSelected = currentIds.length > 0 && currentIds.every((id) => selectedIds.includes(id))
 
@@ -261,6 +300,51 @@ export default function AdminBlogsTemplateView({
 		setAddForm(defaultForm(teamOptions))
 		setAddImageFile(null)
 		setAddImagePreview('')
+	}
+
+	async function generateBlogDraft() {
+		setGeneratingBlog(true)
+		try {
+			const body = new FormData()
+			body.set('category', addForm.category)
+			const generated = await generateBlogDraftAction(body)
+			setAddForm((prev) => ({
+				...prev,
+				title: generated.title,
+				slug: generated.slug,
+				category: generated.category,
+				publishedAt: generated.publishedAt,
+				readTime: generated.readTime,
+				excerpt: generated.excerpt,
+				tags: generated.tags,
+				keywords: generated.keywords,
+				content: generated.content,
+				metaTitle: generated.metaTitle,
+				metaDescription: generated.metaDescription,
+				image: generated.image,
+			}))
+			setAddImageFile(null)
+			setAddImagePreview(generated.image)
+			addToast('Blog draft generated.', 'success')
+		} catch (error) {
+			addToast(error instanceof Error ? error.message : 'Failed to generate blog draft.', 'danger')
+		} finally {
+			setGeneratingBlog(false)
+		}
+	}
+
+	function onSort(nextKey: SortKey) {
+		if (sortKey === nextKey) {
+			setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+			return
+		}
+		setSortKey(nextKey)
+		setSortDir('asc')
+	}
+
+	function renderSortIcon(key: SortKey) {
+		if (sortKey !== key) return <ArrowUpDown className="h-3.5 w-3.5 opacity-60" />
+		return sortDir === 'asc' ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />
 	}
 
 	async function runConfirmed() {
@@ -445,11 +529,46 @@ export default function AdminBlogsTemplateView({
 								<ApexCheckbox checked={currentAllSelected} onChange={toggleSelectAllCurrentPage} ariaLabel="Select all visible blogs" />
 							</th>
 							{columns.image ? <th className="px-4 py-3 font-semibold apx-text">Image</th> : null}
-							{columns.title ? <th className="px-4 py-3 font-semibold apx-text">Title</th> : null}
-							{columns.category ? <th className="px-4 py-3 font-semibold apx-text">Category</th> : null}
-							{columns.author ? <th className="px-4 py-3 font-semibold apx-text">Author</th> : null}
-							{columns.date ? <th className="px-4 py-3 font-semibold apx-text">Date</th> : null}
-							{columns.status ? <th className="px-4 py-3 font-semibold apx-text">Status</th> : null}
+							{columns.title ? (
+								<th className="px-4 py-3 font-semibold apx-text">
+									<button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('title')}>
+										Title
+										{renderSortIcon('title')}
+									</button>
+								</th>
+							) : null}
+							{columns.category ? (
+								<th className="px-4 py-3 font-semibold apx-text">
+									<button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('category')}>
+										Category
+										{renderSortIcon('category')}
+									</button>
+								</th>
+							) : null}
+							{columns.author ? (
+								<th className="px-4 py-3 font-semibold apx-text">
+									<button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('author')}>
+										Author
+										{renderSortIcon('author')}
+									</button>
+								</th>
+							) : null}
+							{columns.date ? (
+								<th className="px-4 py-3 font-semibold apx-text">
+									<button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('date')}>
+										Date
+										{renderSortIcon('date')}
+									</button>
+								</th>
+							) : null}
+							{columns.status ? (
+								<th className="px-4 py-3 font-semibold apx-text">
+									<button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('status')}>
+										Status
+										{renderSortIcon('status')}
+									</button>
+								</th>
+							) : null}
 							{columns.actions ? <th className="px-4 py-3 text-right font-semibold apx-text">Actions</th> : null}
 						</tr>
 					</thead>
@@ -552,6 +671,7 @@ export default function AdminBlogsTemplateView({
 												setConfirmOpen(true)
 											}}
 											className="apx-icon-action"
+											style={blog.isPublished ? { borderColor: 'rgba(234, 88, 12, 0.45)', color: '#c2410c', backgroundColor: 'rgba(249, 115, 22, 0.08)' } : { borderColor: 'rgba(22, 163, 74, 0.5)', color: '#15803d', backgroundColor: 'rgba(22, 163, 74, 0.12)' }}
 											aria-label={`Toggle status for ${blog.title}`}
 										>
 											<Power className="h-4 w-4" />
@@ -587,7 +707,7 @@ export default function AdminBlogsTemplateView({
 			<ApexPagination
 				page={safePage}
 				totalPages={totalPages}
-				totalItems={filtered.length}
+				totalItems={sorted.length}
 				perPage={perPage}
 				rowsOptions={[10, 20, 50, 100]}
 				onPerPageChange={(next) => {
@@ -612,6 +732,12 @@ export default function AdminBlogsTemplateView({
 					}}
 					className="grid gap-3 md:grid-cols-2"
 				>
+					<div className="md:col-span-2 flex justify-end">
+						<ApexButton type="button" variant="outline" onClick={generateBlogDraft} disabled={generatingBlog}>
+							{generatingBlog ? 'Generating...' : 'Generate Blog'}
+						</ApexButton>
+					</div>
+
 					<div className="md:col-span-2">
 						<ApexImageDropzone
 							label="Cover Image"
