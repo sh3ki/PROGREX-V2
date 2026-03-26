@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ArrowDown, ArrowUp, Edit2, GripVertical, Plus, Power, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, Edit2, GripVertical, Plus, Power, Trash2 } from 'lucide-react'
 import { ApexButton, ApexInput, ApexTextarea } from '@/components/admin/apex/AdminPrimitives'
 import {
 	ApexBlockingSpinner,
@@ -35,6 +35,7 @@ type TeamRow = {
 
 type ColumnKey = 'member' | 'role' | 'email' | 'portfolio' | 'order' | 'status' | 'actions'
 type StatusFilter = 'all' | 'active' | 'inactive'
+type SortKey = Exclude<ColumnKey, 'actions'>
 
 type TeamFormState = {
 	id?: string
@@ -115,6 +116,8 @@ export default function AdminTeamsTemplateView({
 }) {
 	const [search, setSearch] = useState('')
 	const [status, setStatus] = useState<StatusFilter>('all')
+	const [sortKey, setSortKey] = useState<SortKey>('order')
+	const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 	const [page, setPage] = useState(1)
 	const [perPage, setPerPage] = useState(10)
 	const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -159,7 +162,26 @@ export default function AdminTeamsTemplateView({
 		})
 	}, [team, search, status])
 
-	const sorted = useMemo(() => [...filtered].sort((a, b) => (a.sortOrder || 999) - (b.sortOrder || 999)), [filtered])
+	const sorted = useMemo(() => {
+		const items = [...filtered]
+		items.sort((a, b) => {
+			const direction = sortDir === 'asc' ? 1 : -1
+
+			if (sortKey === 'member') return a.name.localeCompare(b.name) * direction
+			if (sortKey === 'role') return a.role.localeCompare(b.role) * direction
+			if (sortKey === 'email') return a.email.localeCompare(b.email) * direction
+			if (sortKey === 'portfolio') return a.portfolio.localeCompare(b.portfolio) * direction
+			if (sortKey === 'status') {
+				const aValue = a.isActive ? 1 : 0
+				const bValue = b.isActive ? 1 : 0
+				return (aValue - bValue) * direction
+			}
+
+			return ((a.sortOrder || 999) - (b.sortOrder || 999)) * direction
+		})
+
+		return items
+	}, [filtered, sortDir, sortKey])
 
 	const reorderRows = useMemo(() => {
 		if (!rearrangeMode) return []
@@ -206,6 +228,21 @@ export default function AdminTeamsTemplateView({
 		const rows = sorted.map((member) => [member.name, member.role, member.email, member.portfolio || '', String(member.sortOrder || 1), member.isActive ? 'Active' : 'Inactive'])
 		downloadCsv('teams-export.csv', [['Name', 'Role', 'Email', 'Portfolio', 'Position / Order', 'Status'], ...rows])
 		addToast('Team CSV exported', 'success')
+	}
+
+	function onSort(nextKey: SortKey) {
+		if (sortKey === nextKey) {
+			setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+			return
+		}
+
+		setSortKey(nextKey)
+		setSortDir('asc')
+	}
+
+	function renderSortIcon(key: SortKey) {
+		if (sortKey !== key) return <ArrowUpDown className="h-3.5 w-3.5 opacity-60" />
+		return sortDir === 'asc' ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />
 	}
 
 	function toFormData(form: TeamFormState, imageFile: File | null) {
@@ -442,12 +479,54 @@ export default function AdminTeamsTemplateView({
 							) : (
 								<th className="w-14 px-2 py-3 font-semibold apx-text">Order</th>
 							)}
-							{columns.member ? <th className="px-4 py-3 font-semibold apx-text">Member</th> : null}
-							{columns.role ? <th className="px-4 py-3 font-semibold apx-text">Role</th> : null}
-							{columns.email ? <th className="px-4 py-3 font-semibold apx-text">Email</th> : null}
-							{columns.portfolio ? <th className="px-4 py-3 font-semibold apx-text">Portfolio</th> : null}
-							{columns.order ? <th className="px-4 py-3 font-semibold apx-text">Order</th> : null}
-							{columns.status ? <th className="px-4 py-3 font-semibold apx-text">Status</th> : null}
+							{columns.member ? (
+								<th className="px-4 py-3 font-semibold apx-text">
+									<button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('member')}>
+										Member
+										{renderSortIcon('member')}
+									</button>
+								</th>
+							) : null}
+							{columns.role ? (
+								<th className="px-4 py-3 font-semibold apx-text">
+									<button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('role')}>
+										Role
+										{renderSortIcon('role')}
+									</button>
+								</th>
+							) : null}
+							{columns.email ? (
+								<th className="px-4 py-3 font-semibold apx-text">
+									<button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('email')}>
+										Email
+										{renderSortIcon('email')}
+									</button>
+								</th>
+							) : null}
+							{columns.portfolio ? (
+								<th className="px-4 py-3 font-semibold apx-text">
+									<button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('portfolio')}>
+										Portfolio
+										{renderSortIcon('portfolio')}
+									</button>
+								</th>
+							) : null}
+							{columns.order ? (
+								<th className="px-4 py-3 font-semibold apx-text">
+									<button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('order')}>
+										Order
+										{renderSortIcon('order')}
+									</button>
+								</th>
+							) : null}
+							{columns.status ? (
+								<th className="px-4 py-3 font-semibold apx-text">
+									<button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('status')}>
+										Status
+										{renderSortIcon('status')}
+									</button>
+								</th>
+							) : null}
 							{columns.actions ? <th className="px-4 py-3 text-right font-semibold apx-text">Actions</th> : null}
 						</tr>
 					</thead>
