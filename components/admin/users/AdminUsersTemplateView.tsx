@@ -7,12 +7,14 @@ import {
   ApexInput,
 } from '@/components/admin/apex/AdminPrimitives'
 import {
+  ApexBlockingSpinner,
   ApexBreadcrumbs,
   ApexCheckbox,
   ApexConfirmationModal,
   ApexColumnsToggle,
   ApexDropdown,
   ApexExportButton,
+  ApexImageDropzone,
   ApexModal,
   ApexPagination,
   ApexSearchField,
@@ -30,6 +32,7 @@ type UserRow = {
   roleId: string
   roleName: string
   isActive: boolean
+  profileImageUrl: string | null
   updatedAt: string | null
 }
 
@@ -50,6 +53,7 @@ type UserFormState = {
   confirmPassword?: string
   roleId: string
   status: 'active' | 'inactive'
+  profileImageUrl?: string
 }
 
 function toRelative(value: string | null) {
@@ -125,8 +129,12 @@ export default function AdminUsersTemplateView({
   const [pendingToggleUser, setPendingToggleUser] = useState<PreparedUser | null>(null)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
-  const [addForm, setAddForm] = useState<UserFormState>({ fullName: '', email: '', password: '', confirmPassword: '', roleId: '', status: 'active' })
-  const [editForm, setEditForm] = useState<UserFormState>({ id: '', fullName: '', email: '', password: '', roleId: '', status: 'active' })
+  const [addForm, setAddForm] = useState<UserFormState>({ fullName: '', email: '', password: '', confirmPassword: '', roleId: '', status: 'active', profileImageUrl: '' })
+  const [editForm, setEditForm] = useState<UserFormState>({ id: '', fullName: '', email: '', password: '', roleId: '', status: 'active', profileImageUrl: '' })
+  const [addImageFile, setAddImageFile] = useState<File | null>(null)
+  const [editImageFile, setEditImageFile] = useState<File | null>(null)
+  const [addImagePreview, setAddImagePreview] = useState('')
+  const [editImagePreview, setEditImagePreview] = useState('')
   const [toasts, setToasts] = useState<ApexToast[]>([])
   const [columns, setColumns] = useState<Record<ColumnKey, boolean>>({
     name: true,
@@ -260,7 +268,10 @@ export default function AdminUsersTemplateView({
       password: '',
       roleId: user.roleId,
       status: user.isActive ? 'active' : 'inactive',
+      profileImageUrl: user.profileImageUrl ?? '',
     })
+    setEditImageFile(null)
+    setEditImagePreview(user.profileImageUrl ?? '')
     setEditOpen(true)
   }
 
@@ -315,6 +326,19 @@ export default function AdminUsersTemplateView({
     formData.set('password', form.password)
     formData.set('roleId', form.roleId)
     formData.set('status', form.status)
+
+    if (form.profileImageUrl) {
+      formData.set('existingProfileImageUrl', form.profileImageUrl)
+    }
+
+    if (!form.id && addImageFile) {
+      formData.set('profileImage', addImageFile)
+    }
+
+    if (form.id && editImageFile) {
+      formData.set('profileImage', editImageFile)
+    }
+
     return formData
   }
 
@@ -326,13 +350,17 @@ export default function AdminUsersTemplateView({
       if (confirmConfig.kind === 'add') {
         await createUserAction(toFormData(addForm))
         setAddOpen(false)
-        setAddForm({ fullName: '', email: '', password: '', confirmPassword: '', roleId: '', status: 'active' })
+        setAddForm({ fullName: '', email: '', password: '', confirmPassword: '', roleId: '', status: 'active', profileImageUrl: '' })
+        setAddImageFile(null)
+        setAddImagePreview('')
         addToast('User created successfully', 'success')
       }
 
       if (confirmConfig.kind === 'edit') {
         await updateUserAction(toFormData(editForm))
         setEditOpen(false)
+        setEditImageFile(null)
+        setEditImagePreview('')
         addToast('User updated successfully', 'success')
       }
 
@@ -393,6 +421,7 @@ export default function AdminUsersTemplateView({
 
   return (
     <div className="space-y-4">
+      {pendingAction && (confirmConfig?.kind === 'add' || confirmConfig?.kind === 'edit') ? <ApexBlockingSpinner label="Saving user..." /> : null}
       <ApexToastStack toasts={toasts} onRemove={(id) => setToasts((prev) => prev.filter((toast) => toast.id !== id))} />
 
       <ApexBreadcrumbs items={[{ label: 'Dashboard', href: '/admin' }, { label: 'Users' }]} />
@@ -404,7 +433,12 @@ export default function AdminUsersTemplateView({
         </div>
 
         <button
-          onClick={() => setAddOpen(true)}
+          onClick={() => {
+            setAddForm({ fullName: '', email: '', password: '', confirmPassword: '', roleId: '', status: 'active', profileImageUrl: '' })
+            setAddImageFile(null)
+            setAddImagePreview('')
+            setAddOpen(true)
+          }}
           className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-all duration-150 hover:-translate-y-0.5"
           style={{ backgroundColor: 'var(--apx-primary)' }}
         >
@@ -569,8 +603,15 @@ export default function AdminUsersTemplateView({
                   {columns.name ? (
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold" style={{ backgroundColor: 'var(--apx-primary-soft)', color: 'var(--apx-primary)' }}>
-                          {initials}
+                        <div className="h-8 w-8 overflow-hidden rounded-full border" style={{ borderColor: 'var(--apx-border)' }}>
+                          {user.profileImageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={user.profileImageUrl} alt={user.fullName} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-xs font-semibold" style={{ backgroundColor: 'var(--apx-primary-soft)', color: 'var(--apx-primary)' }}>
+                              {initials}
+                            </div>
+                          )}
                         </div>
                         <button type="button" onClick={(event) => { event.stopPropagation(); openViewModal(user) }} className="text-left">
                           <p className="font-semibold apx-text">{user.fullName}</p>
@@ -696,6 +737,16 @@ export default function AdminUsersTemplateView({
           className="grid gap-3 md:grid-cols-2"
         >
           <div className="md:col-span-2">
+            <ApexImageDropzone
+              label="Profile Image"
+              previewUrl={addImagePreview}
+              onFileSelect={(file) => {
+                setAddImageFile(file)
+                setAddImagePreview(URL.createObjectURL(file))
+              }}
+            />
+          </div>
+          <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Full Name</label>
             <ApexInput value={addForm.fullName} onChange={(event) => setAddForm((prev) => ({ ...prev, fullName: event.target.value }))} name="fullName" placeholder="Full name" required />
           </div>
@@ -749,6 +800,16 @@ export default function AdminUsersTemplateView({
           }}
           className="grid gap-3 md:grid-cols-2"
         >
+          <div className="md:col-span-2">
+            <ApexImageDropzone
+              label="Profile Image"
+              previewUrl={editImagePreview || editForm.profileImageUrl || ''}
+              onFileSelect={(file) => {
+                setEditImageFile(file)
+                setEditImagePreview(URL.createObjectURL(file))
+              }}
+            />
+          </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Full Name</label>
             <ApexInput value={editForm.fullName} onChange={(event) => setEditForm((prev) => ({ ...prev, fullName: event.target.value }))} placeholder="Full name" required />
@@ -847,13 +908,20 @@ export default function AdminUsersTemplateView({
         {selectedUser ? (
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full text-sm font-semibold" style={{ backgroundColor: 'var(--apx-primary-soft)', color: 'var(--apx-primary)' }}>
-                {selectedUser.fullName
-                  .split(' ')
-                  .map((part) => part[0] ?? '')
-                  .join('')
-                  .slice(0, 2)
-                  .toUpperCase()}
+              <div className="h-12 w-12 overflow-hidden rounded-full border" style={{ borderColor: 'var(--apx-border)' }}>
+                {selectedUser.profileImageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={selectedUser.profileImageUrl} alt={selectedUser.fullName} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-sm font-semibold" style={{ backgroundColor: 'var(--apx-primary-soft)', color: 'var(--apx-primary)' }}>
+                    {selectedUser.fullName
+                      .split(' ')
+                      .map((part) => part[0] ?? '')
+                      .join('')
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </div>
+                )}
               </div>
               <div>
                 <p className="text-base font-semibold apx-text">{selectedUser.fullName}</p>
