@@ -8,6 +8,53 @@ async function ensureProjectsStatusColumn() {
   await sql('alter table projects add column if not exists is_published boolean not null default true')
 }
 
+async function ensureProjectResultsMetricSlots() {
+  await sql(
+    `update projects
+     set details = jsonb_set(
+       coalesce(details, '{}'::jsonb),
+       '{results}',
+       case
+         when jsonb_typeof(coalesce(details, '{}'::jsonb)->'results') = 'array' then
+           (
+             (
+               select jsonb_agg(
+                 jsonb_build_object(
+                   'value', coalesce(nullif(item->>'value', ''), 'N/A'),
+                   'metric', coalesce(nullif(item->>'metric', ''), 'Additional KPI')
+                 )
+               )
+               from (
+                 select item
+                 from jsonb_array_elements(coalesce(details, '{}'::jsonb)->'results') as item
+                 limit 4
+               ) trimmed
+             ) ||
+             (
+               select coalesce(
+                 jsonb_agg(jsonb_build_object('value', 'N/A', 'metric', 'Additional KPI')),
+                 '[]'::jsonb
+               )
+               from generate_series(
+                 1,
+                 greatest(0, 4 - least(4, jsonb_array_length(coalesce(details, '{}'::jsonb)->'results')))
+               )
+             )
+           )
+         else
+           jsonb_build_array(
+             jsonb_build_object('value', 'N/A', 'metric', 'Additional KPI'),
+             jsonb_build_object('value', 'N/A', 'metric', 'Additional KPI'),
+             jsonb_build_object('value', 'N/A', 'metric', 'Additional KPI'),
+             jsonb_build_object('value', 'N/A', 'metric', 'Additional KPI')
+           )
+       end,
+       true
+     ),
+     updated_at = now()`
+  )
+}
+
 type ProjectImageOrderItem =
   | { id: string; kind: 'existing'; url: string }
   | { id: string; kind: 'new' }
@@ -191,6 +238,10 @@ async function saveProject(formData: FormData) {
       metric: String(item.metric ?? '').trim(),
     }))
     .filter((item) => item.value || item.metric)
+
+  if (resultsItems.length !== 4 || resultsItems.some((item) => !item.value || !item.metric)) {
+    throw new Error('Projects must have exactly 4 result value + metric pairs.')
+  }
   const testimonialAuthor = String(formData.get('testimonialAuthor') ?? '').trim()
   const testimonialRole = String(formData.get('testimonialRole') ?? '').trim()
   const testimonialQuote = String(formData.get('testimonialQuote') ?? '').trim()
@@ -417,6 +468,7 @@ async function bulkSetInactiveProjects(formData: FormData) {
 export default async function AdminProjectsPage() {
   await requirePermission('projects', 'read')
   await ensureProjectsStatusColumn()
+  await ensureProjectResultsMetricSlots()
 
   const projects = await sql<{
     id: string
