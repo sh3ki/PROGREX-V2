@@ -1,84 +1,60 @@
-import nodemailer from 'nodemailer'
 import { revalidatePath } from 'next/cache'
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
-import {
-  ApexButton,
-  ApexSelect,
-  ApexTextarea,
-} from '@/components/admin/apex/AdminPrimitives'
+import { ApexButton, ApexSelect } from '@/components/admin/apex/AdminPrimitives'
 import { ApexBreadcrumbs } from '@/components/admin/apex/ApexDataUi'
 
 async function updateBookingStatus(formData: FormData) {
   'use server'
   await requirePermission('bookings', 'write')
-  const id = String(formData.get('id') ?? '')
-  const status = String(formData.get('status') ?? 'new')
-  await sql('update bookings set status = $2, updated_at = now() where id = $1', [id, status])
-  revalidatePath('/admin/bookings')
-}
 
-async function updateContactStatus(formData: FormData) {
-  'use server'
-  await requirePermission('bookings', 'write')
-  const id = String(formData.get('id') ?? '')
-  const status = String(formData.get('status') ?? 'new')
-  await sql('update contact_submissions set status = $2, updated_at = now() where id = $1', [id, status])
-  revalidatePath('/admin/bookings')
-}
+  const id = String(formData.get('id') ?? '').trim()
+  const status = String(formData.get('status') ?? 'new').trim() || 'new'
+  if (!id) return
 
-async function replyContact(formData: FormData) {
-  'use server'
-  await requirePermission('bookings', 'write')
-
-  const id = String(formData.get('id') ?? '')
-  const toEmail = String(formData.get('email') ?? '')
-  const senderName = String(formData.get('name') ?? '')
-  const reply = String(formData.get('reply') ?? '').trim()
-  if (!id || !toEmail || !reply) return
-
-  const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  })
-
-  await transporter.sendMail({
-    from: `"PROGREX" <${process.env.SMTP_USER}>`,
-    to: toEmail,
-    subject: `Re: Your PROGREX inquiry`,
-    html: `<p>Hello ${senderName || 'there'},</p><p>${reply.replace(/\n/g, '<br/>')}</p><p>Best regards,<br/>PROGREX Team</p>`,
-  })
-
-  await sql(
-    `update contact_submissions
-     set admin_reply = $2, status = 'replied', replied_at = now(), updated_at = now()
-     where id = $1`,
-    [id, reply]
-  )
-
+  await sql('update bookings set status = $2, updated_at = now() where id = $1::uuid', [id, status])
   revalidatePath('/admin/bookings')
 }
 
 export default async function AdminBookingsPage() {
   await requirePermission('bookings', 'read')
 
-  const [bookings, contacts] = await Promise.all([
-    sql<{ id: string; name: string; email: string; phone: string; service: string; message: string; status: string; created_at: string }>(
-      `select id, name, email, phone, service, message, status, created_at::text
-       from bookings
-       order by created_at desc`
-    ),
-    sql<{ id: string; name: string; email: string; service: string; message: string; status: string; admin_reply: string; created_at: string }>(
-      `select id, name, email, service, message, status, admin_reply, created_at::text
-       from contact_submissions
-       order by created_at desc`
-    ),
-  ])
+  await sql("alter table bookings add column if not exists is_approved boolean not null default false")
+  await sql('alter table bookings add column if not exists requested_date date')
+  await sql('alter table bookings add column if not exists requested_start_time text')
+  await sql('alter table bookings add column if not exists requested_duration_minutes integer')
+
+  const bookings = await sql<{
+    id: string
+    name: string
+    email: string
+    phone: string | null
+    company: string | null
+    service: string | null
+    message: string | null
+    status: string
+    is_approved: boolean
+    requested_date: string | null
+    requested_start_time: string | null
+    requested_duration_minutes: number | null
+    created_at: string
+  }>(
+    `select id,
+            name,
+            email,
+            phone,
+            company,
+            service,
+            message,
+            status,
+            is_approved,
+            case when requested_date is null then null else to_char(requested_date, 'YYYY-MM-DD') end as requested_date,
+            requested_start_time,
+            requested_duration_minutes,
+            created_at::text
+     from bookings
+     order by created_at desc`
+  )
 
   return (
     <div className="space-y-4">
@@ -86,72 +62,66 @@ export default async function AdminBookingsPage() {
 
       <div>
         <h1 className="text-[42px] leading-none font-bold tracking-tight apx-text">Bookings</h1>
-        <p className="mt-1 text-sm apx-muted">Track booking requests and contact inquiries from one place.</p>
+        <p className="mt-1 text-sm apx-muted">Booking requests submitted from the contact page.</p>
       </div>
 
-      <section className="rounded-2xl border p-4" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold apx-text">Bookings</h2>
-          <p className="text-xs apx-muted">{bookings.length} entry(ies)</p>
-        </div>
-        <div className="space-y-3">
-        {bookings.map((item) => (
-          <div key={item.id} className="rounded-xl border p-4" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface-alt)' }}>
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="font-semibold apx-text">{item.name} <span className="apx-muted">({item.email})</span></p>
-                <p className="text-sm apx-muted">{item.service || 'General inquiry'}</p>
-                <p className="text-sm apx-muted">{item.message}</p>
-              </div>
-              <form action={updateBookingStatus} className="flex gap-2">
-                <input type="hidden" name="id" value={item.id} />
-                <ApexSelect name="status" defaultValue={item.status} className="text-xs">
-                  <option value="new">new</option>
-                  <option value="scheduled">scheduled</option>
-                  <option value="done">done</option>
-                </ApexSelect>
-                <ApexButton variant="outline" type="submit">Save</ApexButton>
-              </form>
-            </div>
-          </div>
-        ))}
-        </div>
-      </section>
-
-      <section className="rounded-2xl border p-4" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold apx-text">Contact Submissions</h2>
-          <p className="text-xs apx-muted">{contacts.length} message(s)</p>
-        </div>
-        <div className="space-y-3">
-        {contacts.map((item) => (
-          <div key={item.id} className="rounded-xl border p-4" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface-alt)' }}>
-            <p className="font-semibold apx-text">{item.name} <span className="apx-muted">({item.email})</span></p>
-            <p className="text-sm apx-muted">{item.service || 'General inquiry'}</p>
-            <p className="text-sm apx-muted">{item.message}</p>
-
-            <div className="mt-3 grid gap-2 md:grid-cols-2">
-              <form action={updateContactStatus} className="flex gap-2">
-                <input type="hidden" name="id" value={item.id} />
-                <ApexSelect name="status" defaultValue={item.status} className="text-xs">
-                  <option value="new">new</option>
-                  <option value="in-progress">in-progress</option>
-                  <option value="replied">replied</option>
-                </ApexSelect>
-                <ApexButton variant="outline" type="submit">Save Status</ApexButton>
-              </form>
-
-              <form action={replyContact} className="space-y-2">
-                <input type="hidden" name="id" value={item.id} />
-                <input type="hidden" name="email" value={item.email} />
-                <input type="hidden" name="name" value={item.name} />
-                <ApexTextarea name="reply" rows={3} defaultValue={item.admin_reply ?? ''} placeholder="Write email reply..." className="text-xs" />
-                <ApexButton type="submit">Send Reply Email</ApexButton>
-              </form>
-            </div>
-          </div>
-        ))}
-        </div>
+      <section className="overflow-x-auto rounded-2xl border" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
+        <table className="w-full text-left text-sm">
+          <thead>
+            <tr className="border-b" style={{ borderColor: 'var(--apx-border)' }}>
+              <th className="px-4 py-3 font-semibold apx-text">Requester</th>
+              <th className="px-4 py-3 font-semibold apx-text">Service</th>
+              <th className="px-4 py-3 font-semibold apx-text">Meeting Request</th>
+              <th className="px-4 py-3 font-semibold apx-text">Approval</th>
+              <th className="px-4 py-3 font-semibold apx-text">Status</th>
+              <th className="px-4 py-3 text-right font-semibold apx-text">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {bookings.map((item) => (
+              <tr key={item.id} className="border-b last:border-b-0" style={{ borderColor: 'var(--apx-border)' }}>
+                <td className="px-4 py-3">
+                  <p className="font-semibold apx-text">{item.name}</p>
+                  <p className="text-xs apx-muted">{item.email}</p>
+                  {item.phone ? <p className="text-xs apx-muted">{item.phone}</p> : null}
+                </td>
+                <td className="px-4 py-3 apx-text">{item.service || '-'}</td>
+                <td className="px-4 py-3">
+                  {item.requested_date && item.requested_start_time ? (
+                    <div className="text-xs apx-text">
+                      <p>{item.requested_date}</p>
+                      <p className="apx-muted">{item.requested_start_time} • {item.requested_duration_minutes || 0} min</p>
+                    </div>
+                  ) : (
+                    <span className="text-xs apx-muted">No meeting slot</span>
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  <span
+                    className="inline-flex rounded-full px-2 py-1 text-xs font-semibold"
+                    style={item.is_approved ? { backgroundColor: 'rgba(22,163,74,0.15)', color: '#15803d' } : { backgroundColor: 'rgba(249,115,22,0.15)', color: '#c2410c' }}
+                  >
+                    {item.is_approved ? 'Approved' : 'Pending'}
+                  </span>
+                </td>
+                <td className="px-4 py-3 apx-text">{item.status}</td>
+                <td className="px-4 py-3">
+                  <form action={updateBookingStatus} className="flex items-center justify-end gap-2">
+                    <input type="hidden" name="id" value={item.id} />
+                    <ApexSelect name="status" defaultValue={item.status} className="text-xs">
+                      <option value="new">new</option>
+                      <option value="in-review">in-review</option>
+                      <option value="scheduled">scheduled</option>
+                      <option value="done">done</option>
+                      <option value="rejected">rejected</option>
+                    </ApexSelect>
+                    <ApexButton type="submit" variant="outline">Save</ApexButton>
+                  </form>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </section>
     </div>
   )
