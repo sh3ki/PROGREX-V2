@@ -112,7 +112,7 @@ export default function AdminUsersTemplateView({
   changeUserPasswordAction: (formData: FormData) => Promise<void>
 }) {
   const [search, setSearch] = useState('')
-  const [status, setStatus] = useState<'all' | 'active' | 'inactive' | 'suspended'>('all')
+  const [status, setStatus] = useState<'all' | 'active' | 'inactive'>('all')
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
   const [sortKey, setSortKey] = useState<SortKey>('name')
@@ -164,8 +164,7 @@ export default function AdminUsersTemplateView({
   const filtered = useMemo(() => {
     const keyword = search.trim().toLowerCase()
     return prepared.filter((user) => {
-      const statusMatch =
-        status === 'all' ? true : status === 'active' ? user.isActive : status === 'inactive' ? !user.isActive : false
+      const statusMatch = status === 'all' ? true : status === 'active' ? user.isActive : !user.isActive
 
       const searchMatch =
         keyword.length === 0
@@ -208,7 +207,6 @@ export default function AdminUsersTemplateView({
       all: prepared.length,
       active: activeCount,
       inactive: inactiveCount,
-      suspended: 0,
     }
   }, [prepared])
 
@@ -452,11 +450,10 @@ export default function AdminUsersTemplateView({
           { key: 'all', label: 'All', count: counts.all },
           { key: 'active', label: 'Active', count: counts.active },
           { key: 'inactive', label: 'Inactive', count: counts.inactive },
-          { key: 'suspended', label: 'Suspended', count: counts.suspended },
         ]}
         active={status}
         onChange={(key) => {
-          setStatus(key as 'all' | 'active' | 'inactive' | 'suspended')
+          setStatus(key as 'all' | 'active' | 'inactive')
           setPage(1)
         }}
       />
