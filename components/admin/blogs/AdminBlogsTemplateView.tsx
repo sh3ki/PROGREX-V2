@@ -1,515 +1,734 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ArrowDown, ArrowUp, ArrowUpDown, Edit2, Plus, Power, Trash2 } from 'lucide-react'
+import { Edit2, Eye, Plus, Power, Trash2 } from 'lucide-react'
 import { ApexButton, ApexInput, ApexTextarea } from '@/components/admin/apex/AdminPrimitives'
 import {
-  ApexBreadcrumbs,
-  ApexCheckbox,
-  ApexColumnsToggle,
-  ApexConfirmationModal,
-  ApexDropdown,
-  ApexExportButton,
-  ApexModal,
-  ApexPagination,
-  ApexSearchField,
-  ApexStatusTabs,
-  ApexToast,
-  ApexToastStack,
+	ApexBlockingSpinner,
+	ApexBreadcrumbs,
+	ApexCheckbox,
+	ApexConfirmationModal,
+	ApexDropdown,
+	ApexExportButton,
+	ApexImageDropzone,
+	ApexModal,
+	ApexPagination,
+	ApexSearchField,
+	ApexStatusTabs,
+	ApexToast,
+	ApexToastStack,
 } from '@/components/admin/apex/ApexDataUi'
 
 type BlogRow = {
-  id: string
-  slug: string
-  title: string
-  category: string
-  authorName: string
-  authorRole: string
-  authorAvatar: string
-  publishedAt: string
-  readTime: string
-  image: string
-  excerpt: string
-  tags: string[]
-  keywords: string[]
-  relatedPosts: string[]
-  content: string
-  metaTitle: string
-  metaDescription: string
-  isPublished: boolean
-  updatedAt: string | null
+	id: string
+	slug: string
+	title: string
+	category: string
+	teamMemberId: string | null
+	authorName: string
+	authorRole: string
+	authorAvatar: string
+	publishedAt: string
+	readTime: string
+	image: string
+	excerpt: string
+	tags: string[]
+	keywords: string[]
+	relatedPosts: string[]
+	content: string
+	metaTitle: string
+	metaDescription: string
+	isPublished: boolean
 }
 
-type ColumnKey = 'title' | 'category' | 'author' | 'status' | 'updated' | 'actions'
-type SortKey = Exclude<ColumnKey, 'actions'>
+type TeamOption = {
+	id: string
+	name: string
+	role: string
+	avatar: string
+	isActive: boolean
+}
 
 type BlogFormState = {
-  id?: string
-  slug: string
-  title: string
-  category: string
-  authorName: string
-  authorRole: string
-  authorAvatar: string
-  date: string
-  readTime: string
-  image: string
-  excerpt: string
-  tags: string
-  keywords: string
-  relatedPosts: string
-  content: string
-  metaTitle: string
-  metaDescription: string
-  status: 'active' | 'inactive'
+	id?: string
+	title: string
+	slug: string
+	category: string
+	teamMemberId: string
+	publishedAt: string
+	readTime: string
+	excerpt: string
+	tags: string
+	keywords: string
+	content: string
+	metaTitle: string
+	metaDescription: string
+	status: 'published' | 'draft'
+	image: string
 }
 
-function toRelative(value: string | null) {
-  if (!value) return 'Never'
-
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return 'Unknown'
-
-  const diffMs = Date.now() - date.getTime()
-  const minutes = Math.floor(diffMs / 60000)
-  if (minutes < 1) return 'just now'
-  if (minutes < 60) return `${minutes} min ago`
-
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`
-
-  const days = Math.floor(hours / 24)
-  if (days < 30) return `${days} day${days > 1 ? 's' : ''} ago`
-
-  return date.toLocaleDateString()
+function slugify(value: string) {
+	return value
+		.toLowerCase()
+		.normalize('NFKD')
+		.replace(/[\u0300-\u036f]/g, '')
+		.replace(/[^a-z0-9\s-]/g, '')
+		.trim()
+		.replace(/\s+/g, '-')
+		.replace(/-+/g, '-')
 }
 
-function downloadCsv(filename: string, rows: string[][]) {
-  const content = rows
-    .map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(','))
-    .join('\n')
-
-  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = filename
-  anchor.click()
-  URL.revokeObjectURL(url)
+function defaultForm(teamOptions: TeamOption[]): BlogFormState {
+	return {
+		title: '',
+		slug: '',
+		category: 'Tech',
+		teamMemberId: teamOptions.find((item) => item.isActive)?.id ?? teamOptions[0]?.id ?? '',
+		publishedAt: new Date().toISOString().slice(0, 10),
+		readTime: '8 min read',
+		excerpt: '',
+		tags: '',
+		keywords: '',
+		content: '',
+		metaTitle: '',
+		metaDescription: '',
+		status: 'published',
+		image: '',
+	}
 }
 
-const defaultForm: BlogFormState = {
-  slug: '',
-  title: '',
-  category: '',
-  authorName: '',
-  authorRole: '',
-  authorAvatar: '',
-  date: '',
-  readTime: '',
-  image: '',
-  excerpt: '',
-  tags: '',
-  keywords: '',
-  relatedPosts: '',
-  content: '',
-  metaTitle: '',
-  metaDescription: '',
-  status: 'active',
+function formFromBlog(blog: BlogRow): BlogFormState {
+	return {
+		id: blog.id,
+		title: blog.title,
+		slug: blog.slug,
+		category: blog.category || 'Tech',
+		teamMemberId: blog.teamMemberId || '',
+		publishedAt: blog.publishedAt || '',
+		readTime: blog.readTime || '',
+		excerpt: blog.excerpt || '',
+		tags: (blog.tags || []).join(', '),
+		keywords: (blog.keywords || []).join(', '),
+		content: blog.content || '',
+		metaTitle: blog.metaTitle || '',
+		metaDescription: blog.metaDescription || '',
+		status: blog.isPublished ? 'published' : 'draft',
+		image: blog.image || '',
+	}
+}
+
+function buildFormData(form: BlogFormState, imageFile: File | null) {
+	const body = new FormData()
+	if (form.id) body.set('id', form.id)
+	body.set('title', form.title)
+	body.set('slug', form.slug)
+	body.set('category', form.category)
+	body.set('teamMemberId', form.teamMemberId)
+	body.set('date', form.publishedAt)
+	body.set('readTime', form.readTime)
+	body.set('excerpt', form.excerpt)
+	body.set('tags', form.tags)
+	body.set('keywords', form.keywords)
+	body.set('content', form.content)
+	body.set('metaTitle', form.metaTitle)
+	body.set('metaDescription', form.metaDescription)
+	body.set('status', form.status)
+	if (form.image) body.set('existingImage', form.image)
+	if (imageFile) body.set('coverImage', imageFile)
+	return body
 }
 
 export default function AdminBlogsTemplateView({
-  blogs,
-  createBlogAction,
-  updateBlogAction,
-  deleteBlogAction,
-  bulkDeleteBlogsAction,
-  bulkSetInactiveBlogsAction,
-  toggleBlogActiveAction,
+	blogs,
+	teamOptions,
+	createBlogAction,
+	updateBlogAction,
+	deleteBlogAction,
+	togglePublishAction,
 }: {
-  blogs: BlogRow[]
-  createBlogAction: (formData: FormData) => Promise<void>
-  updateBlogAction: (formData: FormData) => Promise<void>
-  deleteBlogAction: (formData: FormData) => Promise<void>
-  bulkDeleteBlogsAction: (formData: FormData) => Promise<void>
-  bulkSetInactiveBlogsAction: (formData: FormData) => Promise<void>
-  toggleBlogActiveAction: (formData: FormData) => Promise<void>
+	blogs: BlogRow[]
+	teamOptions: TeamOption[]
+	createBlogAction: (formData: FormData) => Promise<void>
+	updateBlogAction: (formData: FormData) => Promise<void>
+	deleteBlogAction: (formData: FormData) => Promise<void>
+	togglePublishAction: (formData: FormData) => Promise<void>
 }) {
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState<'all' | 'active' | 'inactive'>('all')
-  const [page, setPage] = useState(1)
-  const [perPage, setPerPage] = useState(10)
-  const [sortKey, setSortKey] = useState<SortKey>('title')
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
-  const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [addOpen, setAddOpen] = useState(false)
-  const [editOpen, setEditOpen] = useState(false)
-  const [viewOpen, setViewOpen] = useState(false)
-  const [confirmOpen, setConfirmOpen] = useState(false)
-  const [pendingAction, setPendingAction] = useState(false)
-  const [pendingToggleBlog, setPendingToggleBlog] = useState<BlogRow | null>(null)
-  const [selectedBlog, setSelectedBlog] = useState<BlogRow | null>(null)
-  const [addForm, setAddForm] = useState<BlogFormState>(defaultForm)
-  const [editForm, setEditForm] = useState<BlogFormState>({ ...defaultForm, id: '' })
-  const [toasts, setToasts] = useState<ApexToast[]>([])
-  const [columns, setColumns] = useState<Record<ColumnKey, boolean>>({
-    title: true,
-    category: true,
-    author: true,
-    status: true,
-    updated: true,
-    actions: true,
-  })
+	const [search, setSearch] = useState('')
+	const [status, setStatus] = useState<'all' | 'published' | 'draft'>('all')
+	const [page, setPage] = useState(1)
+	const [perPage, setPerPage] = useState(10)
+	const [selectedIds, setSelectedIds] = useState<string[]>([])
+	const [addOpen, setAddOpen] = useState(false)
+	const [editOpen, setEditOpen] = useState(false)
+	const [viewOpen, setViewOpen] = useState(false)
+	const [confirmOpen, setConfirmOpen] = useState(false)
+	const [pending, setPending] = useState(false)
+	const [selectedBlog, setSelectedBlog] = useState<BlogRow | null>(null)
+	const [toasts, setToasts] = useState<ApexToast[]>([])
+	const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+	const [pendingToggleId, setPendingToggleId] = useState<string | null>(null)
+	const [addForm, setAddForm] = useState<BlogFormState>(defaultForm(teamOptions))
+	const [editForm, setEditForm] = useState<BlogFormState>(defaultForm(teamOptions))
+	const [addImageFile, setAddImageFile] = useState<File | null>(null)
+	const [editImageFile, setEditImageFile] = useState<File | null>(null)
+	const [addImagePreview, setAddImagePreview] = useState('')
+	const [editImagePreview, setEditImagePreview] = useState('')
+	const [confirmConfig, setConfirmConfig] = useState<{
+		title: string
+		description: string
+		confirmLabel: string
+		tone: 'primary' | 'danger'
+		kind: 'create' | 'update' | 'delete' | 'toggle'
+	} | null>(null)
 
-  const [confirmConfig, setConfirmConfig] = useState<{
-    title: string
-    description: string
-    label: string
-    tone: 'primary' | 'danger'
-    kind: 'add' | 'edit' | 'delete' | 'bulkDelete' | 'bulkInactive' | 'toggleActive'
-  } | null>(null)
+	const filtered = useMemo(() => {
+		const needle = search.trim().toLowerCase()
+		return blogs.filter((blog) => {
+			const statusMatch = status === 'all' ? true : status === 'published' ? blog.isPublished : !blog.isPublished
+			const searchMatch = needle.length === 0
+				? true
+				: [blog.title, blog.slug, blog.category, blog.authorName, ...(blog.tags || [])].join(' ').toLowerCase().includes(needle)
+			return statusMatch && searchMatch
+		})
+	}, [blogs, search, status])
 
-  const statusOptions = useMemo(() => [
-    { value: 'active', label: 'Active' },
-    { value: 'inactive', label: 'Inactive' },
-  ] as const, [])
+	const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
+	const safePage = Math.min(page, totalPages)
+	const paged = filtered.slice((safePage - 1) * perPage, safePage * perPage)
+	const currentIds = paged.map((item) => item.id)
+	const currentAllSelected = currentIds.length > 0 && currentIds.every((id) => selectedIds.includes(id))
 
-  const filtered = useMemo(() => {
-    const keyword = search.trim().toLowerCase()
-    return blogs.filter((blog) => {
-      const statusMatch = status === 'all' ? true : status === 'active' ? blog.isPublished : !blog.isPublished
-      const searchMatch = keyword.length === 0 ? true : [blog.title, blog.slug, blog.category, blog.authorName].join(' ').toLowerCase().includes(keyword)
-      return statusMatch && searchMatch
-    })
-  }, [blogs, search, status])
+	const statusCounts = useMemo(() => {
+		const published = blogs.filter((item) => item.isPublished).length
+		return { all: blogs.length, published, draft: blogs.length - published }
+	}, [blogs])
 
-  const sorted = useMemo(() => {
-    const items = [...filtered]
+	const teamDropdownOptions = useMemo(
+		() => teamOptions.map((item) => ({ value: item.id, label: `${item.name} - ${item.role}` })),
+		[teamOptions]
+	)
 
-    items.sort((a, b) => {
-      const direction = sortDir === 'asc' ? 1 : -1
-      if (sortKey === 'title') return a.title.localeCompare(b.title) * direction
-      if (sortKey === 'category') return a.category.localeCompare(b.category) * direction
-      if (sortKey === 'author') return a.authorName.localeCompare(b.authorName) * direction
-      if (sortKey === 'status') return (Number(a.isPublished) - Number(b.isPublished)) * direction
-      const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0
-      const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0
-      return (aTime - bTime) * direction
-    })
+	function addToast(message: string, tone: ApexToast['tone'] = 'default') {
+		const id = Date.now() + Math.floor(Math.random() * 1000)
+		setToasts((prev) => [...prev, { id, message, tone }])
+		setTimeout(() => setToasts((prev) => prev.filter((item) => item.id !== id)), 4000)
+	}
 
-    return items
-  }, [filtered, sortDir, sortKey])
+	function toggleSelectAllCurrentPage() {
+		if (currentAllSelected) {
+			setSelectedIds((prev) => prev.filter((id) => !currentIds.includes(id)))
+			return
+		}
+		setSelectedIds((prev) => Array.from(new Set([...prev, ...currentIds])))
+	}
 
-  const totalPages = Math.max(1, Math.ceil(sorted.length / perPage))
-  const safePage = Math.min(page, totalPages)
-  const paged = sorted.slice((safePage - 1) * perPage, safePage * perPage)
+	function toggleOne(id: string) {
+		setSelectedIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
+	}
 
-  const counts = useMemo(() => {
-    const activeCount = blogs.filter((blog) => blog.isPublished).length
-    return { all: blogs.length, active: activeCount, inactive: blogs.length - activeCount }
-  }, [blogs])
+	function resetAddForm() {
+		setAddForm(defaultForm(teamOptions))
+		setAddImageFile(null)
+		setAddImagePreview('')
+	}
 
-  const currentPageIds = paged.map((blog) => blog.id)
-  const allCurrentPageSelected = currentPageIds.length > 0 && currentPageIds.every((id) => selectedIds.includes(id))
+	async function runConfirmed() {
+		if (!confirmConfig) return
+		setPending(true)
 
-  function addToast(message: string, tone: ApexToast['tone'] = 'default') {
-    const id = Date.now() + Math.floor(Math.random() * 1000)
-    setToasts((prev) => [...prev, { id, message, tone }])
-    setTimeout(() => setToasts((prev) => prev.filter((item) => item.id !== id)), 3500)
-  }
+		try {
+			if (confirmConfig.kind === 'create') {
+				await createBlogAction(buildFormData(addForm, addImageFile))
+				setAddOpen(false)
+				resetAddForm()
+				addToast('Blog created successfully.', 'success')
+			}
 
-  function toggleColumn(key: string) {
-    const typedKey = key as ColumnKey
-    setColumns((prev) => ({ ...prev, [typedKey]: !prev[typedKey] }))
-  }
+			if (confirmConfig.kind === 'update') {
+				await updateBlogAction(buildFormData(editForm, editImageFile))
+				setEditOpen(false)
+				setEditImageFile(null)
+				setEditImagePreview('')
+				addToast('Blog updated successfully.', 'success')
+			}
 
-  function toggleSelectAllCurrentPage() {
-    if (allCurrentPageSelected) {
-      setSelectedIds((prev) => prev.filter((id) => !currentPageIds.includes(id)))
-      return
-    }
-    setSelectedIds((prev) => Array.from(new Set([...prev, ...currentPageIds])))
-  }
+			if (confirmConfig.kind === 'delete' && pendingDeleteId) {
+				const body = new FormData()
+				body.set('id', pendingDeleteId)
+				await deleteBlogAction(body)
+				setPendingDeleteId(null)
+				addToast('Blog deleted.', 'success')
+			}
 
-  function toggleSelectOne(id: string) {
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
-  }
+			if (confirmConfig.kind === 'toggle' && pendingToggleId) {
+				const body = new FormData()
+				body.set('id', pendingToggleId)
+				await togglePublishAction(body)
+				setPendingToggleId(null)
+				addToast('Blog status updated.', 'success')
+			}
 
-  function toFormData(form: BlogFormState): FormData {
-    const formData = new FormData()
-    if (form.id) formData.set('id', form.id)
-    formData.set('slug', form.slug)
-    formData.set('title', form.title)
-    formData.set('category', form.category)
-    formData.set('authorName', form.authorName)
-    formData.set('authorRole', form.authorRole)
-    formData.set('authorAvatar', form.authorAvatar)
-    formData.set('date', form.date)
-    formData.set('readTime', form.readTime)
-    formData.set('image', form.image)
-    formData.set('excerpt', form.excerpt)
-    formData.set('tags', form.tags)
-    formData.set('keywords', form.keywords)
-    formData.set('relatedPosts', form.relatedPosts)
-    formData.set('content', form.content)
-    formData.set('metaTitle', form.metaTitle)
-    formData.set('metaDescription', form.metaDescription)
-    formData.set('status', form.status)
-    return formData
-  }
+			setConfirmOpen(false)
+			setConfirmConfig(null)
+		} catch (error) {
+			addToast(error instanceof Error ? error.message : 'Action failed.', 'danger')
+		} finally {
+			setPending(false)
+		}
+	}
 
-  function openEditModal(blog: BlogRow) {
-    setSelectedBlog(blog)
-    setEditForm({
-      id: blog.id,
-      slug: blog.slug,
-      title: blog.title,
-      category: blog.category,
-      authorName: blog.authorName,
-      authorRole: blog.authorRole,
-      authorAvatar: blog.authorAvatar,
-      date: blog.publishedAt,
-      readTime: blog.readTime,
-      image: blog.image,
-      excerpt: blog.excerpt,
-      tags: (blog.tags ?? []).join(', '),
-      keywords: (blog.keywords ?? []).join(', '),
-      relatedPosts: (blog.relatedPosts ?? []).join(', '),
-      content: blog.content,
-      metaTitle: blog.metaTitle,
-      metaDescription: blog.metaDescription,
-      status: blog.isPublished ? 'active' : 'inactive',
-    })
-    setEditOpen(true)
-  }
+	return (
+		<div className="space-y-4">
+			{(pending && (confirmConfig?.kind === 'create' || confirmConfig?.kind === 'update')) ? <ApexBlockingSpinner label="Saving blog post..." /> : null}
+			<ApexToastStack toasts={toasts} onRemove={(id) => setToasts((prev) => prev.filter((item) => item.id !== id))} />
 
-  function onSort(nextKey: SortKey) {
-    if (sortKey === nextKey) {
-      setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'))
-      return
-    }
+			<ApexBreadcrumbs items={[{ label: 'Dashboard', href: '/admin' }, { label: 'Blogs' }]} />
 
-    setSortKey(nextKey)
-    setSortDir('asc')
-  }
+			<div className="flex flex-wrap items-start justify-between gap-4">
+				<div>
+					<h1 className="text-[42px] leading-none font-bold tracking-tight apx-text">Blogs</h1>
+					<p className="mt-1 text-sm apx-muted">Manage blog posts shown in your public blog listing.</p>
+				</div>
+				<button
+					onClick={() => {
+						resetAddForm()
+						setAddOpen(true)
+					}}
+					className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-all duration-150 hover:-translate-y-0.5"
+					style={{ backgroundColor: 'var(--apx-primary)' }}
+				>
+					<Plus className="h-4 w-4" />
+					Add Blog Post
+				</button>
+			</div>
 
-  function renderSortIcon(key: SortKey) {
-    if (sortKey !== key) return <ArrowUpDown className="h-3.5 w-3.5 opacity-60" />
-    return sortDir === 'asc' ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />
-  }
+			<ApexStatusTabs
+				tabs={[
+					{ key: 'all', label: 'All', count: statusCounts.all },
+					{ key: 'published', label: 'Published', count: statusCounts.published },
+					{ key: 'draft', label: 'Draft', count: statusCounts.draft },
+				]}
+				active={status}
+				onChange={(key) => {
+					setStatus(key as 'all' | 'published' | 'draft')
+					setPage(1)
+				}}
+			/>
 
-  function exportCsv() {
-    const rows = sorted.map((item) => [item.title, item.slug, item.category, item.authorName, item.isPublished ? 'Active' : 'Inactive', toRelative(item.updatedAt)])
-    downloadCsv('blogs-export.csv', [['Title', 'Slug', 'Category', 'Author', 'Status', 'Last Updated'], ...rows])
-    addToast('Blogs CSV exported', 'success')
-  }
+			<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+				<div className="w-full md:max-w-md">
+					<ApexSearchField value={search} onChange={(value) => { setSearch(value); setPage(1) }} placeholder="Search blogs..." />
+				</div>
+				<ApexExportButton
+					onClick={() => {
+						const header = ['Title', 'Slug', 'Category', 'Author', 'Date', 'Status']
+						const rows = filtered.map((item) => [item.title, item.slug, item.category, item.authorName, item.publishedAt, item.isPublished ? 'Published' : 'Draft'])
+						const csv = [header, ...rows].map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(',')).join('\n')
+						const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+						const url = URL.createObjectURL(blob)
+						const link = document.createElement('a')
+						link.href = url
+						link.download = 'blogs-export.csv'
+						link.click()
+						URL.revokeObjectURL(url)
+						addToast('Blogs CSV exported.', 'success')
+					}}
+				/>
+			</div>
 
-  async function executeConfirmedAction() {
-    if (!confirmConfig) return
-    setPendingAction(true)
+			<div className="overflow-x-auto rounded-2xl border" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
+				<table className="w-full text-left text-sm">
+					<thead>
+						<tr className="border-b" style={{ borderColor: 'var(--apx-border)' }}>
+							<th className="w-10 px-2 py-3">
+								<ApexCheckbox checked={currentAllSelected} onChange={toggleSelectAllCurrentPage} ariaLabel="Select all visible blogs" />
+							</th>
+							<th className="px-4 py-3 font-semibold apx-text">Image</th>
+							<th className="px-4 py-3 font-semibold apx-text">Title</th>
+							<th className="px-4 py-3 font-semibold apx-text">Category</th>
+							<th className="px-4 py-3 font-semibold apx-text">Author</th>
+							<th className="px-4 py-3 font-semibold apx-text">Date</th>
+							<th className="px-4 py-3 font-semibold apx-text">Status</th>
+							<th className="px-4 py-3 text-right font-semibold apx-text">Actions</th>
+						</tr>
+					</thead>
+					<tbody>
+						{paged.map((blog) => (
+							<tr key={blog.id} className="apx-table-row border-b last:border-b-0" style={{ borderColor: 'var(--apx-border)' }}>
+								<td className="px-2 py-3">
+									<ApexCheckbox checked={selectedIds.includes(blog.id)} onChange={() => toggleOne(blog.id)} ariaLabel={`Select ${blog.title}`} />
+								</td>
+								<td className="px-4 py-3">
+									<div className="h-14 w-24 overflow-hidden rounded-md border" style={{ borderColor: 'var(--apx-border)' }}>
+										{blog.image ? (
+											// eslint-disable-next-line @next/next/no-img-element
+											<img src={blog.image} alt={blog.title} className="h-full w-full object-contain" />
+										) : (
+											<div className="flex h-full w-full items-center justify-center text-[10px] apx-muted">No image</div>
+										)}
+									</div>
+								</td>
+								<td className="px-4 py-3">
+									<p className="font-semibold apx-text">{blog.title}</p>
+									{/* <p className="text-xs apx-muted">{blog.slug}</p> */}
+								</td>
+								<td className="px-4 py-3 apx-text">{blog.category || '-'}</td>
+								<td className="px-4 py-3">
+									<p className="apx-text">{blog.authorName || '-'}</p>
+									<p className="text-xs apx-muted">{blog.authorRole || '-'}</p>
+								</td>
+								<td className="px-4 py-3 apx-text">{blog.publishedAt || '-'}</td>
+								<td className="px-4 py-3">
+									<span className="inline-flex rounded-full px-2 py-1 text-xs font-semibold" style={blog.isPublished ? { backgroundColor: 'rgba(22,163,74,0.15)', color: '#15803d' } : { backgroundColor: 'rgba(100,116,139,0.2)', color: '#334155' }}>
+										{blog.isPublished ? 'Published' : 'Draft'}
+									</span>
+								</td>
+								<td className="px-4 py-3">
+									<div className="flex items-center justify-end gap-2">
+										{/* <button
+											type="button"
+											onClick={() => {
+												setSelectedBlog(blog)
+												setViewOpen(true)
+											}}
+											className="apx-icon-action"
+											aria-label={`View ${blog.title}`}
+										>
+											<Eye className="h-4 w-4" />
+										</button> */}
+										<button
+											type="button"
+											onClick={() => {
+												setSelectedBlog(blog)
+												setEditForm(formFromBlog(blog))
+												setEditImageFile(null)
+												setEditImagePreview(blog.image || '')
+												setEditOpen(true)
+											}}
+											className="apx-icon-action"
+											aria-label={`Edit ${blog.title}`}
+										>
+											<Edit2 className="h-4 w-4" />
+										</button>
+										<button
+											type="button"
+											onClick={() => {
+												setPendingToggleId(blog.id)
+												setConfirmConfig({
+													title: blog.isPublished ? 'Unpublish Blog Post' : 'Publish Blog Post',
+													description: `Set ${blog.title} as ${blog.isPublished ? 'draft' : 'published'}?`,
+													confirmLabel: blog.isPublished ? 'Set Draft' : 'Publish',
+													tone: 'primary',
+													kind: 'toggle',
+												})
+												setConfirmOpen(true)
+											}}
+											className="apx-icon-action"
+											aria-label={`Toggle status for ${blog.title}`}
+										>
+											<Power className="h-4 w-4" />
+										</button>
+										<button
+											type="button"
+											onClick={() => {
+												setPendingDeleteId(blog.id)
+												setConfirmConfig({
+													title: 'Delete Blog Post',
+													description: `Delete ${blog.title}? This action cannot be undone.`,
+													confirmLabel: 'Delete',
+													tone: 'danger',
+													kind: 'delete',
+												})
+												setConfirmOpen(true)
+											}}
+											className="apx-icon-action-danger"
+											aria-label={`Delete ${blog.title}`}
+										>
+											<Trash2 className="h-4 w-4" />
+										</button>
+									</div>
+								</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			</div>
 
-    try {
-      if (confirmConfig.kind === 'add') {
-        await createBlogAction(toFormData(addForm))
-        setAddOpen(false)
-        setAddForm(defaultForm)
-        addToast('Blog created successfully', 'success')
-      }
+			<ApexPagination
+				page={safePage}
+				totalPages={totalPages}
+				totalItems={filtered.length}
+				perPage={perPage}
+				rowsOptions={[10, 20, 50, 100]}
+				onPerPageChange={(next) => {
+					setPerPage(next)
+					setPage(1)
+				}}
+				onPageChange={setPage}
+			/>
 
-      if (confirmConfig.kind === 'edit') {
-        await updateBlogAction(toFormData(editForm))
-        setEditOpen(false)
-        addToast('Blog updated successfully', 'success')
-      }
+			<ApexModal open={addOpen} size="xl" title="Add Blog Post" subtitle="Create a new blog post." onClose={() => setAddOpen(false)}>
+				<form
+					onSubmit={(event) => {
+						event.preventDefault()
+						setConfirmConfig({
+							title: 'Create Blog Post',
+							description: 'Save this blog post now?',
+							confirmLabel: 'Create',
+							tone: 'primary',
+							kind: 'create',
+						})
+						setConfirmOpen(true)
+					}}
+					className="grid gap-3 md:grid-cols-2"
+				>
+					<div className="md:col-span-2">
+						<ApexImageDropzone
+							label="Cover Image"
+							previewUrl={addImagePreview || addForm.image}
+							onFileSelect={(file) => {
+								setAddImageFile(file)
+								setAddImagePreview(URL.createObjectURL(file))
+							}}
+						/>
+					</div>
 
-      if (confirmConfig.kind === 'delete' && selectedBlog) {
-        const formData = new FormData()
-        formData.set('id', selectedBlog.id)
-        await deleteBlogAction(formData)
-        addToast('Blog deleted', 'success')
-      }
+					<div className="md:col-span-2">
+						<label className="mb-1 block text-xs font-medium apx-muted">Title</label>
+						<ApexInput
+							required
+							value={addForm.title}
+							onChange={(event) => {
+								const title = event.target.value
+								setAddForm((prev) => ({ ...prev, title, slug: slugify(title) }))
+							}}
+						/>
+					</div>
 
-      if (confirmConfig.kind === 'bulkDelete') {
-        const formData = new FormData()
-        formData.set('ids', selectedIds.join(','))
-        await bulkDeleteBlogsAction(formData)
-        setSelectedIds([])
-        addToast('Selected blogs deleted', 'success')
-      }
+					{/* <div className="md:col-span-2">
+						<label className="mb-1 block text-xs font-medium apx-muted">Slug (auto)</label>
+						<ApexInput value={addForm.slug} readOnly />
+					</div> */}
 
-      if (confirmConfig.kind === 'bulkInactive') {
-        const formData = new FormData()
-        formData.set('ids', selectedIds.join(','))
-        await bulkSetInactiveBlogsAction(formData)
-        setSelectedIds([])
-        addToast('Selected blogs set to inactive', 'success')
-      }
+					<div>
+						<label className="mb-1 block text-xs font-medium apx-muted">Category</label>
+						<ApexDropdown
+							value={addForm.category}
+							onChange={(value) => setAddForm((prev) => ({ ...prev, category: value }))}
+							options={[
+								{ value: 'Tech', label: 'Tech' },
+								{ value: 'Business', label: 'Business' },
+								{ value: 'Academic', label: 'Academic' },
+								{ value: 'Case Studies', label: 'Case Studies' },
+							]}
+						/>
+					</div>
 
-      if (confirmConfig.kind === 'toggleActive' && pendingToggleBlog) {
-        const formData = new FormData()
-        formData.set('id', pendingToggleBlog.id)
-        await toggleBlogActiveAction(formData)
-        addToast(`Blog marked ${pendingToggleBlog.isPublished ? 'inactive' : 'active'}`, 'success')
-        setPendingToggleBlog(null)
-      }
+					<div>
+						<label className="mb-1 block text-xs font-medium apx-muted">Author (Team Member)</label>
+						<ApexDropdown value={addForm.teamMemberId} onChange={(value) => setAddForm((prev) => ({ ...prev, teamMemberId: value }))} options={teamDropdownOptions} />
+					</div>
 
-      setConfirmOpen(false)
-      setConfirmConfig(null)
-    } finally {
-      setPendingAction(false)
-    }
-  }
+					<div>
+						<label className="mb-1 block text-xs font-medium apx-muted">Date</label>
+						<ApexInput type="date" value={addForm.publishedAt} onChange={(event) => setAddForm((prev) => ({ ...prev, publishedAt: event.target.value }))} />
+					</div>
 
-  return (
-    <div className="space-y-4">
-      <ApexToastStack toasts={toasts} onRemove={(id) => setToasts((prev) => prev.filter((toast) => toast.id !== id))} />
-      <ApexBreadcrumbs items={[{ label: 'Dashboard', href: '/admin' }, { label: 'Blogs' }]} />
+					<div>
+						<label className="mb-1 block text-xs font-medium apx-muted">Status</label>
+						<ApexDropdown value={addForm.status} onChange={(value) => setAddForm((prev) => ({ ...prev, status: value as 'published' | 'draft' }))} options={[{ value: 'published', label: 'Published' }, { value: 'draft', label: 'Draft' }]} />
+					</div>
 
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-[42px] leading-none font-bold tracking-tight apx-text">Blogs</h1>
-          <p className="mt-1 text-sm apx-muted">Edit content, metadata, and author information.</p>
-        </div>
-        <button onClick={() => setAddOpen(true)} className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-all duration-150 hover:-translate-y-0.5" style={{ backgroundColor: 'var(--apx-primary)' }}><Plus className="h-4 w-4" />Add Blog</button>
-      </div>
+					<div className="md:col-span-2">
+						<label className="mb-1 block text-xs font-medium apx-muted">Read Time</label>
+						<ApexInput value={addForm.readTime} onChange={(event) => setAddForm((prev) => ({ ...prev, readTime: event.target.value }))} placeholder="e.g. 8 min read" />
+					</div>
 
-      <ApexStatusTabs tabs={[{ key: 'all', label: 'All', count: counts.all }, { key: 'active', label: 'Active', count: counts.active }, { key: 'inactive', label: 'Inactive', count: counts.inactive }]} active={status} onChange={(key) => { setStatus(key as 'all' | 'active' | 'inactive'); setPage(1) }} />
+					<div className="md:col-span-2">
+						<label className="mb-1 block text-xs font-medium apx-muted">Excerpt</label>
+						<ApexTextarea rows={3} value={addForm.excerpt} onChange={(event) => setAddForm((prev) => ({ ...prev, excerpt: event.target.value }))} />
+					</div>
 
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="w-full md:max-w-md"><ApexSearchField value={search} onChange={(value) => { setSearch(value); setPage(1) }} placeholder="Search blogs..." /></div>
+					<div>
+						<label className="mb-1 block text-xs font-medium apx-muted">Tags (comma separated)</label>
+						<ApexInput value={addForm.tags} onChange={(event) => setAddForm((prev) => ({ ...prev, tags: event.target.value }))} />
+					</div>
 
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {selectedIds.length > 0 ? (
-            <>
-              <ApexButton type="button" variant="outline" className="whitespace-nowrap" onClick={() => { setConfirmConfig({ title: 'Set Blogs Inactive', description: `Set ${selectedIds.length} selected blog(s) to inactive?`, label: 'Set Inactive', tone: 'primary', kind: 'bulkInactive' }); setConfirmOpen(true) }}><Power className="h-4 w-4" />Set Inactive</ApexButton>
-              <ApexButton type="button" variant="danger" className="whitespace-nowrap" onClick={() => { setConfirmConfig({ title: 'Delete Selected Blogs', description: `Delete ${selectedIds.length} selected blog(s)? This action cannot be undone.`, label: 'Delete', tone: 'danger', kind: 'bulkDelete' }); setConfirmOpen(true) }}><Trash2 className="h-4 w-4" />Delete Selected</ApexButton>
-            </>
-          ) : null}
+					<div>
+						<label className="mb-1 block text-xs font-medium apx-muted">Keywords (comma separated)</label>
+						<ApexInput value={addForm.keywords} onChange={(event) => setAddForm((prev) => ({ ...prev, keywords: event.target.value }))} />
+					</div>
 
-          <ApexColumnsToggle columns={[{ key: 'title', label: 'Blog', visible: columns.title }, { key: 'category', label: 'Category', visible: columns.category }, { key: 'author', label: 'Author', visible: columns.author }, { key: 'status', label: 'Status', visible: columns.status }, { key: 'updated', label: 'Last Updated', visible: columns.updated }, { key: 'actions', label: 'Actions', visible: columns.actions }]} onToggle={toggleColumn} />
-          <ApexExportButton onClick={exportCsv} />
-        </div>
-      </div>
+					<div className="md:col-span-2">
+						<label className="mb-1 block text-xs font-medium apx-muted">Content</label>
+						<ApexTextarea rows={10} value={addForm.content} onChange={(event) => setAddForm((prev) => ({ ...prev, content: event.target.value }))} />
+					</div>
 
-      <div className="overflow-x-auto rounded-2xl border" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="border-b" style={{ borderColor: 'var(--apx-border)' }}>
-              <th className="w-10 px-2 py-3"><ApexCheckbox checked={allCurrentPageSelected} onChange={toggleSelectAllCurrentPage} ariaLabel="Select all current page blogs" /></th>
-              {columns.title ? <th className="px-4 py-3 font-semibold apx-text"><button onClick={() => onSort('title')} className="inline-flex items-center gap-1.5" type="button">Blog{renderSortIcon('title')}</button></th> : null}
-              {columns.category ? <th className="px-4 py-3 font-semibold apx-text"><button onClick={() => onSort('category')} className="inline-flex items-center gap-1.5" type="button">Category{renderSortIcon('category')}</button></th> : null}
-              {columns.author ? <th className="px-4 py-3 font-semibold apx-text"><button onClick={() => onSort('author')} className="inline-flex items-center gap-1.5" type="button">Author{renderSortIcon('author')}</button></th> : null}
-              {columns.status ? <th className="px-4 py-3 font-semibold apx-text"><button onClick={() => onSort('status')} className="inline-flex items-center gap-1.5" type="button">Status{renderSortIcon('status')}</button></th> : null}
-              {columns.updated ? <th className="px-4 py-3 font-semibold apx-text"><button onClick={() => onSort('updated')} className="inline-flex items-center gap-1.5" type="button">Last Updated{renderSortIcon('updated')}</button></th> : null}
-              {columns.actions ? <th className="px-4 py-3 text-right font-semibold apx-text">Actions</th> : null}
-            </tr>
-          </thead>
-          <tbody>
-            {paged.map((blog) => (
-              <tr key={blog.id} onClick={() => { setSelectedBlog(blog); setViewOpen(true) }} className={['apx-table-row cursor-pointer border-b last:border-b-0', selectedIds.includes(blog.id) ? 'apx-table-row-selected' : ''].join(' ').trim()} style={{ borderColor: 'var(--apx-border)' }}>
-                <td className="px-2 py-3"><div onClick={(event) => event.stopPropagation()}><ApexCheckbox checked={selectedIds.includes(blog.id)} onChange={() => toggleSelectOne(blog.id)} ariaLabel={`Select ${blog.title}`} /></div></td>
-                {columns.title ? <td className="px-4 py-3"><p className="font-semibold apx-text">{blog.title}</p><p className="text-xs apx-muted">{blog.slug}</p></td> : null}
-                {columns.category ? <td className="px-4 py-3 apx-text">{blog.category || '-'}</td> : null}
-                {columns.author ? <td className="px-4 py-3 apx-text">{blog.authorName || '-'}</td> : null}
-                {columns.status ? <td className="px-4 py-3"><span className="inline-flex rounded-full px-2 py-1 text-xs font-semibold" style={blog.isPublished ? { backgroundColor: 'rgba(22,163,74,0.15)', color: '#15803d' } : { backgroundColor: 'rgba(100,116,139,0.2)', color: '#334155' }}>{blog.isPublished ? 'Active' : 'Inactive'}</span></td> : null}
-                {columns.updated ? <td className="px-4 py-3 apx-muted">{toRelative(blog.updatedAt)}</td> : null}
-                {columns.actions ? (
-                  <td className="px-4 py-3"><div className="flex items-center justify-end gap-2">
-                    <button type="button" onClick={(event) => { event.stopPropagation(); openEditModal(blog) }} className="apx-icon-action" aria-label={`Edit ${blog.title}`}><Edit2 className="apx-muted" /></button>
-                    <button type="button" onClick={(event) => {
-                      event.stopPropagation()
-                      setPendingToggleBlog(blog)
-                      setConfirmConfig({ title: blog.isPublished ? 'Deactivate Blog' : 'Activate Blog', description: `Set ${blog.title} as ${blog.isPublished ? 'inactive' : 'active'}?`, label: blog.isPublished ? 'Deactivate' : 'Activate', tone: 'primary', kind: 'toggleActive' })
-                      setConfirmOpen(true)
-                    }} className="apx-icon-action" style={blog.isPublished ? { borderColor: 'rgba(234, 88, 12, 0.45)', color: '#c2410c', backgroundColor: 'rgba(249, 115, 22, 0.08)' } : { borderColor: 'rgba(22, 163, 74, 0.5)', color: '#15803d', backgroundColor: 'rgba(22, 163, 74, 0.12)' }} aria-label={`Toggle ${blog.title} status`}><Power className="h-4 w-4" /></button>
-                    <button type="button" onClick={(event) => {
-                      event.stopPropagation()
-                      setSelectedBlog(blog)
-                      setConfirmConfig({ title: 'Delete Blog', description: `Delete ${blog.title}? This action cannot be undone.`, label: 'Delete', tone: 'danger', kind: 'delete' })
-                      setConfirmOpen(true)
-                    }} className="apx-icon-action-danger" aria-label={`Delete ${blog.title}`}><Trash2 /></button>
-                  </div></td>
-                ) : null}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+					<div>
+						<label className="mb-1 block text-xs font-medium apx-muted">Meta Title</label>
+						<ApexInput value={addForm.metaTitle} onChange={(event) => setAddForm((prev) => ({ ...prev, metaTitle: event.target.value }))} />
+					</div>
 
-      <ApexPagination page={safePage} totalPages={totalPages} totalItems={sorted.length} perPage={perPage} rowsOptions={[10, 20, 50, 100]} onPerPageChange={(next) => { setPerPage(next); setPage(1) }} onPageChange={setPage} />
+					<div>
+						<label className="mb-1 block text-xs font-medium apx-muted">Meta Description</label>
+						<ApexInput value={addForm.metaDescription} onChange={(event) => setAddForm((prev) => ({ ...prev, metaDescription: event.target.value }))} />
+					</div>
 
-      <ApexModal size="sm" open={addOpen} title="Add Blog" subtitle="Create a blog post entry." onClose={() => setAddOpen(false)}>
-        <form onSubmit={(event) => {
-          event.preventDefault()
-          setConfirmConfig({ title: 'Confirm Add Blog', description: `Add ${addForm.title || 'this blog'}?`, label: 'Add Blog', tone: 'primary', kind: 'add' })
-          setConfirmOpen(true)
-        }} className="space-y-3">
-          <ApexInput value={addForm.slug} onChange={(event) => setAddForm((prev) => ({ ...prev, slug: event.target.value }))} placeholder="Slug" required />
-          <ApexInput value={addForm.title} onChange={(event) => setAddForm((prev) => ({ ...prev, title: event.target.value }))} placeholder="Title" required />
-          <ApexInput value={addForm.category} onChange={(event) => setAddForm((prev) => ({ ...prev, category: event.target.value }))} placeholder="Category" />
-          <ApexInput value={addForm.date} onChange={(event) => setAddForm((prev) => ({ ...prev, date: event.target.value }))} placeholder="Published date" />
-          <ApexInput value={addForm.readTime} onChange={(event) => setAddForm((prev) => ({ ...prev, readTime: event.target.value }))} placeholder="Read time" />
-          <ApexInput value={addForm.image} onChange={(event) => setAddForm((prev) => ({ ...prev, image: event.target.value }))} placeholder="Image URL" />
-          <ApexInput value={addForm.authorName} onChange={(event) => setAddForm((prev) => ({ ...prev, authorName: event.target.value }))} placeholder="Author name" />
-          <ApexInput value={addForm.authorRole} onChange={(event) => setAddForm((prev) => ({ ...prev, authorRole: event.target.value }))} placeholder="Author role" />
-          <ApexInput value={addForm.authorAvatar} onChange={(event) => setAddForm((prev) => ({ ...prev, authorAvatar: event.target.value }))} placeholder="Author avatar" />
-          <ApexTextarea value={addForm.excerpt} onChange={(event) => setAddForm((prev) => ({ ...prev, excerpt: event.target.value }))} rows={2} placeholder="Excerpt" />
-          <ApexInput value={addForm.tags} onChange={(event) => setAddForm((prev) => ({ ...prev, tags: event.target.value }))} placeholder="Tags (comma-separated)" />
-          <ApexInput value={addForm.keywords} onChange={(event) => setAddForm((prev) => ({ ...prev, keywords: event.target.value }))} placeholder="Keywords (comma-separated)" />
-          <ApexInput value={addForm.relatedPosts} onChange={(event) => setAddForm((prev) => ({ ...prev, relatedPosts: event.target.value }))} placeholder="Related posts (comma-separated)" />
-          <ApexTextarea value={addForm.content} onChange={(event) => setAddForm((prev) => ({ ...prev, content: event.target.value }))} rows={6} placeholder="Content" />
-          <ApexInput value={addForm.metaTitle} onChange={(event) => setAddForm((prev) => ({ ...prev, metaTitle: event.target.value }))} placeholder="Meta title" />
-          <ApexInput value={addForm.metaDescription} onChange={(event) => setAddForm((prev) => ({ ...prev, metaDescription: event.target.value }))} placeholder="Meta description" />
-          <ApexDropdown value={addForm.status} onChange={(value) => setAddForm((prev) => ({ ...prev, status: value as 'active' | 'inactive' }))} options={[...statusOptions]} placeholder="Select status" />
-          <div className="flex justify-end gap-2 pt-2"><ApexButton type="button" variant="outline" onClick={() => setAddOpen(false)}>Cancel</ApexButton><ApexButton type="submit">Save Blog</ApexButton></div>
-        </form>
-      </ApexModal>
+					<div className="md:col-span-2 flex justify-end gap-2 pt-2">
+						<ApexButton type="button" variant="outline" onClick={() => setAddOpen(false)}>Cancel</ApexButton>
+						<ApexButton type="submit">Save Blog</ApexButton>
+					</div>
+				</form>
+			</ApexModal>
 
-      <ApexModal size="sm" open={editOpen} title="Edit Blog" subtitle="Update blog details." onClose={() => setEditOpen(false)}>
-        <form onSubmit={(event) => {
-          event.preventDefault()
-          setConfirmConfig({ title: 'Confirm Edit Blog', description: `Save changes for ${editForm.title || 'this blog'}?`, label: 'Save Changes', tone: 'primary', kind: 'edit' })
-          setConfirmOpen(true)
-        }} className="space-y-3">
-          <ApexInput value={editForm.slug} onChange={(event) => setEditForm((prev) => ({ ...prev, slug: event.target.value }))} placeholder="Slug" required />
-          <ApexInput value={editForm.title} onChange={(event) => setEditForm((prev) => ({ ...prev, title: event.target.value }))} placeholder="Title" required />
-          <ApexInput value={editForm.category} onChange={(event) => setEditForm((prev) => ({ ...prev, category: event.target.value }))} placeholder="Category" />
-          <ApexInput value={editForm.date} onChange={(event) => setEditForm((prev) => ({ ...prev, date: event.target.value }))} placeholder="Published date" />
-          <ApexInput value={editForm.readTime} onChange={(event) => setEditForm((prev) => ({ ...prev, readTime: event.target.value }))} placeholder="Read time" />
-          <ApexInput value={editForm.image} onChange={(event) => setEditForm((prev) => ({ ...prev, image: event.target.value }))} placeholder="Image URL" />
-          <ApexInput value={editForm.authorName} onChange={(event) => setEditForm((prev) => ({ ...prev, authorName: event.target.value }))} placeholder="Author name" />
-          <ApexInput value={editForm.authorRole} onChange={(event) => setEditForm((prev) => ({ ...prev, authorRole: event.target.value }))} placeholder="Author role" />
-          <ApexInput value={editForm.authorAvatar} onChange={(event) => setEditForm((prev) => ({ ...prev, authorAvatar: event.target.value }))} placeholder="Author avatar" />
-          <ApexTextarea value={editForm.excerpt} onChange={(event) => setEditForm((prev) => ({ ...prev, excerpt: event.target.value }))} rows={2} placeholder="Excerpt" />
-          <ApexInput value={editForm.tags} onChange={(event) => setEditForm((prev) => ({ ...prev, tags: event.target.value }))} placeholder="Tags (comma-separated)" />
-          <ApexInput value={editForm.keywords} onChange={(event) => setEditForm((prev) => ({ ...prev, keywords: event.target.value }))} placeholder="Keywords (comma-separated)" />
-          <ApexInput value={editForm.relatedPosts} onChange={(event) => setEditForm((prev) => ({ ...prev, relatedPosts: event.target.value }))} placeholder="Related posts (comma-separated)" />
-          <ApexTextarea value={editForm.content} onChange={(event) => setEditForm((prev) => ({ ...prev, content: event.target.value }))} rows={6} placeholder="Content" />
-          <ApexInput value={editForm.metaTitle} onChange={(event) => setEditForm((prev) => ({ ...prev, metaTitle: event.target.value }))} placeholder="Meta title" />
-          <ApexInput value={editForm.metaDescription} onChange={(event) => setEditForm((prev) => ({ ...prev, metaDescription: event.target.value }))} placeholder="Meta description" />
-          <ApexDropdown value={editForm.status} onChange={(value) => setEditForm((prev) => ({ ...prev, status: value as 'active' | 'inactive' }))} options={[...statusOptions]} placeholder="Select status" />
-          <div className="flex justify-end gap-2 pt-2"><ApexButton type="button" variant="outline" onClick={() => setEditOpen(false)}>Cancel</ApexButton><ApexButton type="submit">Save Changes</ApexButton></div>
-        </form>
-      </ApexModal>
+			<ApexModal open={editOpen} size="xl" title="Edit Blog Post" subtitle="Update blog details." onClose={() => setEditOpen(false)}>
+				<form
+					onSubmit={(event) => {
+						event.preventDefault()
+						setConfirmConfig({
+							title: 'Save Blog Changes',
+							description: `Save changes to ${editForm.title || 'this post'}?`,
+							confirmLabel: 'Save Changes',
+							tone: 'primary',
+							kind: 'update',
+						})
+						setConfirmOpen(true)
+					}}
+					className="grid gap-3 md:grid-cols-2"
+				>
+					<div className="md:col-span-2">
+						<ApexImageDropzone
+							label="Cover Image"
+							previewUrl={editImagePreview || editForm.image}
+							onFileSelect={(file) => {
+								setEditImageFile(file)
+								setEditImagePreview(URL.createObjectURL(file))
+							}}
+						/>
+					</div>
 
-      <ApexModal size="sm" open={viewOpen && !!selectedBlog} title="View Blog" subtitle="Read-only blog details." onClose={() => setViewOpen(false)}>
-        {selectedBlog ? (
-          <div className="space-y-3">
-            <div><p className="text-xs uppercase tracking-wider apx-muted">Title</p><p className="mt-1 text-sm font-medium apx-text">{selectedBlog.title}</p></div>
-            <div><p className="text-xs uppercase tracking-wider apx-muted">Slug</p><p className="mt-1 text-sm font-medium apx-text">{selectedBlog.slug}</p></div>
-            <div><p className="text-xs uppercase tracking-wider apx-muted">Author</p><p className="mt-1 text-sm font-medium apx-text">{selectedBlog.authorName || '-'}</p></div>
-            <div><p className="text-xs uppercase tracking-wider apx-muted">Status</p><p className="mt-1 text-sm font-medium apx-text">{selectedBlog.isPublished ? 'Active' : 'Inactive'}</p></div>
-            <div><p className="text-xs uppercase tracking-wider apx-muted">Last Updated</p><p className="mt-1 text-sm font-medium apx-text">{toRelative(selectedBlog.updatedAt)}</p></div>
-            <div className="flex justify-end pt-2"><ApexButton type="button" variant="outline" onClick={() => setViewOpen(false)}>Close</ApexButton></div>
-          </div>
-        ) : null}
-      </ApexModal>
+					<div className="md:col-span-2">
+						<label className="mb-1 block text-xs font-medium apx-muted">Title</label>
+						<ApexInput
+							required
+							value={editForm.title}
+							onChange={(event) => {
+								const title = event.target.value
+								setEditForm((prev) => ({ ...prev, title, slug: slugify(title) }))
+							}}
+						/>
+					</div>
 
-      <ApexConfirmationModal open={confirmOpen && !!confirmConfig} title={confirmConfig?.title ?? 'Confirm Action'} description={confirmConfig?.description ?? 'Proceed with this action?'} confirmLabel={confirmConfig?.label ?? 'Confirm'} tone={confirmConfig?.tone ?? 'primary'} pending={pendingAction} onClose={() => {
-        if (pendingAction) return
-        setConfirmOpen(false)
-        setConfirmConfig(null)
-      }} onConfirm={executeConfirmedAction} />
-    </div>
-  )
+					{/* <div className="md:col-span-2">
+						<label className="mb-1 block text-xs font-medium apx-muted">Slug (auto)</label>
+						<ApexInput value={editForm.slug} readOnly />
+					</div> */}
+
+					<div>
+						<label className="mb-1 block text-xs font-medium apx-muted">Category</label>
+						<ApexDropdown value={editForm.category} onChange={(value) => setEditForm((prev) => ({ ...prev, category: value }))} options={[{ value: 'Tech', label: 'Tech' }, { value: 'Business', label: 'Business' }, { value: 'Academic', label: 'Academic' }, { value: 'Case Studies', label: 'Case Studies' }]} />
+					</div>
+
+					<div>
+						<label className="mb-1 block text-xs font-medium apx-muted">Author (Team Member)</label>
+						<ApexDropdown value={editForm.teamMemberId} onChange={(value) => setEditForm((prev) => ({ ...prev, teamMemberId: value }))} options={teamDropdownOptions} />
+					</div>
+
+					<div>
+						<label className="mb-1 block text-xs font-medium apx-muted">Date</label>
+						<ApexInput type="date" value={editForm.publishedAt} onChange={(event) => setEditForm((prev) => ({ ...prev, publishedAt: event.target.value }))} />
+					</div>
+
+					<div>
+						<label className="mb-1 block text-xs font-medium apx-muted">Status</label>
+						<ApexDropdown value={editForm.status} onChange={(value) => setEditForm((prev) => ({ ...prev, status: value as 'published' | 'draft' }))} options={[{ value: 'published', label: 'Published' }, { value: 'draft', label: 'Draft' }]} />
+					</div>
+
+					<div className="md:col-span-2">
+						<label className="mb-1 block text-xs font-medium apx-muted">Read Time</label>
+						<ApexInput value={editForm.readTime} onChange={(event) => setEditForm((prev) => ({ ...prev, readTime: event.target.value }))} />
+					</div>
+
+					<div className="md:col-span-2">
+						<label className="mb-1 block text-xs font-medium apx-muted">Excerpt</label>
+						<ApexTextarea rows={3} value={editForm.excerpt} onChange={(event) => setEditForm((prev) => ({ ...prev, excerpt: event.target.value }))} />
+					</div>
+
+					<div>
+						<label className="mb-1 block text-xs font-medium apx-muted">Tags (comma separated)</label>
+						<ApexInput value={editForm.tags} onChange={(event) => setEditForm((prev) => ({ ...prev, tags: event.target.value }))} />
+					</div>
+
+					<div>
+						<label className="mb-1 block text-xs font-medium apx-muted">Keywords (comma separated)</label>
+						<ApexInput value={editForm.keywords} onChange={(event) => setEditForm((prev) => ({ ...prev, keywords: event.target.value }))} />
+					</div>
+
+					<div className="md:col-span-2">
+						<label className="mb-1 block text-xs font-medium apx-muted">Content</label>
+						<ApexTextarea rows={10} value={editForm.content} onChange={(event) => setEditForm((prev) => ({ ...prev, content: event.target.value }))} />
+					</div>
+
+					<div>
+						<label className="mb-1 block text-xs font-medium apx-muted">Meta Title</label>
+						<ApexInput value={editForm.metaTitle} onChange={(event) => setEditForm((prev) => ({ ...prev, metaTitle: event.target.value }))} />
+					</div>
+
+					<div>
+						<label className="mb-1 block text-xs font-medium apx-muted">Meta Description</label>
+						<ApexInput value={editForm.metaDescription} onChange={(event) => setEditForm((prev) => ({ ...prev, metaDescription: event.target.value }))} />
+					</div>
+
+					<div className="md:col-span-2 flex justify-end gap-2 pt-2">
+						<ApexButton type="button" variant="outline" onClick={() => setEditOpen(false)}>Cancel</ApexButton>
+						<ApexButton type="submit">Save Changes</ApexButton>
+					</div>
+				</form>
+			</ApexModal>
+
+			<ApexModal open={viewOpen} size="lg" title="View Blog Post" subtitle={selectedBlog?.title || ''} onClose={() => setViewOpen(false)}>
+				{selectedBlog ? (
+					<div className="space-y-3 text-sm">
+						<div className="overflow-hidden rounded-md border" style={{ borderColor: 'var(--apx-border)' }}>
+							{selectedBlog.image ? (
+								// eslint-disable-next-line @next/next/no-img-element
+								<img src={selectedBlog.image} alt={selectedBlog.title} className="h-56 w-full object-contain" />
+							) : (
+								<div className="flex h-56 w-full items-center justify-center apx-muted">No image</div>
+							)}
+						</div>
+						<div><p className="text-xs uppercase tracking-wide apx-muted">Title</p><p className="mt-1 apx-text">{selectedBlog.title}</p></div>
+						<div><p className="text-xs uppercase tracking-wide apx-muted">Slug</p><p className="mt-1 apx-text">{selectedBlog.slug}</p></div>
+						<div className="grid gap-3 md:grid-cols-3">
+							<div><p className="text-xs uppercase tracking-wide apx-muted">Category</p><p className="mt-1 apx-text">{selectedBlog.category || '-'}</p></div>
+							<div><p className="text-xs uppercase tracking-wide apx-muted">Date</p><p className="mt-1 apx-text">{selectedBlog.publishedAt || '-'}</p></div>
+							<div><p className="text-xs uppercase tracking-wide apx-muted">Status</p><p className="mt-1 apx-text">{selectedBlog.isPublished ? 'Published' : 'Draft'}</p></div>
+						</div>
+						<div><p className="text-xs uppercase tracking-wide apx-muted">Author</p><p className="mt-1 apx-text">{selectedBlog.authorName || '-'}</p><p className="text-xs apx-muted">{selectedBlog.authorRole || '-'}</p></div>
+						<div><p className="text-xs uppercase tracking-wide apx-muted">Excerpt</p><p className="mt-1 whitespace-pre-wrap apx-text">{selectedBlog.excerpt || '-'}</p></div>
+						<div><p className="text-xs uppercase tracking-wide apx-muted">Content</p><p className="mt-1 whitespace-pre-wrap apx-text">{selectedBlog.content || '-'}</p></div>
+						<div><p className="text-xs uppercase tracking-wide apx-muted">Tags</p><p className="mt-1 apx-text">{(selectedBlog.tags || []).join(', ') || '-'}</p></div>
+						<div><p className="text-xs uppercase tracking-wide apx-muted">Keywords</p><p className="mt-1 apx-text">{(selectedBlog.keywords || []).join(', ') || '-'}</p></div>
+						<div><p className="text-xs uppercase tracking-wide apx-muted">Related Posts (Auto)</p><p className="mt-1 apx-text">{(selectedBlog.relatedPosts || []).join(', ') || '-'}</p></div>
+					</div>
+				) : null}
+			</ApexModal>
+
+			<ApexConfirmationModal
+				open={confirmOpen}
+				title={confirmConfig?.title || 'Confirm action'}
+				description={confirmConfig?.description || ''}
+				confirmLabel={confirmConfig?.confirmLabel || 'Confirm'}
+				tone={confirmConfig?.tone || 'primary'}
+				pending={pending}
+				onConfirm={runConfirmed}
+				onClose={() => {
+					if (pending) return
+					setConfirmOpen(false)
+					setConfirmConfig(null)
+				}}
+			/>
+		</div>
+	)
 }
+
