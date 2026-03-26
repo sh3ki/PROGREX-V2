@@ -70,8 +70,10 @@ export async function getCurrentAdmin() {
   const session = await getAdminSessionFromCookie()
   if (!session) return null
 
-  const rows = await sql<{ id: string; email: string; full_name: string; role_id: string; is_active: boolean }>(
-    'select id, email, full_name, role_id, is_active from admin_users where id = $1 limit 1',
+  await sql('alter table admin_users add column if not exists profile_image_url text')
+
+  const rows = await sql<{ id: string; email: string; full_name: string; role_id: string; is_active: boolean; profile_image_url: string | null }>(
+    'select id, email, full_name, role_id, is_active, profile_image_url from admin_users where id = $1 limit 1',
     [session.sub]
   )
 
@@ -83,6 +85,7 @@ export async function getCurrentAdmin() {
     email: admin.email,
     fullName: admin.full_name,
     roleId: admin.role_id,
+    profileImageUrl: admin.profile_image_url,
   }
 }
 
