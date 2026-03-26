@@ -176,9 +176,51 @@ async function uploadBlogImage(file: File, opts: { folder: string; filename: str
   return payload.secure_url
 }
 
+async function uploadBlogImageFromUrl(imageUrl: string, opts: { folder: string; filename: string }) {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+  const apiKey = process.env.CLOUDINARY_API_KEY
+  const apiSecret = process.env.CLOUDINARY_API_SECRET
+
+  if (!cloudName || !apiKey || !apiSecret) {
+    throw new Error('Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.')
+  }
+
+  const timestamp = Math.floor(Date.now() / 1000)
+  const signatureBase = `folder=${opts.folder}&public_id=${opts.filename}&timestamp=${timestamp}${apiSecret}`
+  const signature = createHash('sha1').update(signatureBase).digest('hex')
+
+  const body = new FormData()
+  body.append('file', imageUrl)
+  body.append('api_key', apiKey)
+  body.append('timestamp', String(timestamp))
+  body.append('folder', opts.folder)
+  body.append('public_id', opts.filename)
+  body.append('signature', signature)
+
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+    method: 'POST',
+    body,
+  })
+
+  const payload = (await response.json()) as { secure_url?: string; error?: { message?: string } }
+  if (!response.ok || !payload.secure_url) {
+    throw new Error(payload.error?.message || 'Cloudinary upload failed.')
+  }
+
+  return payload.secure_url
+}
+
 async function resolveBlogImage(formData: FormData, title: string, fallback: string) {
   const image = formData.get('coverImage')
-  if (!(image instanceof File) || image.size <= 0) return fallback
+
+  if (!(image instanceof File) || image.size <= 0) {
+    const isExternalUrl = fallback.startsWith('http') && !fallback.includes('/res.cloudinary.com/')
+    if (!isExternalUrl) return fallback
+
+    const base = slugify(title).slice(0, 60) || 'blog'
+    const filename = `${base}-${randomBytes(3).toString('hex')}`
+    return uploadBlogImageFromUrl(fallback, { folder: 'ProgreX Blogs', filename })
+  }
 
   const base = slugify(title).slice(0, 60) || 'blog'
   const filename = `${base}-${randomBytes(3).toString('hex')}`
@@ -198,10 +240,10 @@ async function saveBlog(formData: FormData) {
   const date = String(formData.get('date') ?? '').trim()
   const readTime = String(formData.get('readTime') ?? '').trim()
   const existingImage = String(formData.get('existingImage') ?? '').trim()
-  const excerpt = String(formData.get('excerpt') ?? '').trim()
+  const excerpt = String(formData.get('excerpt') ?? '')
   const tags = String(formData.get('tags') ?? '').split(',').map((s) => s.trim()).filter(Boolean)
   const keywords = String(formData.get('keywords') ?? '').split(',').map((s) => s.trim()).filter(Boolean)
-  const content = String(formData.get('content') ?? '').trim()
+  const content = String(formData.get('content') ?? '')
   const metaTitle = String(formData.get('metaTitle') ?? '').trim()
   const metaDescription = String(formData.get('metaDescription') ?? '').trim()
   const status = String(formData.get('status') ?? 'published')
@@ -273,6 +315,90 @@ async function saveBlog(formData: FormData) {
 
   revalidatePath('/admin/blogs')
   revalidatePath('/blogs')
+}
+
+async function generateBlogDraft(formData: FormData) {
+  'use server'
+  await requirePermission('blogs', 'write')
+
+  const category = String(formData.get('category') ?? 'Tech').trim() || 'Tech'
+  const apiKey = process.env.GROQ_API_KEY
+
+  if (!apiKey) {
+    throw new Error('GROQ_API_KEY is not configured.')
+  }
+
+  const today = new Date().toISOString().slice(0, 10)
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      temperature: 0.35,
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert SEO content strategist for PROGREX. Return only valid JSON with no markdown fences.',
+        },
+        {
+          role: 'user',
+          content:
+            `Generate a complete, SEO-focused blog draft for category "${category}".\n` +
+            'Target search visibility for Philippine and global business/tech audiences.\n' +
+            'Return exactly this JSON shape: ' +
+            '{"title":"","slug":"","readTime":"","excerpt":"","tags":[""],"keywords":[""],"content":"","metaTitle":"","metaDescription":"","imageQuery":""}.\n' +
+            'Rules: content must use markdown with headings, bullet lists, and **bold** where useful; 900-1400 words; practical and conversion-aware; no code fences.',
+        },
+      ],
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to generate blog draft from GROQ.')
+  }
+
+  const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> }
+  const content = payload.choices?.[0]?.message?.content?.trim() || ''
+  const jsonMatch = content.match(/\{[\s\S]*\}/)
+  if (!jsonMatch) {
+    throw new Error('GROQ returned an invalid draft format.')
+  }
+
+  const parsed = JSON.parse(jsonMatch[0]) as {
+    title?: string
+    slug?: string
+    readTime?: string
+    excerpt?: string
+    tags?: string[]
+    keywords?: string[]
+    content?: string
+    metaTitle?: string
+    metaDescription?: string
+    imageQuery?: string
+  }
+
+  const title = (parsed.title || '').trim() || `${category} Guide for Better Search Visibility`
+  const slug = slugify(parsed.slug || title)
+  const imageQuery = (parsed.imageQuery || `${category} technology business`).trim()
+  const generatedImage = `https://source.unsplash.com/1600x900/?${encodeURIComponent(imageQuery)}`
+
+  return {
+    title,
+    slug,
+    category,
+    publishedAt: today,
+    readTime: (parsed.readTime || '8 min read').trim(),
+    excerpt: parsed.excerpt || '',
+    tags: (parsed.tags || []).filter(Boolean).join(', '),
+    keywords: (parsed.keywords || []).filter(Boolean).join(', '),
+    content: parsed.content || '',
+    metaTitle: (parsed.metaTitle || title).trim(),
+    metaDescription: (parsed.metaDescription || parsed.excerpt || '').trim(),
+    image: generatedImage,
+  }
 }
 
 async function toggleBlogPublish(formData: FormData) {
@@ -416,6 +542,7 @@ export default async function AdminBlogsPage() {
       bulkDeleteBlogAction={bulkDeleteBlogs}
       bulkSetDraftBlogAction={bulkSetBlogsDraft}
       togglePublishAction={toggleBlogPublish}
+      generateBlogDraftAction={generateBlogDraft}
     />
   )
 }
