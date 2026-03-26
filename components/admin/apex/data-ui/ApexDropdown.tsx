@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronDown, Check } from 'lucide-react'
 
-type Option = { value: string; label: string }
+type Option = { value: string; label: string; color?: string }
 
 export function ApexDropdown({
   value,
@@ -70,7 +70,10 @@ export function ApexDropdown({
         className="flex h-10 w-full items-center justify-between rounded-xl border px-3 text-sm transition disabled:opacity-50"
         style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface-alt)', color: 'var(--apx-text)' }}
       >
-        <span className={selected ? 'apx-text' : 'apx-muted'}>{selected?.label ?? placeholder ?? 'Select option'}</span>
+        <span className={['inline-flex items-center gap-2', selected ? 'apx-text' : 'apx-muted'].join(' ')}>
+          {selected?.color ? <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: selected.color }} /> : null}
+          {selected?.label ?? placeholder ?? 'Select option'}
+        </span>
         <ChevronDown className={['h-4 w-4 transition-transform', open ? 'rotate-180' : 'rotate-0'].join(' ')} />
       </button>
 
@@ -99,7 +102,10 @@ export function ApexDropdown({
                     : { color: 'var(--apx-text)' }
                 }
               >
-                <span>{option.label}</span>
+                <span className="inline-flex items-center gap-2">
+                  {option.color ? <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: option.color }} /> : null}
+                  {option.label}
+                </span>
                 {isSelected ? <Check className="h-4 w-4" /> : null}
               </button>
             )
