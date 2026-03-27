@@ -321,23 +321,23 @@ export default function AdminCalendarTemplateView({
                   key={cell.key}
                   type="button"
                   onClick={() => setSelectedDate(key)}
-                  className="aspect-square min-h-28 rounded-xl border p-2 text-left transition"
+                  className="flex aspect-square min-h-28 flex-col items-start justify-start rounded-xl border p-2 text-left transition"
                   style={{
                     borderColor: isHighlighted ? 'var(--apx-primary)' : 'var(--apx-border)',
                     backgroundColor: isHighlighted ? 'var(--apx-primary-soft)' : 'var(--apx-surface-alt)',
                   }}
                 >
-                  <div className="mb-1 flex items-start justify-between">
+                  <div className="mb-1 flex w-full items-start justify-between">
                     <span
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold"
-                      style={isHighlighted ? { backgroundColor: 'var(--apx-primary)', color: '#fff' } : { color: 'var(--apx-text)' }}
+                      className="text-sm font-semibold"
+                      style={isHighlighted ? { color: 'var(--apx-primary)' } : { color: 'var(--apx-text)' }}
                     >
                       {cell.date.getDate()}
                     </span>
-                    {dayEvents.length > 0 ? <span className="text-[10px] apx-muted">{dayEvents.length} event{dayEvents.length > 1 ? 's' : ''}</span> : <span />}
+                    {dayEvents.length > 0 ? <span className="text-[10px] apx-muted">{dayEvents.length} event{dayEvents.length > 1 ? 's' : ''}</span> : null}
                   </div>
 
-                  <div className="space-y-1 overflow-hidden">
+                  <div className="w-full space-y-1 overflow-hidden text-left">
                     {dayEvents.slice(0, 2).map((event) => {
                       const theme = colorTheme(event.color)
                       return (
