@@ -23,10 +23,24 @@ function tokenize(text: string) {
     .filter((token) => token.length > 2)
 }
 
-function normalizeRoleWithProgrex(role: string) {
-  const value = role.trim()
-  if (!value) return 'PROGREX'
-  return value.toLowerCase().includes('progrex') ? value : `${value}, PROGREX`
+function sanitizeControlCharacters(value: string) {
+  return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ' ')
+}
+
+function extractJsonObject(content: string) {
+  const start = content.indexOf('{')
+  const end = content.lastIndexOf('}')
+  if (start === -1 || end === -1 || end <= start) {
+    throw new Error('GROQ returned an invalid draft format.')
+  }
+
+  const candidate = content.slice(start, end + 1)
+  try {
+    return JSON.parse(candidate) as Record<string, unknown>
+  } catch {
+    const sanitized = sanitizeControlCharacters(candidate)
+    return JSON.parse(sanitized) as Record<string, unknown>
+  }
 }
 
 function pickRelatedByTitleFallback(inputTitle: string, candidates: Array<{ slug: string; title: string }>, limit = 2) {
@@ -252,7 +266,7 @@ async function saveBlog(formData: FormData) {
   if (!slug || !title) return
   if (!teamMemberId) throw new Error('Please select an author from team members.')
 
-  const members = await sql<{ id: string; name: string; role: string; avatar: string }>('select id, name, role, avatar from team_members where id = $1 limit 1', [teamMemberId])
+  const members = await sql<{ id: string; name: string }>('select id, name from team_members where id = $1 limit 1', [teamMemberId])
   const member = members[0]
   if (!member) throw new Error('Selected team member was not found.')
 
@@ -271,17 +285,14 @@ async function saveBlog(formData: FormData) {
     relatedPosts = await pickRelatedByGroq(title, category, candidates, 2)
   }
 
-  const authorRole = normalizeRoleWithProgrex(member.role)
-
   if (id) {
     await sql(
       `update blogs
        set slug = $2, title = $3, category = $4, team_member_id = $5,
-           author_name = $6, author_role = $7, author_avatar = $8,
-           published_at = $9, read_time = $10, image = $11, excerpt = $12,
-           tags = $13::text[], keywords = $14::text[], related_posts = $15::text[],
-           content = $16, meta_title = $17, meta_description = $18,
-           is_published = $19, updated_at = now()
+           published_at = $6, read_time = $7, image = $8, excerpt = $9,
+           tags = $10::text[], keywords = $11::text[], related_posts = $12::text[],
+           content = $13, meta_title = $14, meta_description = $15,
+           is_published = $16, updated_at = now()
        where id = $1`,
       [
         id,
@@ -289,9 +300,6 @@ async function saveBlog(formData: FormData) {
         title,
         category,
         teamMemberId,
-        member.name,
-        authorRole,
-        member.avatar,
         date,
         readTime,
         image,
@@ -307,9 +315,9 @@ async function saveBlog(formData: FormData) {
     )
   } else {
     await sql(
-      `insert into blogs(slug, title, category, team_member_id, author_name, author_role, author_avatar, published_at, read_time, image, excerpt, tags, keywords, related_posts, content, meta_title, meta_description, is_published)
-       values ($1, $2, $3, $4::uuid, $5, $6, $7, $8, $9, $10, $11, $12::text[], $13::text[], $14::text[], $15, $16, $17, $18)`,
-      [slug, title, category, teamMemberId, member.name, authorRole, member.avatar, date, readTime, image, excerpt, tags, keywords, relatedPosts, content, metaTitle, metaDescription, status === 'published']
+      `insert into blogs(slug, title, category, team_member_id, published_at, read_time, image, excerpt, tags, keywords, related_posts, content, meta_title, meta_description, is_published)
+       values ($1, $2, $3, $4::uuid, $5, $6, $7, $8, $9::text[], $10::text[], $11::text[], $12, $13, $14, $15)`,
+      [slug, title, category, teamMemberId, date, readTime, image, excerpt, tags, keywords, relatedPosts, content, metaTitle, metaDescription, status === 'published']
     )
   }
 
@@ -337,20 +345,21 @@ async function generateBlogDraft(formData: FormData) {
     },
     body: JSON.stringify({
       model: 'llama-3.3-70b-versatile',
-      temperature: 0.35,
+      temperature: 0.55,
       messages: [
         {
           role: 'system',
-          content: 'You are an expert SEO content strategist for PROGREX. Return only valid JSON with no markdown fences.',
+          content: 'You are an expert SEO content strategist for PROGREX. Return only valid JSON with no markdown fences or extra text.',
         },
         {
           role: 'user',
           content:
             `Generate a complete, SEO-focused blog draft for category "${category}".\n` +
             'Target search visibility for Philippine and global business/tech audiences.\n' +
+            'Content format must mimic existing PROGREX blog style: intro paragraph + exactly 5 sections, each with heading, 1-2 paragraph blocks, and bullet points where useful. Keep natural new lines and markdown formatting including **bold** emphasis.\n' +
             'Return exactly this JSON shape: ' +
-            '{"title":"","slug":"","readTime":"","excerpt":"","tags":[""],"keywords":[""],"content":"","metaTitle":"","metaDescription":"","imageQuery":""}.\n' +
-            'Rules: content must use markdown with headings, bullet lists, and **bold** where useful; 900-1400 words; practical and conversion-aware; no code fences.',
+            '{"title":"","slug":"","readTime":"","excerpt":"","tags":[""],"keywords":[""],"content":"","metaTitle":"","metaDescription":"","imageQueries":["q1","q2","q3","q4","q5","q6","q7","q8","q9","q10"]}.\n' +
+            'Rules: content must use markdown with headings, bullet lists, and **bold** where useful; 1000-1500 words; practical and conversion-aware; no code fences. imageQueries must always return exactly 10 useful image search queries.',
         },
       ],
     }),
@@ -362,12 +371,7 @@ async function generateBlogDraft(formData: FormData) {
 
   const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> }
   const content = payload.choices?.[0]?.message?.content?.trim() || ''
-  const jsonMatch = content.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) {
-    throw new Error('GROQ returned an invalid draft format.')
-  }
-
-  const parsed = JSON.parse(jsonMatch[0]) as {
+  const parsed = extractJsonObject(content) as {
     title?: string
     slug?: string
     readTime?: string
@@ -377,13 +381,16 @@ async function generateBlogDraft(formData: FormData) {
     content?: string
     metaTitle?: string
     metaDescription?: string
-    imageQuery?: string
+    imageQueries?: string[]
   }
 
   const title = (parsed.title || '').trim() || `${category} Guide for Better Search Visibility`
   const slug = slugify(parsed.slug || title)
-  const imageQuery = (parsed.imageQuery || `${category} technology business`).trim()
-  const generatedImage = `https://source.unsplash.com/1600x900/?${encodeURIComponent(imageQuery)}`
+  const baseQueries = (parsed.imageQueries || []).map((item) => String(item).trim()).filter(Boolean)
+  while (baseQueries.length < 10) {
+    baseQueries.push(`${category} business technology Philippines ${baseQueries.length + 1}`)
+  }
+  const imageCandidates = baseQueries.slice(0, 10).map((query, index) => `https://source.unsplash.com/1600x900/?${encodeURIComponent(query)}&sig=${Date.now() + index}`)
 
   return {
     title,
@@ -397,7 +404,8 @@ async function generateBlogDraft(formData: FormData) {
     content: parsed.content || '',
     metaTitle: (parsed.metaTitle || title).trim(),
     metaDescription: (parsed.metaDescription || parsed.excerpt || '').trim(),
-    image: generatedImage,
+    image: imageCandidates[0],
+    imageCandidates,
   }
 }
 
@@ -479,10 +487,8 @@ export default async function AdminBlogsPage() {
     meta_description: string
     is_published: boolean
   }>(
-    `select b.id, b.slug, b.title, b.category, b.team_member_id,
-            coalesce(tm.name, b.author_name) as author_name,
-            coalesce(tm.role, b.author_role) as author_role,
-            coalesce(tm.avatar, b.author_avatar) as author_avatar,
+        `select b.id, b.slug, b.title, b.category, b.team_member_id,
+          coalesce(tm.name, '') as author_name,
             case
               when coalesce(trim(b.published_at), '') = '' then to_char(coalesce(b.created_at, now())::date, 'YYYY-MM-DD')
               when b.published_at ~ '^\\d{4}-\\d{2}-\\d{2}$' then b.published_at
@@ -515,8 +521,8 @@ export default async function AdminBlogsPage() {
         category: blog.category,
         teamMemberId: blog.team_member_id,
         authorName: blog.author_name || '',
-        authorRole: blog.author_role || '',
-        authorAvatar: blog.author_avatar || '',
+        authorRole: '',
+        authorAvatar: '',
         publishedAt: blog.published_at || '',
         readTime: blog.read_time || '',
         image: blog.image || '',
