@@ -24,22 +24,44 @@ function tokenize(text: string) {
 }
 
 function sanitizeControlCharacters(value: string) {
-  return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ' ')
+  // Remove all control characters and replace with space
+  return value
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, ' ')
+    .replace(/\n/g, ' ')
+    .replace(/\r/g, ' ')
+    .replace(/\t/g, ' ')
+    .replace(/  +/g, ' ')
+    .trim()
 }
 
 function extractJsonObject(content: string) {
-  const start = content.indexOf('{')
-  const end = content.lastIndexOf('}')
+  // First, sanitize the entire content
+  let sanitized = sanitizeControlCharacters(content)
+  
+  const start = sanitized.indexOf('{')
+  const end = sanitized.lastIndexOf('}')
   if (start === -1 || end === -1 || end <= start) {
     throw new Error('GROQ returned an invalid draft format.')
   }
 
-  const candidate = content.slice(start, end + 1)
+  let candidate = sanitized.slice(start, end + 1)
+  
   try {
     return JSON.parse(candidate) as Record<string, unknown>
-  } catch {
-    const sanitized = sanitizeControlCharacters(candidate)
-    return JSON.parse(sanitized) as Record<string, unknown>
+  } catch (firstError) {
+    // Second pass: aggressive escape of problematic characters
+    candidate = candidate
+      .replace(/[\\"]/g, (match) => {
+        // Don't double-escape already escaped characters
+        return match
+      })
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ')
+    
+    try {
+      return JSON.parse(candidate) as Record<string, unknown>
+    } catch {
+      throw new Error(`GROQ response contained unparseable JSON: ${firstError instanceof Error ? firstError.message : 'Unknown error'}`)
+    }
   }
 }
 
