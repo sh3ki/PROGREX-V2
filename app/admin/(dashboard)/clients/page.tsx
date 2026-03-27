@@ -2,8 +2,7 @@ import { revalidatePath } from 'next/cache'
 import { createHash, randomBytes } from 'node:crypto'
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
-import { ApexButton, ApexInput } from '@/components/admin/apex/AdminPrimitives'
-import { ApexBreadcrumbs } from '@/components/admin/apex/ApexDataUi'
+import AdminClientsTemplateView from '../../../../components/admin/clients/AdminClientsTemplateView'
 
 async function uploadImageToCloudinary(file: File, opts: { folder: string; filename: string }) {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
@@ -92,6 +91,62 @@ async function createClient(formData: FormData) {
   revalidatePath('/admin/clients')
 }
 
+async function updateClient(formData: FormData) {
+  'use server'
+  await requirePermission('teams', 'write')
+  await ensureClientsTable()
+
+  const id = String(formData.get('id') ?? '').trim()
+  if (!id) return
+
+  const fullName = String(formData.get('fullName') ?? '').trim()
+  const otherMemberNames = String(formData.get('otherMemberNames') ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+  const role = String(formData.get('role') ?? '').trim()
+  const email = String(formData.get('email') ?? '').trim()
+  const fbLink = String(formData.get('fbLink') ?? '').trim()
+  const phone = String(formData.get('phone') ?? '').trim()
+  const clientDate = String(formData.get('clientDate') ?? '').trim()
+  const existingProfileImage = String(formData.get('existingProfileImage') ?? '').trim()
+
+  if (!fullName) return
+
+  let imageUrl = existingProfileImage
+  const profileImage = formData.get('profileImage')
+  if (profileImage instanceof File && profileImage.size > 0) {
+    const filename = `${fullName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 50) || 'client'}-${randomBytes(3).toString('hex')}`
+    imageUrl = await uploadImageToCloudinary(profileImage, { folder: 'ProgreX Clients', filename })
+  }
+
+  await sql(
+    `update clients
+     set full_name = $2,
+         profile_image = nullif($3, ''),
+         other_member_names = $4::text[],
+         role = nullif($5, ''),
+         email = nullif($6, ''),
+         fb_link = nullif($7, ''),
+         phone = nullif($8, ''),
+         client_date = nullif($9, '')::date,
+         updated_at = now()
+     where id = $1::uuid`,
+    [id, fullName, imageUrl, otherMemberNames, role, email, fbLink, phone, clientDate]
+  )
+
+  revalidatePath('/admin/clients')
+}
+
+async function deleteClient(formData: FormData) {
+  'use server'
+  await requirePermission('teams', 'write')
+  const id = String(formData.get('id') ?? '').trim()
+  if (!id) return
+  await sql('delete from clients where id = $1::uuid', [id])
+  revalidatePath('/admin/clients')
+}
+
 async function toggleClient(formData: FormData) {
   'use server'
   await requirePermission('teams', 'write')
@@ -132,109 +187,23 @@ export default async function AdminClientsPage() {
   )
 
   return (
-    <div className="space-y-4">
-      <ApexBreadcrumbs items={[{ label: 'Dashboard', href: '/admin' }, { label: 'Clients' }]} />
-
-      <div>
-        <h1 className="text-[42px] leading-none font-bold tracking-tight apx-text">Clients</h1>
-        <p className="mt-1 text-sm apx-muted">Manage client profiles and statuses.</p>
-      </div>
-
-      <section className="rounded-2xl border p-4" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
-        <h2 className="mb-3 text-lg font-semibold apx-text">Add Client</h2>
-        <form action={createClient} className="grid gap-3 md:grid-cols-2" encType="multipart/form-data">
-          <div className="md:col-span-2">
-            <label className="mb-1 block text-xs font-medium apx-muted">Profile Image</label>
-            <ApexInput type="file" name="profileImage" accept="image/*" />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Full Name</label>
-            <ApexInput name="fullName" required />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Other Member Name(s) (comma separated)</label>
-            <ApexInput name="otherMemberNames" placeholder="Default none" />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Role</label>
-            <ApexInput name="role" />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Email</label>
-            <ApexInput name="email" type="email" />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Facebook Link (Optional)</label>
-            <ApexInput name="fbLink" />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Phone (Optional)</label>
-            <ApexInput name="phone" />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Date</label>
-            <ApexInput name="clientDate" type="date" />
-          </div>
-          <div className="md:col-span-2 flex justify-end">
-            <ApexButton type="submit">Save Client</ApexButton>
-          </div>
-        </form>
-      </section>
-
-      <section className="overflow-x-auto rounded-2xl border" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="border-b" style={{ borderColor: 'var(--apx-border)' }}>
-              <th className="px-4 py-3 font-semibold apx-text">Client</th>
-              <th className="px-4 py-3 font-semibold apx-text">Members</th>
-              <th className="px-4 py-3 font-semibold apx-text">Role | Email</th>
-              <th className="px-4 py-3 font-semibold apx-text">FB | Phone</th>
-              <th className="px-4 py-3 font-semibold apx-text">Date | Status</th>
-              <th className="px-4 py-3 text-right font-semibold apx-text">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {clients.map((client) => (
-              <tr key={client.id} className="border-b last:border-b-0" style={{ borderColor: 'var(--apx-border)' }}>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 overflow-hidden rounded-full border" style={{ borderColor: 'var(--apx-border)' }}>
-                      {client.profile_image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={client.profile_image} alt={client.full_name} className="h-full w-full object-cover" />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-[10px] apx-muted">N/A</div>
-                      )}
-                    </div>
-                    <p className="font-semibold apx-text">{client.full_name}</p>
-                  </div>
-                </td>
-                <td className="px-4 py-3 apx-text">{client.other_member_names?.length ? client.other_member_names.join(', ') : 'none'}</td>
-                <td className="px-4 py-3">
-                  <p className="apx-text">{client.role || '-'}</p>
-                  <p className="text-xs apx-muted">{client.email || '-'}</p>
-                </td>
-                <td className="px-4 py-3">
-                  <p className="apx-text">{client.fb_link || '-'}</p>
-                  <p className="text-xs apx-muted">{client.phone || '-'}</p>
-                </td>
-                <td className="px-4 py-3">
-                  <p className="apx-text">{client.client_date || '-'}</p>
-                  <span className="inline-flex rounded-full px-2 py-1 text-xs font-semibold" style={client.is_active ? { backgroundColor: 'rgba(22,163,74,0.15)', color: '#15803d' } : { backgroundColor: 'rgba(100,116,139,0.2)', color: '#334155' }}>
-                    {client.is_active ? 'Active' : 'Inactive'}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <form action={toggleClient}>
-                    <input type="hidden" name="id" value={client.id} />
-                    <ApexButton type="submit" variant="outline">Toggle Status</ApexButton>
-                  </form>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-    </div>
+    <AdminClientsTemplateView
+      clients={clients.map((client) => ({
+        id: client.id,
+        fullName: client.full_name,
+        profileImage: client.profile_image,
+        otherMemberNames: client.other_member_names ?? [],
+        role: client.role,
+        email: client.email,
+        fbLink: client.fb_link,
+        phone: client.phone,
+        clientDate: client.client_date,
+        isActive: client.is_active,
+      }))}
+      createClientAction={createClient}
+      updateClientAction={updateClient}
+      toggleClientAction={toggleClient}
+      deleteClientAction={deleteClient}
+    />
   )
 }
