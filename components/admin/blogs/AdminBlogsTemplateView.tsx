@@ -184,6 +184,7 @@ export default function AdminBlogsTemplateView({
 		metaTitle: string
 		metaDescription: string
 		image: string
+		imageCandidates: string[]
 	}>
 }) {
 	const [search, setSearch] = useState('')
@@ -209,12 +210,13 @@ export default function AdminBlogsTemplateView({
 	const [editImageFile, setEditImageFile] = useState<File | null>(null)
 	const [addImagePreview, setAddImagePreview] = useState('')
 	const [editImagePreview, setEditImagePreview] = useState('')
+	const [generatedImageCandidates, setGeneratedImageCandidates] = useState<string[]>([])
 	const [confirmConfig, setConfirmConfig] = useState<{
 		title: string
 		description: string
 		confirmLabel: string
 		tone: 'primary' | 'danger'
-		kind: 'create' | 'update' | 'delete' | 'toggle' | 'bulkDelete' | 'bulkDraft'
+		kind: 'create' | 'update' | 'delete' | 'toggle' | 'bulkDelete' | 'bulkDraft' | 'generate'
 	} | null>(null)
 	const [columns, setColumns] = useState<Record<BlogColumnKey, boolean>>({
 		image: true,
@@ -300,9 +302,10 @@ export default function AdminBlogsTemplateView({
 		setAddForm(defaultForm(teamOptions))
 		setAddImageFile(null)
 		setAddImagePreview('')
+		setGeneratedImageCandidates([])
 	}
 
-	async function generateBlogDraft() {
+	async function runGenerateBlogDraft() {
 		setGeneratingBlog(true)
 		try {
 			const body = new FormData()
@@ -323,6 +326,7 @@ export default function AdminBlogsTemplateView({
 				metaDescription: generated.metaDescription,
 				image: generated.image,
 			}))
+			setGeneratedImageCandidates(generated.imageCandidates || [])
 			setAddImageFile(null)
 			setAddImagePreview(generated.image)
 			addToast('Blog draft generated.', 'success')
@@ -399,6 +403,10 @@ export default function AdminBlogsTemplateView({
 				addToast('Blog status updated.', 'success')
 			}
 
+			if (confirmConfig.kind === 'generate') {
+				await runGenerateBlogDraft()
+			}
+
 			setConfirmOpen(false)
 			setConfirmConfig(null)
 		} catch (error) {
@@ -410,7 +418,7 @@ export default function AdminBlogsTemplateView({
 
 	return (
 		<div className="space-y-4">
-			{(pending && (confirmConfig?.kind === 'create' || confirmConfig?.kind === 'update')) ? <ApexBlockingSpinner label="Saving blog post..." /> : null}
+			{(pending && (confirmConfig?.kind === 'create' || confirmConfig?.kind === 'update' || confirmConfig?.kind === 'generate')) ? <ApexBlockingSpinner label={confirmConfig?.kind === 'generate' ? 'Generating blog draft...' : 'Saving blog post...'} /> : null}
 			<ApexToastStack toasts={toasts} onRemove={(id) => setToasts((prev) => prev.filter((item) => item.id !== id))} />
 
 			<ApexBreadcrumbs items={[{ label: 'Dashboard', href: '/admin' }, { label: 'Blogs' }]} />
@@ -616,7 +624,6 @@ export default function AdminBlogsTemplateView({
 								{columns.author ? (
 									<td className="px-4 py-3">
 									<p className="apx-text">{blog.authorName || '-'}</p>
-									<p className="text-xs apx-muted">{blog.authorRole || '-'}</p>
 									</td>
 								) : null}
 								{columns.date ? <td className="px-4 py-3 apx-text">{blog.publishedAt || '-'}</td> : null}
@@ -732,12 +739,6 @@ export default function AdminBlogsTemplateView({
 					}}
 					className="grid gap-3 md:grid-cols-2"
 				>
-					<div className="md:col-span-2 flex justify-end">
-						<ApexButton type="button" variant="outline" onClick={generateBlogDraft} disabled={generatingBlog}>
-							{generatingBlog ? 'Generating...' : 'Generate Blog'}
-						</ApexButton>
-					</div>
-
 					<div className="md:col-span-2">
 						<ApexImageDropzone
 							label="Cover Image"
@@ -748,6 +749,30 @@ export default function AdminBlogsTemplateView({
 							}}
 						/>
 					</div>
+
+					{generatedImageCandidates.length > 1 ? (
+						<div className="md:col-span-2">
+							<label className="mb-1 block text-xs font-medium apx-muted">Generated Image Options</label>
+							<div className="grid grid-cols-2 gap-2 md:grid-cols-5">
+								{generatedImageCandidates.map((imageUrl) => (
+									<button
+										key={imageUrl}
+										type="button"
+										onClick={() => {
+											setAddForm((prev) => ({ ...prev, image: imageUrl }))
+											setAddImagePreview(imageUrl)
+											setAddImageFile(null)
+										}}
+										className="overflow-hidden rounded-md border p-0"
+										style={{ borderColor: addForm.image === imageUrl ? 'var(--apx-primary)' : 'var(--apx-border)' }}
+									>
+										{/* eslint-disable-next-line @next/next/no-img-element */}
+										<img src={imageUrl} alt="Generated preview option" className="h-16 w-full object-cover" />
+									</button>
+								))}
+							</div>
+						</div>
+					) : null}
 
 					<div className="md:col-span-2">
 						<label className="mb-1 block text-xs font-medium apx-muted">Title</label>
@@ -832,6 +857,23 @@ export default function AdminBlogsTemplateView({
 
 					<div className="md:col-span-2 flex justify-end gap-2 pt-2">
 						<ApexButton type="button" variant="outline" onClick={() => setAddOpen(false)}>Cancel</ApexButton>
+						<ApexButton
+							type="button"
+							variant="outline"
+							onClick={() => {
+								setConfirmConfig({
+									title: 'Generate Blog Draft',
+									description: `Generate an SEO blog draft for ${addForm.category}? This will overwrite current draft fields in this modal.`,
+									confirmLabel: 'Generate',
+									tone: 'primary',
+									kind: 'generate',
+								})
+								setConfirmOpen(true)
+							}}
+							disabled={generatingBlog}
+						>
+							{generatingBlog ? 'Generating...' : 'Generate Blog'}
+						</ApexButton>
 						<ApexButton type="submit">Save Blog</ApexButton>
 					</div>
 				</form>
@@ -960,7 +1002,7 @@ export default function AdminBlogsTemplateView({
 							<div><p className="text-xs uppercase tracking-wide apx-muted">Date</p><p className="mt-1 apx-text">{selectedBlog.publishedAt || '-'}</p></div>
 							<div><p className="text-xs uppercase tracking-wide apx-muted">Status</p><p className="mt-1 apx-text">{selectedBlog.isPublished ? 'Published' : 'Draft'}</p></div>
 						</div>
-						<div><p className="text-xs uppercase tracking-wide apx-muted">Author</p><p className="mt-1 apx-text">{selectedBlog.authorName || '-'}</p><p className="text-xs apx-muted">{selectedBlog.authorRole || '-'}</p></div>
+						<div><p className="text-xs uppercase tracking-wide apx-muted">Author</p><p className="mt-1 apx-text">{selectedBlog.authorName || '-'}</p></div>
 						<div><p className="text-xs uppercase tracking-wide apx-muted">Excerpt</p><p className="mt-1 whitespace-pre-wrap apx-text">{selectedBlog.excerpt || '-'}</p></div>
 						<div><p className="text-xs uppercase tracking-wide apx-muted">Content</p><p className="mt-1 whitespace-pre-wrap apx-text">{selectedBlog.content || '-'}</p></div>
 						<div><p className="text-xs uppercase tracking-wide apx-muted">Tags</p><p className="mt-1 apx-text">{(selectedBlog.tags || []).join(', ') || '-'}</p></div>
