@@ -16,7 +16,7 @@ export function ApexToastStack({ toasts, onRemove }: { toasts: ApexToast[]; onRe
           style={{ width: `${Math.min(460, Math.max(250, 160 + toast.message.length * 7))}px` }}
         >
           <div
-            className="rounded-lg px-3 py-2"
+            className="rounded-lg p-3"
           style={
             toast.tone === 'success'
               ? { backgroundColor: '#052e26', color: '#6ee7b7' }
