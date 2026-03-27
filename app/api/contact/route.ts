@@ -193,22 +193,24 @@ export async function POST(req: NextRequest) {
       [name, email, phone || null, company || null, service || null, budget || null, message, uploadedAttachmentUrls]
     )
 
-    await sql(
-      `insert into bookings(name, email, phone, company, service, budget, message, source, status, is_approved, requested_date, requested_start_time, requested_duration_minutes)
-       values ($1, $2, $3, $4, $5, $6, $7, 'contact-form', 'new', false, $8::date, $9, $10)`,
-      [
-        name,
-        email,
-        phone || null,
-        company || null,
-        service || null,
-        budget || null,
-        message,
-        requestMeeting ? meetingDate : null,
-        requestMeeting ? meetingStartTime : null,
-        requestMeeting ? meetingDurationMinutes : null,
-      ]
-    )
+    if (requestMeeting) {
+      await sql(
+        `insert into bookings(name, email, phone, company, service, budget, message, source, status, is_approved, requested_date, requested_start_time, requested_duration_minutes)
+         values ($1, $2, $3, $4, $5, $6, $7, 'contact-form', 'new', false, $8::date, $9, $10)`,
+        [
+          name,
+          email,
+          phone || null,
+          company || null,
+          service || null,
+          budget || null,
+          message,
+          meetingDate,
+          meetingStartTime,
+          meetingDurationMinutes,
+        ]
+      )
+    }
 
     await transporter.sendMail({
       from: `"PROGREX Contact Form" <${process.env.SMTP_USER}>`,
