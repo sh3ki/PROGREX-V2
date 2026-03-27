@@ -2,8 +2,7 @@ import { revalidatePath } from 'next/cache'
 import { createHash, randomBytes } from 'node:crypto'
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
-import { ApexButton, ApexInput, ApexSelect, ApexTextarea } from '@/components/admin/apex/AdminPrimitives'
-import { ApexBreadcrumbs } from '@/components/admin/apex/ApexDataUi'
+import AdminOngoingProjectsTemplateView from '../../../../components/admin/ongoing-projects/AdminOngoingProjectsTemplateView'
 
 async function uploadRawToCloudinary(file: File, opts: { folder: string; filename: string }) {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
@@ -128,6 +127,89 @@ async function createOngoingProject(formData: FormData) {
   revalidatePath('/admin/ongoing-projects')
 }
 
+async function updateOngoingProject(formData: FormData) {
+  'use server'
+  await requirePermission('projects', 'write')
+  await ensureOngoingProjectsTable()
+
+  const id = String(formData.get('id') ?? '').trim()
+  if (!id) return
+
+  const projectName = String(formData.get('projectName') ?? '').trim()
+  const projectDescription = String(formData.get('projectDescription') ?? '').trim()
+  const startDate = String(formData.get('startDate') ?? '').trim()
+  const targetDate = String(formData.get('targetDate') ?? '').trim()
+  const clientId = String(formData.get('clientId') ?? '').trim()
+  const category = String(formData.get('category') ?? '').trim()
+  const assignedTeamIds = formData.getAll('assignedTeamIds').map((value) => String(value).trim()).filter(Boolean)
+  const paymentTerm = String(formData.get('paymentTerm') ?? '').trim()
+  const totalPrice = Number(formData.get('totalPrice') ?? 0) || 0
+  const balance = Number(formData.get('balance') ?? 0) || 0
+  const existingAgreementFileUrl = String(formData.get('existingAgreementFileUrl') ?? '').trim()
+  const existingScopeFileUrl = String(formData.get('existingScopeFileUrl') ?? '').trim()
+
+  if (!projectName) return
+
+  const agreementFile = formData.get('agreementFile')
+  const scopeFile = formData.get('scopeFile')
+  let agreementUrl = existingAgreementFileUrl
+  let scopeUrl = existingScopeFileUrl
+
+  if (agreementFile instanceof File && agreementFile.size > 0) {
+    const filename = `${projectName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 50) || 'agreement'}-${randomBytes(3).toString('hex')}`
+    agreementUrl = await uploadRawToCloudinary(agreementFile, { folder: 'ProgreX Agreement', filename })
+  }
+
+  if (scopeFile instanceof File && scopeFile.size > 0) {
+    const filename = `${projectName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 50) || 'scope'}-${randomBytes(3).toString('hex')}`
+    scopeUrl = await uploadRawToCloudinary(scopeFile, { folder: 'ProgreX Project Scopes', filename })
+  }
+
+  await sql(
+    `update ongoing_projects
+     set project_name = $2,
+         project_description = nullif($3, ''),
+         start_date = nullif($4, '')::date,
+         target_date = nullif($5, '')::date,
+         client_id = nullif($6, '')::uuid,
+         category = nullif($7, ''),
+         assigned_team_member_ids = $8::uuid[],
+         agreement_file_url = nullif($9, ''),
+         project_scope_file_url = nullif($10, ''),
+         payment_term = nullif($11, ''),
+         total_price = $12,
+         balance = $13,
+         updated_at = now()
+     where id = $1::uuid`,
+    [
+      id,
+      projectName,
+      projectDescription,
+      startDate,
+      targetDate,
+      clientId,
+      category,
+      assignedTeamIds,
+      agreementUrl,
+      scopeUrl,
+      paymentTerm,
+      totalPrice,
+      balance,
+    ]
+  )
+
+  revalidatePath('/admin/ongoing-projects')
+}
+
+async function deleteOngoingProject(formData: FormData) {
+  'use server'
+  await requirePermission('projects', 'write')
+  const id = String(formData.get('id') ?? '').trim()
+  if (!id) return
+  await sql('delete from ongoing_projects where id = $1::uuid', [id])
+  revalidatePath('/admin/ongoing-projects')
+}
+
 export default async function AdminOngoingProjectsPage() {
   await requirePermission('projects', 'read')
   await ensureOngoingProjectsTable()
@@ -139,8 +221,12 @@ export default async function AdminOngoingProjectsPage() {
       project_description: string | null
       start_date: string | null
       target_date: string | null
+      client_id: string | null
       client_name: string | null
       category: string | null
+      assigned_team_member_ids: string[]
+      agreement_file_url: string | null
+      project_scope_file_url: string | null
       payment_term: string | null
       total_price: string | null
       balance: string | null
@@ -150,128 +236,48 @@ export default async function AdminOngoingProjectsPage() {
               op.project_description,
               case when op.start_date is null then null else to_char(op.start_date, 'YYYY-MM-DD') end as start_date,
               case when op.target_date is null then null else to_char(op.target_date, 'YYYY-MM-DD') end as target_date,
+              op.client_id::text,
               c.full_name as client_name,
               op.category,
+              array_remove(array_agg(tm.id::text order by tm.sort_order asc, tm.name asc), null) as assigned_team_member_ids,
+              op.agreement_file_url,
+              op.project_scope_file_url,
               op.payment_term,
               op.total_price::text,
               op.balance::text
        from ongoing_projects op
        left join clients c on c.id = op.client_id
-       order by op.created_at desc`
+            left join team_members tm on tm.id = any(op.assigned_team_member_ids)
+            group by op.id, c.full_name
+            order by op.created_at desc`
     ),
     sql<{ id: string; full_name: string }>('select id, full_name from clients order by full_name asc'),
     sql<{ id: string; name: string }>('select id, name from team_members where is_active = true order by sort_order asc, name asc'),
   ])
 
   return (
-    <div className="space-y-4">
-      <ApexBreadcrumbs items={[{ label: 'Dashboard', href: '/admin' }, { label: 'Ongoing Projects' }]} />
-
-      <div>
-        <h1 className="text-[42px] leading-none font-bold tracking-tight apx-text">Ongoing Projects</h1>
-        <p className="mt-1 text-sm apx-muted">Track active client projects and delivery details.</p>
-      </div>
-
-      <section className="rounded-2xl border p-4" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
-        <h2 className="mb-3 text-lg font-semibold apx-text">Add Ongoing Project</h2>
-        <form action={createOngoingProject} className="grid gap-3 md:grid-cols-2" encType="multipart/form-data">
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Project Name</label>
-            <ApexInput name="projectName" required />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Category</label>
-            <ApexInput name="category" placeholder="Same category style as Projects" />
-          </div>
-          <div className="md:col-span-2">
-            <label className="mb-1 block text-xs font-medium apx-muted">Project Description</label>
-            <ApexTextarea name="projectDescription" rows={3} />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Start Date</label>
-            <ApexInput name="startDate" type="date" />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Target Date</label>
-            <ApexInput name="targetDate" type="date" />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Client Name</label>
-            <ApexSelect name="clientId" defaultValue="">
-              <option value="">Select client</option>
-              {clients.map((client) => (
-                <option key={client.id} value={client.id}>{client.full_name}</option>
-              ))}
-            </ApexSelect>
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Assigned Team Member (multi-select)</label>
-            <ApexSelect name="assignedTeamIds" multiple className="h-28">
-              {teamMembers.map((member) => (
-                <option key={member.id} value={member.id}>{member.name}</option>
-              ))}
-            </ApexSelect>
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Agreement Upload (Optional)</label>
-            <ApexInput name="agreementFile" type="file" />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Project Scope Upload (Optional)</label>
-            <ApexInput name="scopeFile" type="file" />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Payment Term</label>
-            <ApexSelect name="paymentTerm" defaultValue="One-time Payment">
-              <option value="One-time Payment">One-time Payment</option>
-              <option value="Progress-based">Progress-based</option>
-              <option value="Monthly billing">Monthly billing</option>
-            </ApexSelect>
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Total Price</label>
-            <ApexInput name="totalPrice" type="number" step="0.01" />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Balance</label>
-            <ApexInput name="balance" type="number" step="0.01" />
-          </div>
-          <div className="md:col-span-2 flex justify-end">
-            <ApexButton type="submit">Save Project</ApexButton>
-          </div>
-        </form>
-      </section>
-
-      <section className="overflow-x-auto rounded-2xl border" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="border-b" style={{ borderColor: 'var(--apx-border)' }}>
-              <th className="px-4 py-3 font-semibold apx-text">Project</th>
-              <th className="px-4 py-3 font-semibold apx-text">Dates</th>
-              <th className="px-4 py-3 font-semibold apx-text">Client</th>
-              <th className="px-4 py-3 font-semibold apx-text">Category</th>
-              <th className="px-4 py-3 font-semibold apx-text">Payment</th>
-            </tr>
-          </thead>
-          <tbody>
-            {projects.map((project) => (
-              <tr key={project.id} className="border-b last:border-b-0" style={{ borderColor: 'var(--apx-border)' }}>
-                <td className="px-4 py-3">
-                  <p className="font-semibold apx-text">{project.project_name}</p>
-                  <p className="text-xs apx-muted line-clamp-2">{project.project_description || '-'}</p>
-                </td>
-                <td className="px-4 py-3 apx-text">{project.start_date || '-'} • {project.target_date || '-'}</td>
-                <td className="px-4 py-3 apx-text">{project.client_name || '-'}</td>
-                <td className="px-4 py-3 apx-text">{project.category || '-'}</td>
-                <td className="px-4 py-3">
-                  <p className="apx-text">{project.payment_term || '-'}</p>
-                  <p className="text-xs apx-muted">Total: {project.total_price || '0'} • Balance: {project.balance || '0'}</p>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-    </div>
+    <AdminOngoingProjectsTemplateView
+      projects={projects.map((project) => ({
+        id: project.id,
+        projectName: project.project_name,
+        projectDescription: project.project_description,
+        startDate: project.start_date,
+        targetDate: project.target_date,
+        clientId: project.client_id,
+        clientName: project.client_name,
+        category: project.category,
+        assignedTeamIds: project.assigned_team_member_ids ?? [],
+        agreementFileUrl: project.agreement_file_url,
+        projectScopeFileUrl: project.project_scope_file_url,
+        paymentTerm: project.payment_term,
+        totalPrice: project.total_price,
+        balance: project.balance,
+      }))}
+      clients={clients.map((client) => ({ id: client.id, fullName: client.full_name }))}
+      teamMembers={teamMembers}
+      createProjectAction={createOngoingProject}
+      updateProjectAction={updateOngoingProject}
+      deleteProjectAction={deleteOngoingProject}
+    />
   )
 }
