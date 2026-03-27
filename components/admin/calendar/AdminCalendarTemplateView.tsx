@@ -132,7 +132,7 @@ export default function AdminCalendarTemplateView({
   deleteEventAction: (formData: FormData) => Promise<void>
 }) {
   const [monthCursor, setMonthCursor] = useState(() => startOfMonth(new Date()))
-  const [selectedDate, setSelectedDate] = useState('')
+  const [selectedDate, setSelectedDate] = useState(() => toDateKey(new Date()))
   const [addOpen, setAddOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [viewOpen, setViewOpen] = useState(false)
@@ -275,7 +275,7 @@ export default function AdminCalendarTemplateView({
         </button>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(360px,0.92fr)]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.75fr)_minmax(300px,0.7fr)]">
         <section className="rounded-2xl border p-4" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
           <div className="mb-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -316,7 +316,7 @@ export default function AdminCalendarTemplateView({
               const key = toDateKey(cell.date)
               const isToday = key === todayKey
               const isSelected = key === selectedDate
-              const isHighlighted = isSelected || (!selectedDate && isToday)
+              const isHighlighted = isSelected || isToday
               const dayEvents = eventsByDate.get(key) ?? []
 
               return (
@@ -330,14 +330,14 @@ export default function AdminCalendarTemplateView({
                     backgroundColor: isHighlighted ? 'var(--apx-primary-soft)' : 'var(--apx-surface-alt)',
                   }}
                 >
-                  <div className="mb-1 flex items-center justify-between">
-                    {dayEvents.length > 0 ? <span className="text-[10px] apx-muted">{dayEvents.length} event{dayEvents.length > 1 ? 's' : ''}</span> : <span />}
+                  <div className="mb-1 flex items-start justify-between">
                     <span
                       className="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold"
                       style={isHighlighted ? { backgroundColor: 'var(--apx-primary)', color: '#fff' } : { color: 'var(--apx-text)' }}
                     >
                       {cell.date.getDate()}
                     </span>
+                    {dayEvents.length > 0 ? <span className="text-[10px] apx-muted">{dayEvents.length} event{dayEvents.length > 1 ? 's' : ''}</span> : <span />}
                   </div>
 
                   <div className="space-y-1 overflow-hidden">
