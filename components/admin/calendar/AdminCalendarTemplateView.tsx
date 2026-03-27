@@ -147,8 +147,6 @@ export default function AdminCalendarTemplateView({
   const monthEnd = endOfMonth(monthCursor)
   const leadingOffset = monthStart.getDay()
   const totalDays = monthEnd.getDate()
-  const todayKey = toDateKey(new Date())
-
   const cells = useMemo(() => {
     const output: Array<{ date: Date | null; key: string }> = []
     for (let i = 0; i < leadingOffset; i += 1) output.push({ date: null, key: `lead-${i}` })
@@ -314,9 +312,8 @@ export default function AdminCalendarTemplateView({
               }
 
               const key = toDateKey(cell.date)
-              const isToday = key === todayKey
               const isSelected = key === selectedDate
-              const isHighlighted = isSelected || isToday
+              const isHighlighted = isSelected
               const dayEvents = eventsByDate.get(key) ?? []
 
               return (
