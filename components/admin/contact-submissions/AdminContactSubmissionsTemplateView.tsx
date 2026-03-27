@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ArrowDown, ArrowUp, ArrowUpDown, Edit2, Mail, Plus, Trash2, UserX } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, Archive, Download, Edit2, Mail, Plus, Trash2 } from 'lucide-react'
 import { ApexButton, ApexInput, ApexTextarea } from '@/components/admin/apex/AdminPrimitives'
 import {
   ApexBlockingSpinner,
@@ -9,7 +9,6 @@ import {
   ApexCheckbox,
   ApexColumnsToggle,
   ApexConfirmationModal,
-  ApexDropdown,
   ApexExportButton,
   ApexModal,
   ApexPagination,
@@ -19,26 +18,23 @@ import {
   ApexToastStack,
 } from '@/components/admin/apex/ApexDataUi'
 
-type ContactSubmissionRow = {
+type ContactSubmission = {
   id: string
   name: string
   email: string
   phone: string | null
   company: string | null
   service: string | null
-  budget: string | null
-  message: string
+  budget?: string | null
+  message?: string | null
   status: string
-  adminReply: string | null
   isActive: boolean
+  isArchived: boolean
+  attachmentUrls: string[]
   createdAt: string | null
 }
 
-type ColumnKey = 'requester' | 'service' | 'message' | 'status' | 'active' | 'createdAt' | 'actions'
-type SortKey = Exclude<ColumnKey, 'actions'>
-type StatusFilter = 'all' | 'active' | 'inactive'
-
-type SubmissionFormState = {
+type ContactFormState = {
   id?: string
   name: string
   email: string
@@ -48,62 +44,28 @@ type SubmissionFormState = {
   budget: string
   message: string
   status: string
-  isActive: boolean
 }
 
-const SUBMISSION_STATUS_OPTIONS = [
-  { value: 'new', label: 'New' },
-  { value: 'in-progress', label: 'In Progress' },
-  { value: 'replied', label: 'Replied' },
-  { value: 'resolved', label: 'Resolved' },
+type ColumnKey = 'requester' | 'service' | 'company' | 'status' | 'created' | 'actions'
+type SortKey = Exclude<ColumnKey, 'actions'>
+
+const STATUS_OPTIONS = ['new', 'in-progress', 'replied', 'resolved', 'archived']
+const SERVICE_OPTIONS = [
+  'Book a Meeting',
+  'Request a Demo',
+  'Ready-Made Systems',
+  'Business Automation',
+  'Custom Web Development',
+  'Mobile App Development',
+  'Custom Software Development',
+  'Academic / Capstone System',
+  'Partnership / Collaboration',
+  'Hardware Development',
+  'IT Consulting',
+  'Others',
 ]
 
-const ACTIVE_OPTIONS = [
-  { value: 'active', label: 'Active' },
-  { value: 'inactive', label: 'Inactive' },
-]
-
-function toRelative(value: string | null) {
-  if (!value) return 'Unknown'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return 'Unknown'
-
-  const diffMs = Date.now() - date.getTime()
-  const minutes = Math.floor(diffMs / 60000)
-  if (minutes < 1) return 'just now'
-  if (minutes < 60) return `${minutes} min ago`
-
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`
-
-  const days = Math.floor(hours / 24)
-  if (days < 30) return `${days} day${days > 1 ? 's' : ''} ago`
-
-  return date.toLocaleDateString()
-}
-
-function downloadCsv(filename: string, rows: string[][]) {
-  const content = rows
-    .map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(','))
-    .join('\n')
-
-  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = filename
-  anchor.click()
-  URL.revokeObjectURL(url)
-}
-
-function statusBadgeStyle(status: string) {
-  if (status === 'resolved') return { backgroundColor: 'rgba(22,163,74,0.15)', color: '#15803d' }
-  if (status === 'replied') return { backgroundColor: 'rgba(37,99,235,0.16)', color: '#1d4ed8' }
-  if (status === 'in-progress') return { backgroundColor: 'rgba(245,158,11,0.18)', color: '#b45309' }
-  return { backgroundColor: 'rgba(100,116,139,0.2)', color: '#334155' }
-}
-
-function defaultForm(): SubmissionFormState {
+function defaultForm(): ContactFormState {
   return {
     name: '',
     email: '',
@@ -113,124 +75,142 @@ function defaultForm(): SubmissionFormState {
     budget: '',
     message: '',
     status: 'new',
-    isActive: true,
   }
 }
 
-function formFromSubmission(item: ContactSubmissionRow): SubmissionFormState {
+function formFromSubmission(row: ContactSubmission): ContactFormState {
   return {
-    id: item.id,
-    name: item.name,
-    email: item.email,
-    phone: item.phone || '',
-    company: item.company || '',
-    service: item.service || '',
-    budget: item.budget || '',
-    message: item.message || '',
-    status: item.status || 'new',
-    isActive: item.isActive,
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    phone: row.phone ?? '',
+    company: row.company ?? '',
+    service: row.service ?? '',
+    budget: row.budget ?? '',
+    message: row.message ?? '',
+    status: row.status,
   }
+}
+
+function statusPillStyle(status: string) {
+  if (status === 'new') return { backgroundColor: 'rgba(59,130,246,0.18)', color: '#2563eb' }
+  if (status === 'in-progress') return { backgroundColor: 'rgba(168,85,247,0.18)', color: '#7e22ce' }
+  if (status === 'replied') return { backgroundColor: 'rgba(234,179,8,0.18)', color: '#a16207' }
+  if (status === 'resolved') return { backgroundColor: 'rgba(34,197,94,0.18)', color: '#15803d' }
+  if (status === 'archived') return { backgroundColor: 'rgba(100,116,139,0.2)', color: '#334155' }
+  return { backgroundColor: 'rgba(100,116,139,0.2)', color: '#334155' }
+}
+
+function formatCreated(value: string | null) {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '-'
+  return date.toLocaleDateString()
+}
+
+function downloadCsv(filename: string, rows: string[][]) {
+  const content = rows.map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(',')).join('\n')
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  anchor.click()
+  URL.revokeObjectURL(url)
 }
 
 export default function AdminContactSubmissionsTemplateView({
   submissions,
-  createSubmissionAction,
-  updateSubmissionAction,
-  deleteSubmissionAction,
-  bulkDeleteSubmissionsAction,
-  bulkSetInactiveSubmissionsAction,
-  sendReplyAction,
+  createContactSubmissionAction,
+  updateContactSubmissionAction,
+  deleteContactSubmissionAction,
+  bulkDeleteContactSubmissionsAction,
+  bulkArchiveContactSubmissionsAction,
+  toggleArchiveContactSubmissionAction,
+  updateContactSubmissionStatusAction,
+  sendContactEmailAction,
 }: {
-  submissions: ContactSubmissionRow[]
-  createSubmissionAction: (formData: FormData) => Promise<void>
-  updateSubmissionAction: (formData: FormData) => Promise<void>
-  deleteSubmissionAction: (formData: FormData) => Promise<void>
-  bulkDeleteSubmissionsAction: (formData: FormData) => Promise<void>
-  bulkSetInactiveSubmissionsAction: (formData: FormData) => Promise<void>
-  sendReplyAction: (formData: FormData) => Promise<void>
+  submissions: ContactSubmission[]
+  createContactSubmissionAction: (formData: FormData) => Promise<void>
+  updateContactSubmissionAction: (formData: FormData) => Promise<void>
+  deleteContactSubmissionAction: (formData: FormData) => Promise<void>
+  bulkDeleteContactSubmissionsAction: (formData: FormData) => Promise<void>
+  bulkArchiveContactSubmissionsAction: (formData: FormData) => Promise<void>
+  toggleArchiveContactSubmissionAction: (formData: FormData) => Promise<void>
+  updateContactSubmissionStatusAction: (formData: FormData) => Promise<void>
+  sendContactEmailAction: (formData: FormData) => Promise<void>
 }) {
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
-  const [sortKey, setSortKey] = useState<SortKey>('createdAt')
+  const [status, setStatus] = useState('all')
+  const [sortKey, setSortKey] = useState<SortKey>('created')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
-  const [columns, setColumns] = useState<Record<ColumnKey, boolean>>({
-    requester: true,
-    service: true,
-    message: true,
-    status: true,
-    active: true,
-    createdAt: true,
-    actions: true,
-  })
-
-  const [toasts, setToasts] = useState<ApexToast[]>([])
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [selectedRow, setSelectedRow] = useState<ContactSubmissionRow | null>(null)
+  const [columns, setColumns] = useState<Record<ColumnKey, boolean>>({ requester: true, service: true, company: true, status: true, created: true, actions: true })
+  const [toasts, setToasts] = useState<ApexToast[]>([])
+  const [pending, setPending] = useState(false)
 
   const [addOpen, setAddOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [viewOpen, setViewOpen] = useState(false)
-  const [replyOpen, setReplyOpen] = useState(false)
+  const [filesOpen, setFilesOpen] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
-  const [pendingAction, setPendingAction] = useState(false)
-
-  const [addForm, setAddForm] = useState<SubmissionFormState>(defaultForm())
-  const [editForm, setEditForm] = useState<SubmissionFormState>(defaultForm())
-  const [replyForm, setReplyForm] = useState({ id: '', toEmail: '', name: '', subject: 'Re: Your PROGREX inquiry', reply: '' })
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [selectedSubmission, setSelectedSubmission] = useState<ContactSubmission | null>(null)
+  const [filesTargetSubmission, setFilesTargetSubmission] = useState<ContactSubmission | null>(null)
+  const [selectedFileUrls, setSelectedFileUrls] = useState<string[]>([])
+  const [addForm, setAddForm] = useState<ContactFormState>(defaultForm())
+  const [editForm, setEditForm] = useState<ContactFormState>(defaultForm())
+  const [addAttachments, setAddAttachments] = useState<File[]>([])
+  const [editAttachments, setEditAttachments] = useState<File[]>([])
+  const [editKeptAttachmentUrls, setEditKeptAttachmentUrls] = useState<string[]>([])
+  const [emailReply, setEmailReply] = useState('')
+  const [statusDraft, setStatusDraft] = useState('new')
 
   const [confirmConfig, setConfirmConfig] = useState<{
     title: string
     description: string
-    label: string
+    confirmLabel: string
     tone: 'primary' | 'danger'
-    kind: 'add' | 'edit' | 'delete' | 'bulkDelete' | 'bulkInactive' | 'reply' | 'quickStatus'
-    rowId?: string
-    nextStatus?: string
+    kind: 'add' | 'edit' | 'delete' | 'bulkDelete' | 'bulkArchive' | 'toggleArchive' | 'saveStatus' | 'sendEmail'
   } | null>(null)
 
-  const counts = useMemo(() => {
-    const active = submissions.filter((item) => item.isActive).length
-    return { all: submissions.length, active, inactive: submissions.length - active }
-  }, [submissions])
-
   const filtered = useMemo(() => {
-    const needle = search.trim().toLowerCase()
+    const keyword = search.trim().toLowerCase()
     return submissions.filter((item) => {
-      const statusMatch = statusFilter === 'all' ? true : statusFilter === 'active' ? item.isActive : !item.isActive
-      const searchMatch = needle.length === 0
+      const statusMatch = status === 'all' ? true : item.status === status
+      const searchMatch = keyword.length === 0
         ? true
-        : [item.name, item.email, item.phone || '', item.company || '', item.service || '', item.message || '', item.status]
-            .join(' ')
-            .toLowerCase()
-            .includes(needle)
-
+        : [item.name, item.email, item.company ?? '', item.service ?? ''].join(' ').toLowerCase().includes(keyword)
       return statusMatch && searchMatch
     })
-  }, [submissions, search, statusFilter])
+  }, [submissions, search, status])
 
   const sorted = useMemo(() => {
-    const items = [...filtered]
-    items.sort((a, b) => {
-      const direction = sortDir === 'asc' ? 1 : -1
-      if (sortKey === 'requester') return a.name.localeCompare(b.name) * direction
-      if (sortKey === 'service') return (a.service || '').localeCompare(b.service || '') * direction
-      if (sortKey === 'status') return a.status.localeCompare(b.status) * direction
-      if (sortKey === 'active') return (Number(a.isActive) - Number(b.isActive)) * direction
-      if (sortKey === 'message') return a.message.localeCompare(b.message) * direction
-
-      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0
-      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0
-      return (aTime - bTime) * direction
+    const list = [...filtered]
+    list.sort((a, b) => {
+      const dir = sortDir === 'asc' ? 1 : -1
+      if (sortKey === 'requester') return a.name.localeCompare(b.name) * dir
+      if (sortKey === 'service') return (a.service ?? '').localeCompare(b.service ?? '') * dir
+      if (sortKey === 'company') return (a.company ?? '').localeCompare(b.company ?? '') * dir
+      if (sortKey === 'status') return a.status.localeCompare(b.status) * dir
+      return (a.createdAt ?? '').localeCompare(b.createdAt ?? '') * dir
     })
-    return items
+    return list
   }, [filtered, sortDir, sortKey])
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / perPage))
   const safePage = Math.min(page, totalPages)
   const paged = sorted.slice((safePage - 1) * perPage, safePage * perPage)
+
+  const counts = useMemo(() => ({
+    all: submissions.length,
+    new: submissions.filter((s) => s.status === 'new').length,
+    inProgress: submissions.filter((s) => s.status === 'in-progress').length,
+    replied: submissions.filter((s) => s.status === 'replied').length,
+    resolved: submissions.filter((s) => s.status === 'resolved').length,
+    archived: submissions.filter((s) => s.status === 'archived').length,
+  }), [submissions])
 
   const currentPageIds = paged.map((item) => item.id)
   const allCurrentPageSelected = currentPageIds.length > 0 && currentPageIds.every((id) => selectedIds.includes(id))
@@ -242,8 +222,8 @@ export default function AdminContactSubmissionsTemplateView({
   }
 
   function toggleColumn(key: string) {
-    const typedKey = key as ColumnKey
-    setColumns((prev) => ({ ...prev, [typedKey]: !prev[typedKey] }))
+    const typed = key as ColumnKey
+    setColumns((prev) => ({ ...prev, [typed]: !prev[typed] }))
   }
 
   function onSort(nextKey: SortKey) {
@@ -273,113 +253,112 @@ export default function AdminContactSubmissionsTemplateView({
   }
 
   function exportCsv() {
-    const rows = sorted.map((item) => [
-      item.name,
-      item.email,
-      item.phone || '',
-      item.company || '',
-      item.service || '',
-      item.budget || '',
-      item.message,
-      item.status,
-      item.isActive ? 'Active' : 'Inactive',
-      toRelative(item.createdAt),
-    ])
-
-    downloadCsv('contact-submissions-export.csv', [['Name', 'Email', 'Phone', 'Company', 'Service', 'Budget', 'Message', 'Status', 'Record Status', 'Created'], ...rows])
+    const rows = sorted.map((row) => [row.name, row.email, row.service ?? '', row.company ?? '', row.status, formatCreated(row.createdAt)])
+    downloadCsv('contact-submissions-export.csv', [['Name', 'Email', 'Service', 'Company', 'Status', 'Created'], ...rows])
     addToast('Contact submissions CSV exported', 'success')
   }
 
-  function formToBody(form: SubmissionFormState) {
-    const body = new FormData()
-    if (form.id) body.set('id', form.id)
-    body.set('name', form.name)
-    body.set('email', form.email)
-    body.set('phone', form.phone)
-    body.set('company', form.company)
-    body.set('service', form.service)
-    body.set('budget', form.budget)
-    body.set('message', form.message)
-    body.set('status', form.status)
-    body.set('isActive', String(form.isActive))
-    return body
+  function toFormData(form: ContactFormState, attachments: File[] = [], keptAttachmentUrls: string[] = []) {
+    const formData = new FormData()
+    if (form.id) formData.set('id', form.id)
+    formData.set('name', form.name)
+    formData.set('email', form.email)
+    formData.set('phone', form.phone)
+    formData.set('company', form.company)
+    formData.set('service', form.service)
+    formData.set('budget', form.budget)
+    formData.set('message', form.message)
+    formData.set('status', form.status)
+    if (form.id) formData.set('keptAttachmentUrls', keptAttachmentUrls.join('||'))
+    for (const file of attachments.slice(0, 5)) formData.append('attachments', file)
+    return formData
+  }
+
+  function openFileUrl(url: string) {
+    window.open(url, '_blank', 'noopener,noreferrer')
   }
 
   async function executeConfirmedAction() {
     if (!confirmConfig) return
-    setPendingAction(true)
+    setPending(true)
 
     try {
       if (confirmConfig.kind === 'add') {
-        await createSubmissionAction(formToBody(addForm))
+        await createContactSubmissionAction(toFormData(addForm, addAttachments))
         setAddOpen(false)
         setAddForm(defaultForm())
+        setAddAttachments([])
         addToast('Submission added', 'success')
       }
 
       if (confirmConfig.kind === 'edit') {
-        await updateSubmissionAction(formToBody(editForm))
+        await updateContactSubmissionAction(toFormData(editForm, editAttachments, editKeptAttachmentUrls))
         setEditOpen(false)
+        setEditAttachments([])
         addToast('Submission updated', 'success')
       }
 
-      if (confirmConfig.kind === 'quickStatus' && confirmConfig.rowId && confirmConfig.nextStatus) {
-        const row = submissions.find((item) => item.id === confirmConfig.rowId)
-        if (row) {
-          await updateSubmissionAction(formToBody({ ...formFromSubmission(row), status: confirmConfig.nextStatus }))
-          addToast('Submission status updated', 'success')
-        }
-      }
-
-      if (confirmConfig.kind === 'delete' && pendingDeleteId) {
-        const body = new FormData()
-        body.set('id', pendingDeleteId)
-        await deleteSubmissionAction(body)
-        setPendingDeleteId(null)
+      if (confirmConfig.kind === 'delete' && selectedSubmission) {
+        const formData = new FormData()
+        formData.set('id', selectedSubmission.id)
+        await deleteContactSubmissionAction(formData)
+        setViewOpen(false)
         addToast('Submission deleted', 'success')
       }
 
       if (confirmConfig.kind === 'bulkDelete') {
-        const body = new FormData()
-        body.set('ids', selectedIds.join(','))
-        await bulkDeleteSubmissionsAction(body)
+        const formData = new FormData()
+        formData.set('ids', selectedIds.join(','))
+        await bulkDeleteContactSubmissionsAction(formData)
         setSelectedIds([])
         addToast('Selected submissions deleted', 'success')
       }
 
-      if (confirmConfig.kind === 'bulkInactive') {
-        const body = new FormData()
-        body.set('ids', selectedIds.join(','))
-        await bulkSetInactiveSubmissionsAction(body)
+      if (confirmConfig.kind === 'bulkArchive') {
+        const formData = new FormData()
+        formData.set('ids', selectedIds.join(','))
+        await bulkArchiveContactSubmissionsAction(formData)
         setSelectedIds([])
-        addToast('Selected submissions set to inactive', 'success')
+        addToast('Selected submissions archived', 'success')
       }
 
-      if (confirmConfig.kind === 'reply') {
-        const body = new FormData()
-        body.set('id', replyForm.id)
-        body.set('email', replyForm.toEmail)
-        body.set('name', replyForm.name)
-        body.set('subject', replyForm.subject)
-        body.set('reply', replyForm.reply)
-        await sendReplyAction(body)
-        setReplyOpen(false)
-        setReplyForm({ id: '', toEmail: '', name: '', subject: 'Re: Your PROGREX inquiry', reply: '' })
-        addToast('Reply sent', 'success')
+      if (confirmConfig.kind === 'toggleArchive' && selectedSubmission) {
+        const formData = new FormData()
+        formData.set('id', selectedSubmission.id)
+        await toggleArchiveContactSubmissionAction(formData)
+        addToast(selectedSubmission.isArchived ? 'Submission unarchived' : 'Submission archived', 'success')
       }
 
-      setConfirmOpen(false)
+      if (confirmConfig.kind === 'saveStatus' && selectedSubmission) {
+        const formData = new FormData()
+        formData.set('id', selectedSubmission.id)
+        formData.set('status', statusDraft)
+        await updateContactSubmissionStatusAction(formData)
+        addToast('Submission status updated', 'success')
+      }
+
+      if (confirmConfig.kind === 'sendEmail' && selectedSubmission && emailReply.trim()) {
+        const formData = new FormData()
+        formData.set('email', selectedSubmission.email)
+        formData.set('name', selectedSubmission.name)
+        formData.set('reply', emailReply)
+        await sendContactEmailAction(formData)
+        setEmailReply('')
+        addToast('Email sent', 'success')
+      }
+
       setConfirmConfig(null)
+      setConfirmOpen(false)
     } catch (error) {
       addToast(error instanceof Error ? error.message : 'Action failed.', 'danger')
     } finally {
-      setPendingAction(false)
+      setPending(false)
     }
   }
 
   return (
     <div className="space-y-4">
-      {pendingAction && (confirmConfig?.kind === 'add' || confirmConfig?.kind === 'edit') ? <ApexBlockingSpinner label="Saving contact submission..." /> : null}
+      {pending ? <ApexBlockingSpinner label="Processing..." /> : null}
       <ApexToastStack toasts={toasts} onRemove={(id) => setToasts((prev) => prev.filter((item) => item.id !== id))} />
 
       <ApexBreadcrumbs items={[{ label: 'Dashboard', href: '/admin' }, { label: 'Contact Submissions' }]} />
@@ -387,12 +366,12 @@ export default function AdminContactSubmissionsTemplateView({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-[42px] leading-none font-bold tracking-tight apx-text">Contact Submissions</h1>
-          <p className="mt-1 text-sm apx-muted">Pure contact form submissions without meeting bookings.</p>
+          <p className="mt-1 text-sm apx-muted">Manage inquiries from the contact form.</p>
         </div>
-
         <button
           onClick={() => {
             setAddForm(defaultForm())
+            setAddAttachments([])
             setAddOpen(true)
           }}
           className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-all duration-150 hover:-translate-y-0.5"
@@ -406,13 +385,17 @@ export default function AdminContactSubmissionsTemplateView({
       <ApexStatusTabs
         tabs={[
           { key: 'all', label: 'All', count: counts.all },
-          { key: 'active', label: 'Active', count: counts.active, indicatorColor: '#16a34a' },
-          { key: 'inactive', label: 'Inactive', count: counts.inactive, indicatorColor: '#64748b' },
+          { key: 'new', label: 'New', count: counts.new, indicatorColor: '#3b82f6' },
+          { key: 'in-progress', label: 'In Progress', count: counts.inProgress, indicatorColor: '#a855f7' },
+          { key: 'replied', label: 'Replied', count: counts.replied, indicatorColor: '#eab308' },
+          { key: 'resolved', label: 'Resolved', count: counts.resolved, indicatorColor: '#22c55e' },
+          { key: 'archived', label: 'Archived', count: counts.archived, indicatorColor: '#64748b' },
         ]}
-        active={statusFilter}
+        active={status}
         onChange={(key) => {
-          setStatusFilter(key as StatusFilter)
+          setStatus(key)
           setPage(1)
+          setSelectedIds([])
         }}
       />
 
@@ -434,30 +417,28 @@ export default function AdminContactSubmissionsTemplateView({
               <ApexButton
                 type="button"
                 variant="outline"
-                className="whitespace-nowrap"
                 onClick={() => {
                   setConfirmConfig({
-                    title: 'Set Submissions Inactive',
-                    description: `Set ${selectedIds.length} selected submission(s) to inactive?`,
-                    label: 'Set Inactive',
+                    title: 'Archive Selected Submissions',
+                    description: `Archive ${selectedIds.length} selected submission(s)?`,
+                    confirmLabel: 'Archive',
                     tone: 'primary',
-                    kind: 'bulkInactive',
+                    kind: 'bulkArchive',
                   })
                   setConfirmOpen(true)
                 }}
               >
-                <UserX className="h-4 w-4" />
-                Set Inactive
+                <Archive className="h-4 w-4" />
+                Archive
               </ApexButton>
               <ApexButton
                 type="button"
                 variant="danger"
-                className="whitespace-nowrap"
                 onClick={() => {
                   setConfirmConfig({
                     title: 'Delete Selected Submissions',
-                    description: `Delete ${selectedIds.length} selected submission(s)? This action cannot be undone.`,
-                    label: 'Delete',
+                    description: `Delete ${selectedIds.length} selected submission(s)? This cannot be undone.`,
+                    confirmLabel: 'Delete',
                     tone: 'danger',
                     kind: 'bulkDelete',
                   })
@@ -474,10 +455,9 @@ export default function AdminContactSubmissionsTemplateView({
             columns={[
               { key: 'requester', label: 'Requester', visible: columns.requester },
               { key: 'service', label: 'Service', visible: columns.service },
-              { key: 'message', label: 'Message', visible: columns.message },
+              { key: 'company', label: 'Company', visible: columns.company },
               { key: 'status', label: 'Status', visible: columns.status },
-              { key: 'active', label: 'Record Status', visible: columns.active },
-              { key: 'createdAt', label: 'Created', visible: columns.createdAt },
+              { key: 'created', label: 'Created', visible: columns.created },
               { key: 'actions', label: 'Actions', visible: columns.actions },
             ]}
             onToggle={toggleColumn}
@@ -495,121 +475,79 @@ export default function AdminContactSubmissionsTemplateView({
               </th>
               {columns.requester ? (
                 <th className="px-4 py-3 font-semibold apx-text">
-                  <button onClick={() => onSort('requester')} className="inline-flex items-center gap-1.5" type="button">
-                    Requester
+                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('requester')}>
+                    Name / Email
                     {renderSortIcon('requester')}
                   </button>
                 </th>
               ) : null}
               {columns.service ? (
                 <th className="px-4 py-3 font-semibold apx-text">
-                  <button onClick={() => onSort('service')} className="inline-flex items-center gap-1.5" type="button">
+                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('service')}>
                     Service
                     {renderSortIcon('service')}
                   </button>
                 </th>
               ) : null}
-              {columns.message ? (
+              {columns.company ? (
                 <th className="px-4 py-3 font-semibold apx-text">
-                  <button onClick={() => onSort('message')} className="inline-flex items-center gap-1.5" type="button">
-                    Message
-                    {renderSortIcon('message')}
+                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('company')}>
+                    Company
+                    {renderSortIcon('company')}
                   </button>
                 </th>
               ) : null}
               {columns.status ? (
                 <th className="px-4 py-3 font-semibold apx-text">
-                  <button onClick={() => onSort('status')} className="inline-flex items-center gap-1.5" type="button">
+                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('status')}>
                     Status
                     {renderSortIcon('status')}
                   </button>
                 </th>
               ) : null}
-              {columns.active ? (
+              {columns.created ? (
                 <th className="px-4 py-3 font-semibold apx-text">
-                  <button onClick={() => onSort('active')} className="inline-flex items-center gap-1.5" type="button">
-                    Record Status
-                    {renderSortIcon('active')}
-                  </button>
-                </th>
-              ) : null}
-              {columns.createdAt ? (
-                <th className="px-4 py-3 font-semibold apx-text">
-                  <button onClick={() => onSort('createdAt')} className="inline-flex items-center gap-1.5" type="button">
+                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('created')}>
                     Created
-                    {renderSortIcon('createdAt')}
+                    {renderSortIcon('created')}
                   </button>
                 </th>
               ) : null}
-              {columns.actions ? <th className="px-4 py-3 font-semibold apx-text text-right">Actions</th> : null}
+              {columns.actions ? <th className="px-4 py-3 text-right font-semibold apx-text">Actions</th> : null}
             </tr>
           </thead>
+
           <tbody>
-            {paged.map((item) => (
+            {paged.map((submission) => (
               <tr
-                key={item.id}
+                key={submission.id}
+                className={['apx-table-row border-b last:border-b-0 cursor-pointer', selectedIds.includes(submission.id) ? 'apx-table-row-selected' : ''].join(' ').trim()}
+                style={{ borderColor: 'var(--apx-border)' }}
                 onClick={() => {
-                  setSelectedRow(item)
+                  setSelectedSubmission(submission)
+                  setStatusDraft(submission.status)
                   setViewOpen(true)
                 }}
-                className={[
-                  'apx-table-row cursor-pointer border-b last:border-b-0',
-                  selectedIds.includes(item.id) ? 'apx-table-row-selected' : '',
-                ].join(' ').trim()}
-                style={{ borderColor: 'var(--apx-border)' }}
               >
-                <td className="px-2 py-3">
-                  <div onClick={(event) => event.stopPropagation()}>
-                    <ApexCheckbox checked={selectedIds.includes(item.id)} onChange={() => toggleSelectOne(item.id)} ariaLabel={`Select ${item.name}`} />
-                  </div>
+                <td className="px-2 py-3" onClick={(event) => event.stopPropagation()}>
+                  <ApexCheckbox checked={selectedIds.includes(submission.id)} onChange={() => toggleSelectOne(submission.id)} ariaLabel={`Select ${submission.name}`} />
                 </td>
                 {columns.requester ? (
                   <td className="px-4 py-3">
-                    <p className="font-semibold apx-text">{item.name}</p>
-                    <p className="text-xs apx-muted">{item.email}</p>
-                    {item.phone ? <p className="text-xs apx-muted">{item.phone}</p> : null}
+                    <p className="font-semibold apx-text">{submission.name}</p>
+                    <p className="text-xs apx-muted">{submission.email}</p>
                   </td>
                 ) : null}
-                {columns.service ? <td className="px-4 py-3 apx-text">{item.service || '-'}</td> : null}
-                {columns.message ? (
-                  <td className="px-4 py-3 apx-text">
-                    <p className="line-clamp-2">{item.message || '-'}</p>
-                  </td>
-                ) : null}
+                {columns.service ? <td className="px-4 py-3 apx-text">{submission.service || '-'}</td> : null}
+                {columns.company ? <td className="px-4 py-3 apx-text">{submission.company || '-'}</td> : null}
                 {columns.status ? (
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
-                      <span className="inline-flex rounded-full px-2 py-1 text-xs font-semibold" style={statusBadgeStyle(item.status)}>{item.status}</span>
-                      <div className="min-w-36">
-                        <ApexDropdown
-                          value={item.status}
-                          onChange={(value) => {
-                            if (value === item.status) return
-                            setConfirmConfig({
-                              title: 'Change Submission Status',
-                              description: `Set ${item.name} status to ${value}?`,
-                              label: 'Save Status',
-                              tone: 'primary',
-                              kind: 'quickStatus',
-                              rowId: item.id,
-                              nextStatus: value,
-                            })
-                            setConfirmOpen(true)
-                          }}
-                          options={SUBMISSION_STATUS_OPTIONS}
-                        />
-                      </div>
-                    </div>
-                  </td>
-                ) : null}
-                {columns.active ? (
-                  <td className="px-4 py-3">
-                    <span className="inline-flex rounded-full px-2 py-1 text-xs font-semibold" style={item.isActive ? { backgroundColor: 'rgba(22,163,74,0.15)', color: '#15803d' } : { backgroundColor: 'rgba(100,116,139,0.2)', color: '#334155' }}>
-                      {item.isActive ? 'Active' : 'Inactive'}
+                    <span className="inline-flex rounded-full px-2 py-1 text-xs font-semibold" style={statusPillStyle(submission.status)}>
+                      {submission.status}
                     </span>
                   </td>
                 ) : null}
-                {columns.createdAt ? <td className="px-4 py-3 apx-muted">{toRelative(item.createdAt)}</td> : null}
+                {columns.created ? <td className="px-4 py-3 apx-text">{formatCreated(submission.createdAt)}</td> : null}
                 {columns.actions ? (
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2" onClick={(event) => event.stopPropagation()}>
@@ -617,39 +555,73 @@ export default function AdminContactSubmissionsTemplateView({
                         type="button"
                         className="apx-icon-action"
                         onClick={() => {
-                          setReplyForm({ id: item.id, toEmail: item.email, name: item.name, subject: 'Re: Your PROGREX inquiry', reply: item.adminReply || '' })
-                          setReplyOpen(true)
+                          setFilesTargetSubmission(submission)
+                          setSelectedFileUrls([])
+                          setFilesOpen(true)
                         }}
-                        aria-label={`Reply to ${item.name}`}
+                        aria-label={`Files for ${submission.name}`}
                       >
-                        <Mail className="h-4 w-4" />
+                        <Download className="h-4 w-4" />
                       </button>
                       <button
                         type="button"
                         className="apx-icon-action"
                         onClick={() => {
-                          setEditForm(formFromSubmission(item))
+                          setSelectedSubmission(submission)
+                          setEditForm(formFromSubmission(submission))
+                          setEditKeptAttachmentUrls(submission.attachmentUrls || [])
+                          setEditAttachments([])
                           setEditOpen(true)
                         }}
-                        aria-label={`Edit ${item.name}`}
+                        aria-label={`Edit ${submission.name}`}
                       >
                         <Edit2 className="h-4 w-4" />
                       </button>
                       <button
                         type="button"
+                        className="apx-icon-action"
+                        onClick={() => {
+                          setSelectedSubmission(submission)
+                          setConfirmConfig({
+                            title: submission.isArchived ? 'Unarchive Submission' : 'Archive Submission',
+                            description: `${submission.isArchived ? 'Unarchive' : 'Archive'} ${submission.name}?`,
+                            confirmLabel: submission.isArchived ? 'Unarchive' : 'Archive',
+                            tone: 'primary',
+                            kind: 'toggleArchive',
+                          })
+                          setConfirmOpen(true)
+                        }}
+                        aria-label={`Archive toggle ${submission.name}`}
+                      >
+                        <Archive className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        className="apx-icon-action"
+                        onClick={() => {
+                          setSelectedSubmission(submission)
+                          setStatusDraft(submission.status)
+                          setViewOpen(true)
+                        }}
+                        aria-label={`Open ${submission.name}`}
+                      >
+                        <Mail className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
                         className="apx-icon-action-danger"
                         onClick={() => {
-                          setPendingDeleteId(item.id)
+                          setSelectedSubmission(submission)
                           setConfirmConfig({
-                            title: 'Delete Submission',
-                            description: `Delete submission from ${item.name}? This action cannot be undone.`,
-                            label: 'Delete',
+                            title: 'Delete Contact Submission',
+                            description: `Delete ${submission.name}? This cannot be undone.`,
+                            confirmLabel: 'Delete',
                             tone: 'danger',
                             kind: 'delete',
                           })
                           setConfirmOpen(true)
                         }}
-                        aria-label={`Delete ${item.name}`}
+                        aria-label={`Delete ${submission.name}`}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -675,14 +647,14 @@ export default function AdminContactSubmissionsTemplateView({
         onPageChange={setPage}
       />
 
-      <ApexModal open={addOpen} size="sm" title="Add Contact Submission" subtitle="Create a contact submission manually." onClose={() => setAddOpen(false)}>
+      <ApexModal size="md" open={addOpen} title="Add Contact Submission" subtitle="Create a manual contact submission." onClose={() => setAddOpen(false)}>
         <form
           onSubmit={(event) => {
             event.preventDefault()
             setConfirmConfig({
-              title: 'Create Submission',
-              description: `Create submission for ${addForm.name || 'this requester'}?`,
-              label: 'Create Submission',
+              title: 'Confirm Add Submission',
+              description: `Add submission for ${addForm.name || 'this contact'}?`,
+              confirmLabel: 'Add Submission',
               tone: 'primary',
               kind: 'add',
             })
@@ -690,41 +662,50 @@ export default function AdminContactSubmissionsTemplateView({
           }}
           className="grid gap-3 md:grid-cols-2"
         >
-          <div className="md:col-span-2">
+          <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Name</label>
-            <ApexInput required value={addForm.name} onChange={(event) => setAddForm((prev) => ({ ...prev, name: event.target.value }))} />
+            <ApexInput value={addForm.name} onChange={(event) => setAddForm((prev) => ({ ...prev, name: event.target.value }))} required />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Email</label>
-            <ApexInput required type="email" value={addForm.email} onChange={(event) => setAddForm((prev) => ({ ...prev, email: event.target.value }))} />
+            <ApexInput type="email" value={addForm.email} onChange={(event) => setAddForm((prev) => ({ ...prev, email: event.target.value }))} required />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Phone</label>
             <ApexInput value={addForm.phone} onChange={(event) => setAddForm((prev) => ({ ...prev, phone: event.target.value }))} />
           </div>
-          <div>
+          <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Company</label>
             <ApexInput value={addForm.company} onChange={(event) => setAddForm((prev) => ({ ...prev, company: event.target.value }))} />
           </div>
-          <div>
+          <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Service</label>
-            <ApexInput value={addForm.service} onChange={(event) => setAddForm((prev) => ({ ...prev, service: event.target.value }))} />
+            <select className="apx-input" value={addForm.service} onChange={(event) => setAddForm((prev) => ({ ...prev, service: event.target.value }))}>
+              <option value="">Select service</option>
+              {SERVICE_OPTIONS.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium apx-muted">Status</label>
+            <select className="apx-input" value={addForm.status} onChange={(event) => setAddForm((prev) => ({ ...prev, status: event.target.value }))}>
+              {STATUS_OPTIONS.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Budget</label>
             <ApexInput value={addForm.budget} onChange={(event) => setAddForm((prev) => ({ ...prev, budget: event.target.value }))} />
           </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Status</label>
-            <ApexDropdown value={addForm.status} onChange={(value) => setAddForm((prev) => ({ ...prev, status: value }))} options={SUBMISSION_STATUS_OPTIONS} />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Record Status</label>
-            <ApexDropdown value={addForm.isActive ? 'active' : 'inactive'} onChange={(value) => setAddForm((prev) => ({ ...prev, isActive: value === 'active' }))} options={ACTIVE_OPTIONS} />
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-xs font-medium apx-muted">Message / Details</label>
+            <ApexTextarea rows={4} value={addForm.message} onChange={(event) => setAddForm((prev) => ({ ...prev, message: event.target.value }))} />
           </div>
           <div className="md:col-span-2">
-            <label className="mb-1 block text-xs font-medium apx-muted">Message</label>
-            <ApexTextarea rows={4} value={addForm.message} onChange={(event) => setAddForm((prev) => ({ ...prev, message: event.target.value }))} />
+            <label className="mb-1 block text-xs font-medium apx-muted">Attachments (optional, up to 5)</label>
+            <input type="file" multiple className="apx-input" onChange={(event) => setAddAttachments(Array.from(event.target.files || []).slice(0, 5))} />
           </div>
           <div className="md:col-span-2 flex justify-end gap-2 pt-2">
             <ApexButton type="button" variant="outline" onClick={() => setAddOpen(false)}>Cancel</ApexButton>
@@ -733,14 +714,14 @@ export default function AdminContactSubmissionsTemplateView({
         </form>
       </ApexModal>
 
-      <ApexModal open={editOpen} size="sm" title="Edit Contact Submission" subtitle="Update contact submission details." onClose={() => setEditOpen(false)}>
+      <ApexModal size="md" open={editOpen} title="Edit Contact Submission" subtitle="Update contact submission details." onClose={() => setEditOpen(false)}>
         <form
           onSubmit={(event) => {
             event.preventDefault()
             setConfirmConfig({
-              title: 'Save Submission Changes',
-              description: `Save changes for ${editForm.name || 'this submission'}?`,
-              label: 'Save Changes',
+              title: 'Confirm Edit Submission',
+              description: `Save changes for ${editForm.name || 'this contact'}?`,
+              confirmLabel: 'Save Changes',
               tone: 'primary',
               kind: 'edit',
             })
@@ -748,41 +729,74 @@ export default function AdminContactSubmissionsTemplateView({
           }}
           className="grid gap-3 md:grid-cols-2"
         >
-          <div className="md:col-span-2">
+          <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Name</label>
-            <ApexInput required value={editForm.name} onChange={(event) => setEditForm((prev) => ({ ...prev, name: event.target.value }))} />
+            <ApexInput value={editForm.name} onChange={(event) => setEditForm((prev) => ({ ...prev, name: event.target.value }))} required />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Email</label>
-            <ApexInput required type="email" value={editForm.email} onChange={(event) => setEditForm((prev) => ({ ...prev, email: event.target.value }))} />
+            <ApexInput type="email" value={editForm.email} onChange={(event) => setEditForm((prev) => ({ ...prev, email: event.target.value }))} required />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Phone</label>
             <ApexInput value={editForm.phone} onChange={(event) => setEditForm((prev) => ({ ...prev, phone: event.target.value }))} />
           </div>
-          <div>
+          <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Company</label>
             <ApexInput value={editForm.company} onChange={(event) => setEditForm((prev) => ({ ...prev, company: event.target.value }))} />
           </div>
-          <div>
+          <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Service</label>
-            <ApexInput value={editForm.service} onChange={(event) => setEditForm((prev) => ({ ...prev, service: event.target.value }))} />
+            <select className="apx-input" value={editForm.service} onChange={(event) => setEditForm((prev) => ({ ...prev, service: event.target.value }))}>
+              <option value="">Select service</option>
+              {SERVICE_OPTIONS.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium apx-muted">Status</label>
+            <select className="apx-input" value={editForm.status} onChange={(event) => setEditForm((prev) => ({ ...prev, status: event.target.value }))}>
+              {STATUS_OPTIONS.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Budget</label>
             <ApexInput value={editForm.budget} onChange={(event) => setEditForm((prev) => ({ ...prev, budget: event.target.value }))} />
           </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Status</label>
-            <ApexDropdown value={editForm.status} onChange={(value) => setEditForm((prev) => ({ ...prev, status: value }))} options={SUBMISSION_STATUS_OPTIONS} />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Record Status</label>
-            <ApexDropdown value={editForm.isActive ? 'active' : 'inactive'} onChange={(value) => setEditForm((prev) => ({ ...prev, isActive: value === 'active' }))} options={ACTIVE_OPTIONS} />
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-xs font-medium apx-muted">Message / Details</label>
+            <ApexTextarea rows={4} value={editForm.message} onChange={(event) => setEditForm((prev) => ({ ...prev, message: event.target.value }))} />
           </div>
           <div className="md:col-span-2">
-            <label className="mb-1 block text-xs font-medium apx-muted">Message</label>
-            <ApexTextarea rows={4} value={editForm.message} onChange={(event) => setEditForm((prev) => ({ ...prev, message: event.target.value }))} />
+            <label className="mb-1 block text-xs font-medium apx-muted">Existing Attachments</label>
+            <div className="space-y-1">
+              {(selectedSubmission?.attachmentUrls || []).map((url) => {
+                const keep = editKeptAttachmentUrls.includes(url)
+                return (
+                  <div key={url} className="flex items-center justify-between rounded-lg border px-2 py-1" style={{ borderColor: 'var(--apx-border)' }}>
+                    <button type="button" className="truncate text-left text-xs apx-text hover:underline" onClick={() => openFileUrl(url)}>{url.split('/').pop() || 'file'}</button>
+                    <ApexButton type="button" variant={keep ? 'outline' : 'danger'} className="px-2 py-1 text-xs" onClick={() => {
+                      setEditKeptAttachmentUrls((prev) => (prev.includes(url) ? prev.filter((item) => item !== url) : [...prev, url]))
+                    }}>{keep ? 'Keep' : 'Removed'}</ApexButton>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-xs font-medium apx-muted">Add Attachments (up to 5 total)</label>
+            <input
+              type="file"
+              multiple
+              className="apx-input"
+              onChange={(event) => {
+                const remain = Math.max(0, 5 - editKeptAttachmentUrls.length)
+                setEditAttachments(Array.from(event.target.files || []).slice(0, remain))
+              }}
+            />
           </div>
           <div className="md:col-span-2 flex justify-end gap-2 pt-2">
             <ApexButton type="button" variant="outline" onClick={() => setEditOpen(false)}>Cancel</ApexButton>
@@ -791,66 +805,132 @@ export default function AdminContactSubmissionsTemplateView({
         </form>
       </ApexModal>
 
-      <ApexModal open={replyOpen} size="sm" title="Reply to Contact" subtitle="Send a reply email to this contact." onClose={() => setReplyOpen(false)}>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault()
-            setConfirmConfig({
-              title: 'Send Reply',
-              description: `Send this reply to ${replyForm.toEmail}?`,
-              label: 'Send Reply',
-              tone: 'primary',
-              kind: 'reply',
-            })
-            setConfirmOpen(true)
-          }}
-          className="space-y-3"
-        >
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Subject</label>
-            <ApexInput value={replyForm.subject} onChange={(event) => setReplyForm((prev) => ({ ...prev, subject: event.target.value }))} required />
+      <ApexModal size="md" open={filesOpen} title="Submission Files" subtitle="Download attached files." onClose={() => setFilesOpen(false)}>
+        {filesTargetSubmission ? (
+          <div className="space-y-3">
+            <div className="space-y-2">
+              {(filesTargetSubmission.attachmentUrls || []).length ? (
+                filesTargetSubmission.attachmentUrls.map((url) => (
+                  <div key={url} className="flex items-center justify-between rounded-lg border px-3 py-2" style={{ borderColor: 'var(--apx-border)' }}>
+                    <div className="flex items-center gap-2">
+                      <ApexCheckbox
+                        checked={selectedFileUrls.includes(url)}
+                        onChange={() => setSelectedFileUrls((prev) => (prev.includes(url) ? prev.filter((item) => item !== url) : [...prev, url]))}
+                        ariaLabel="Select file"
+                      />
+                      <span className="truncate text-xs apx-text">{url.split('/').pop() || 'file'}</span>
+                    </div>
+                    <ApexButton type="button" variant="outline" onClick={() => openFileUrl(url)}>
+                      <Download className="h-4 w-4" />
+                      Download
+                    </ApexButton>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm apx-muted">No attachments found.</p>
+              )}
+            </div>
+            <div className="flex justify-end gap-2">
+              <ApexButton type="button" variant="outline" onClick={() => setFilesOpen(false)}>Close</ApexButton>
+              <ApexButton
+                type="button"
+                onClick={() => {
+                  for (const url of selectedFileUrls) openFileUrl(url)
+                }}
+                disabled={selectedFileUrls.length === 0}
+              >
+                <Download className="h-4 w-4" />
+                Download Selected
+              </ApexButton>
+            </div>
           </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Message</label>
-            <ApexTextarea rows={5} value={replyForm.reply} onChange={(event) => setReplyForm((prev) => ({ ...prev, reply: event.target.value }))} required />
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <ApexButton type="button" variant="outline" onClick={() => setReplyOpen(false)}>Cancel</ApexButton>
-            <ApexButton type="submit">Send</ApexButton>
-          </div>
-        </form>
+        ) : null}
       </ApexModal>
 
-      <ApexModal
-        size="sm"
-        open={viewOpen && !!selectedRow}
-        title="Submission Details"
-        subtitle="Read-only contact submission information."
-        onClose={() => {
-          setViewOpen(false)
-          setSelectedRow(null)
-        }}
-      >
-        {selectedRow ? (
-          <div className="space-y-3 text-sm">
-            <div><p className="text-xs uppercase tracking-wide apx-muted">Requester</p><p className="mt-1 apx-text font-semibold">{selectedRow.name}</p><p className="text-xs apx-muted">{selectedRow.email}</p></div>
-            <div><p className="text-xs uppercase tracking-wide apx-muted">Contact</p><p className="mt-1 apx-text">{selectedRow.phone || '-'}</p><p className="text-xs apx-muted">{selectedRow.company || '-'}</p></div>
-            <div><p className="text-xs uppercase tracking-wide apx-muted">Service / Budget</p><p className="mt-1 apx-text">{selectedRow.service || '-'}</p><p className="text-xs apx-muted">{selectedRow.budget || '-'}</p></div>
-            <div><p className="text-xs uppercase tracking-wide apx-muted">Message</p><p className="mt-1 whitespace-pre-wrap apx-text">{selectedRow.message || '-'}</p></div>
-            <div><p className="text-xs uppercase tracking-wide apx-muted">Status</p><span className="mt-1 inline-flex rounded-full px-2 py-1 text-xs font-semibold" style={statusBadgeStyle(selectedRow.status)}>{selectedRow.status}</span></div>
+      <ApexModal size="md" open={viewOpen} title="Submission Details" subtitle="Review and reply to this inquiry." onClose={() => setViewOpen(false)}>
+        {selectedSubmission ? (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs font-medium apx-muted">Name</p>
+                <p className="apx-text font-semibold">{selectedSubmission.name}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium apx-muted">Email</p>
+                <p className="apx-text">{selectedSubmission.email}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium apx-muted">Service</p>
+                <p className="apx-text">{selectedSubmission.service || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium apx-muted">Company</p>
+                <p className="apx-text">{selectedSubmission.company || '-'}</p>
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium apx-muted">Status</label>
+              <select className="apx-input" value={statusDraft} onChange={(event) => setStatusDraft(event.target.value)}>
+                {STATUS_OPTIONS.map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium apx-muted">Email Reply</label>
+              <ApexTextarea rows={4} value={emailReply} onChange={(event) => setEmailReply(event.target.value)} placeholder="Write a reply..." />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-1">
+              <ApexButton type="button" variant="outline" onClick={() => setViewOpen(false)}>Close</ApexButton>
+              <ApexButton
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setConfirmConfig({
+                    title: 'Update Status',
+                    description: `Set status to ${statusDraft}?`,
+                    confirmLabel: 'Save Status',
+                    tone: 'primary',
+                    kind: 'saveStatus',
+                  })
+                  setConfirmOpen(true)
+                }}
+              >
+                Save Status
+              </ApexButton>
+              <ApexButton
+                type="button"
+                onClick={() => {
+                  setConfirmConfig({
+                    title: 'Send Contact Email',
+                    description: `Send reply to ${selectedSubmission.email}?`,
+                    confirmLabel: 'Send',
+                    tone: 'primary',
+                    kind: 'sendEmail',
+                  })
+                  setConfirmOpen(true)
+                }}
+              >
+                <Mail className="h-4 w-4" />
+                Send Email
+              </ApexButton>
+            </div>
           </div>
         ) : null}
       </ApexModal>
 
       <ApexConfirmationModal
-        open={confirmOpen && !!confirmConfig}
-        title={confirmConfig?.title ?? 'Confirm Action'}
-        description={confirmConfig?.description ?? 'Proceed with this action?'}
-        confirmLabel={confirmConfig?.label ?? 'Confirm'}
-        tone={confirmConfig?.tone ?? 'primary'}
-        pending={pendingAction}
+        open={confirmOpen && Boolean(confirmConfig)}
+        title={confirmConfig?.title || 'Confirm'}
+        description={confirmConfig?.description || 'Please confirm this action.'}
+        confirmLabel={confirmConfig?.confirmLabel || 'Confirm'}
+        tone={confirmConfig?.tone || 'primary'}
+        pending={pending}
         onClose={() => {
-          if (pendingAction) return
+          if (pending) return
           setConfirmOpen(false)
           setConfirmConfig(null)
         }}
