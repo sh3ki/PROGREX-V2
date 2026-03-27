@@ -448,8 +448,8 @@ export default function AdminUsersTemplateView({
       <ApexStatusTabs
         tabs={[
           { key: 'all', label: 'All', count: counts.all },
-          { key: 'active', label: 'Active', count: counts.active },
-          { key: 'inactive', label: 'Inactive', count: counts.inactive },
+          { key: 'active', label: 'Active', count: counts.active, indicatorColor: '#16a34a' },
+          { key: 'inactive', label: 'Inactive', count: counts.inactive, indicatorColor: '#64748b' },
         ]}
         active={status}
         onChange={(key) => {
