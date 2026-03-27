@@ -2,26 +2,127 @@ import nodemailer from 'nodemailer'
 import { revalidatePath } from 'next/cache'
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
-import { ApexButton, ApexSelect, ApexTextarea } from '@/components/admin/apex/AdminPrimitives'
-import { ApexBreadcrumbs } from '@/components/admin/apex/ApexDataUi'
+import AdminContactSubmissionsTemplateView from '@/components/admin/contact-submissions/AdminContactSubmissionsTemplateView'
 
-async function updateContactStatus(formData: FormData) {
+const CONTACT_STATUSES = new Set(['new', 'in-progress', 'replied', 'resolved'])
+
+function normalizeContactStatus(value: string) {
+  const input = value.trim().toLowerCase()
+  return CONTACT_STATUSES.has(input) ? input : 'new'
+}
+
+async function ensureContactColumns() {
+  await sql('alter table contact_submissions add column if not exists is_active boolean not null default true')
+}
+
+async function createContactSubmission(formData: FormData) {
   'use server'
   await requirePermission('bookings', 'write')
-  const id = String(formData.get('id') ?? '').trim()
-  const status = String(formData.get('status') ?? 'new').trim() || 'new'
-  if (!id) return
-  await sql('update contact_submissions set status = $2, updated_at = now() where id = $1::uuid', [id, status])
+  await ensureContactColumns()
+
+  const name = String(formData.get('name') ?? '').trim()
+  const email = String(formData.get('email') ?? '').trim()
+  const phone = String(formData.get('phone') ?? '').trim()
+  const company = String(formData.get('company') ?? '').trim()
+  const service = String(formData.get('service') ?? '').trim()
+  const budget = String(formData.get('budget') ?? '').trim()
+  const message = String(formData.get('message') ?? '').trim()
+  const status = normalizeContactStatus(String(formData.get('status') ?? 'new'))
+  const isActive = String(formData.get('isActive') ?? 'true') !== 'false'
+
+  if (!name || !email || !message) return
+
+  await sql(
+    `insert into contact_submissions(name, email, phone, company, service, budget, message, status, is_active)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    [name, email, phone || null, company || null, service || null, budget || null, message, status, isActive]
+  )
+
   revalidatePath('/admin/contact-submissions')
 }
 
-async function replyContact(formData: FormData) {
+async function updateContactSubmission(formData: FormData) {
+  'use server'
+  await requirePermission('bookings', 'write')
+  await ensureContactColumns()
+
+  const id = String(formData.get('id') ?? '').trim()
+  if (!id) return
+
+  const name = String(formData.get('name') ?? '').trim()
+  const email = String(formData.get('email') ?? '').trim()
+  const phone = String(formData.get('phone') ?? '').trim()
+  const company = String(formData.get('company') ?? '').trim()
+  const service = String(formData.get('service') ?? '').trim()
+  const budget = String(formData.get('budget') ?? '').trim()
+  const message = String(formData.get('message') ?? '').trim()
+  const status = normalizeContactStatus(String(formData.get('status') ?? 'new'))
+  const isActive = String(formData.get('isActive') ?? 'true') !== 'false'
+
+  await sql(
+    `update contact_submissions
+     set name = $2,
+         email = $3,
+         phone = $4,
+         company = $5,
+         service = $6,
+         budget = $7,
+         message = $8,
+         status = $9,
+         is_active = $10,
+         updated_at = now()
+     where id = $1::uuid`,
+    [id, name || null, email || null, phone || null, company || null, service || null, budget || null, message || null, status, isActive]
+  )
+
+  revalidatePath('/admin/contact-submissions')
+}
+
+async function deleteContactSubmission(formData: FormData) {
+  'use server'
+  await requirePermission('bookings', 'delete')
+  const id = String(formData.get('id') ?? '').trim()
+  if (!id) return
+  await sql('delete from contact_submissions where id = $1::uuid', [id])
+  revalidatePath('/admin/contact-submissions')
+}
+
+async function bulkDeleteContactSubmissions(formData: FormData) {
+  'use server'
+  await requirePermission('bookings', 'delete')
+
+  const ids = String(formData.get('ids') ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+
+  if (ids.length === 0) return
+  await sql('delete from contact_submissions where id = any($1::uuid[])', [ids])
+  revalidatePath('/admin/contact-submissions')
+}
+
+async function bulkSetInactiveContactSubmissions(formData: FormData) {
+  'use server'
+  await requirePermission('bookings', 'write')
+
+  const ids = String(formData.get('ids') ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+
+  if (ids.length === 0) return
+  await sql('update contact_submissions set is_active = false, updated_at = now() where id = any($1::uuid[])', [ids])
+  revalidatePath('/admin/contact-submissions')
+}
+
+async function sendReply(formData: FormData) {
   'use server'
   await requirePermission('bookings', 'write')
 
   const id = String(formData.get('id') ?? '').trim()
   const toEmail = String(formData.get('email') ?? '').trim()
   const senderName = String(formData.get('name') ?? '').trim()
+  const subject = String(formData.get('subject') ?? 'Re: Your PROGREX inquiry').trim()
   const reply = String(formData.get('reply') ?? '').trim()
   if (!id || !toEmail || !reply) return
 
@@ -38,7 +139,7 @@ async function replyContact(formData: FormData) {
   await transporter.sendMail({
     from: `"PROGREX" <${process.env.SMTP_USER}>`,
     to: toEmail,
-    subject: 'Re: Your PROGREX inquiry',
+    subject,
     html: `<p>Hello ${senderName || 'there'},</p><p>${reply.replace(/\n/g, '<br/>')}</p><p>Best regards,<br/>PROGREX Team</p>`,
   })
 
@@ -54,60 +155,49 @@ async function replyContact(formData: FormData) {
 
 export default async function AdminContactSubmissionsPage() {
   await requirePermission('bookings', 'read')
+  await ensureContactColumns()
 
   const contacts = await sql<{
     id: string
     name: string
     email: string
+    phone: string | null
+    company: string | null
     service: string | null
+    budget: string | null
     message: string
     status: string
     admin_reply: string | null
-    created_at: string
+    is_active: boolean
+    created_at: string | null
   }>(
-    `select id, name, email, service, message, status, admin_reply, created_at::text
+    `select id, name, email, phone, company, service, budget, message, status, admin_reply, is_active, created_at::text
      from contact_submissions
      order by created_at desc`
   )
 
   return (
-    <div className="space-y-4">
-      <ApexBreadcrumbs items={[{ label: 'Dashboard', href: '/admin' }, { label: 'Contact Submissions' }]} />
-
-      <div>
-        <h1 className="text-[42px] leading-none font-bold tracking-tight apx-text">Contact Submissions</h1>
-        <p className="mt-1 text-sm apx-muted">Messages submitted from the website contact form.</p>
-      </div>
-
-      <section className="space-y-3 rounded-2xl border p-4" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
-        {contacts.map((item) => (
-          <article key={item.id} className="rounded-xl border p-4" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface-alt)' }}>
-            <p className="font-semibold apx-text">{item.name} <span className="apx-muted">({item.email})</span></p>
-            <p className="text-sm apx-muted">{item.service || 'General inquiry'}</p>
-            <p className="mt-1 text-sm apx-text whitespace-pre-wrap">{item.message}</p>
-
-            <div className="mt-3 grid gap-2 md:grid-cols-2">
-              <form action={updateContactStatus} className="flex gap-2">
-                <input type="hidden" name="id" value={item.id} />
-                <ApexSelect name="status" defaultValue={item.status} className="text-xs">
-                  <option value="new">new</option>
-                  <option value="in-progress">in-progress</option>
-                  <option value="replied">replied</option>
-                </ApexSelect>
-                <ApexButton variant="outline" type="submit">Save Status</ApexButton>
-              </form>
-
-              <form action={replyContact} className="space-y-2">
-                <input type="hidden" name="id" value={item.id} />
-                <input type="hidden" name="email" value={item.email} />
-                <input type="hidden" name="name" value={item.name} />
-                <ApexTextarea name="reply" rows={3} defaultValue={item.admin_reply ?? ''} placeholder="Write email reply..." className="text-xs" />
-                <ApexButton type="submit">Send Reply Email</ApexButton>
-              </form>
-            </div>
-          </article>
-        ))}
-      </section>
-    </div>
+    <AdminContactSubmissionsTemplateView
+      submissions={contacts.map((item) => ({
+        id: item.id,
+        name: item.name,
+        email: item.email,
+        phone: item.phone,
+        company: item.company,
+        service: item.service,
+        budget: item.budget,
+        message: item.message,
+        status: item.status || 'new',
+        adminReply: item.admin_reply,
+        isActive: item.is_active,
+        createdAt: item.created_at,
+      }))}
+      createSubmissionAction={createContactSubmission}
+      updateSubmissionAction={updateContactSubmission}
+      deleteSubmissionAction={deleteContactSubmission}
+      bulkDeleteSubmissionsAction={bulkDeleteContactSubmissions}
+      bulkSetInactiveSubmissionsAction={bulkSetInactiveContactSubmissions}
+      sendReplyAction={sendReply}
+    />
   )
 }
