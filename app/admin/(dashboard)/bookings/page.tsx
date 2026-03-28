@@ -195,21 +195,6 @@ async function bulkDeleteBookings(formData: FormData) {
   revalidatePath('/admin/bookings')
 }
 
-async function bulkSetInactiveBookings(formData: FormData) {
-  'use server'
-  await requirePermission('bookings', 'write')
-
-  const ids = String(formData.get('ids') ?? '')
-    .split(',')
-    .map((value) => value.trim())
-    .filter(Boolean)
-
-  if (ids.length === 0) return
-
-  await sql('update bookings set is_active = false, updated_at = now() where id = any($1::uuid[])', [ids])
-  revalidatePath('/admin/bookings')
-}
-
 async function bulkArchiveBookings(formData: FormData) {
   'use server'
   await requirePermission('bookings', 'write')
@@ -331,7 +316,6 @@ export default async function AdminBookingsPage() {
       updateBookingAction={updateBooking}
       deleteBookingAction={deleteBooking}
       bulkDeleteBookingsAction={bulkDeleteBookings}
-      bulkSetInactiveBookingsAction={bulkSetInactiveBookings}
       bulkArchiveBookingsAction={bulkArchiveBookings}
       toggleArchiveBookingAction={toggleArchiveBooking}
       sendBookingEmailAction={sendBookingEmail}
