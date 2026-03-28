@@ -312,7 +312,7 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
         >
           <div className="mb-2 flex items-center justify-between gap-3">
             <h2 className="text-xl font-bold text-white">{t('contact.formHeading')}</h2>
-            <button type="button" className="btn-primary !px-4 !py-2 !text-xs">
+            <button type="button" className="btn-primary px-4! py-2! text-xs!">
               Video Call with Our Team
             </button>
           </div>
@@ -340,7 +340,7 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
               </label>
 
               {bookMeeting ? (
-                <button type="button" onClick={() => setBookingModalOpen(true)} className="btn-primary !px-4 !py-2 !text-xs">
+                <button type="button" onClick={() => setBookingModalOpen(true)} className="btn-primary px-4! py-2! text-xs!">
                   <CalendarDays size={14} />
                   {selectedBooking ? 'Edit Booking Calendar' : 'Open Booking Calendar'}
                 </button>
@@ -555,7 +555,7 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
                       <button type="button" onClick={() => setBookingModalOpen(false)} className="apx-btn-outline">
                         Cancel
                       </button>
-                      <button type="button" onClick={saveBookingSelection} className="btn-primary !px-4 !py-2 !text-xs">
+                      <button type="button" onClick={saveBookingSelection} className="btn-primary px-4! py-2! text-xs!">
                         Save
                       </button>
                     </div>
