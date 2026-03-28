@@ -93,6 +93,7 @@ export async function POST(req: NextRequest) {
     await sql('alter table bookings add column if not exists requested_date date')
     await sql('alter table bookings add column if not exists requested_start_time text')
     await sql('alter table bookings add column if not exists requested_duration_minutes integer')
+    await sql('alter table bookings add column if not exists attachment_urls text[] default array[]::text[]')
     await sql('alter table contact_submissions add column if not exists attachment_urls text[] default array[]::text[]')
     await sql('alter table contact_submissions add column if not exists request_meeting boolean not null default false')
 
@@ -198,19 +199,20 @@ export async function POST(req: NextRequest) {
 
     if (requestMeeting) {
       await sql(
-        `insert into bookings(name, email, phone, company, service, budget, message, source, status, is_approved, requested_date, requested_start_time, requested_duration_minutes)
-         values ($1, $2, $3, $4, $5, $6, $7, 'contact-form', 'new', false, $8::date, $9, $10)`,
+        `insert into bookings(name, email, phone, company, service, source, status, requested_date, requested_start_time, requested_duration_minutes, budget, project_details, attachment_urls, is_active, is_approved)
+         values ($1, $2, $3, $4, $5, 'contact-form', 'new', $6::date, $7, $8, $9, $10, $11::text[], true, false)`,
         [
           name,
           email,
           phone || null,
           company || null,
           service || null,
-          budget || null,
-          message,
           meetingDate,
           meetingStartTime,
           meetingDurationMinutes,
+          budget || null,
+          message,
+          uploadedAttachmentUrls,
         ]
       )
     } else {
