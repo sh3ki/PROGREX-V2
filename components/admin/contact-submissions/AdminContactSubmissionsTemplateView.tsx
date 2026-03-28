@@ -48,7 +48,7 @@ type ContactFormState = {
   status: string
 }
 
-type ColumnKey = 'requester' | 'service' | 'message' | 'created' | 'status' | 'actions'
+type ColumnKey = 'requester' | 'service' | 'budget' | 'created' | 'status' | 'actions'
 type SortKey = Exclude<ColumnKey, 'actions'>
 
 const STATUS_OPTIONS = ['new', 'in-progress', 'replied', 'resolved', 'archived']
@@ -66,6 +66,7 @@ const SERVICE_OPTIONS = [
   'IT Consulting',
   'Others',
 ]
+const BUDGET_OPTIONS = ['Below ₱10,000', '₱10,000 - ₱50,000', '₱50,000 - ₱150,000', '₱150,000 - ₱500,000', '₱500,000+', "Let's Discuss"]
 
 function defaultForm(): ContactFormState {
   return {
@@ -92,15 +93,6 @@ function formFromSubmission(row: ContactSubmission): ContactFormState {
     message: row.message ?? '',
     status: row.status,
   }
-}
-
-function statusPillStyle(status: string) {
-  if (status === 'new') return { backgroundColor: 'rgba(59,130,246,0.18)', color: '#2563eb' }
-  if (status === 'in-progress') return { backgroundColor: 'rgba(168,85,247,0.18)', color: '#7e22ce' }
-  if (status === 'replied') return { backgroundColor: 'rgba(234,179,8,0.18)', color: '#a16207' }
-  if (status === 'resolved') return { backgroundColor: 'rgba(34,197,94,0.18)', color: '#15803d' }
-  if (status === 'archived') return { backgroundColor: 'rgba(100,116,139,0.2)', color: '#334155' }
-  return { backgroundColor: 'rgba(100,116,139,0.2)', color: '#334155' }
 }
 
 function formatCreated(value: string | null) {
@@ -149,7 +141,7 @@ export default function AdminContactSubmissionsTemplateView({
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [columns, setColumns] = useState<Record<ColumnKey, boolean>>({ requester: true, service: true, message: true, created: true, status: true, actions: true })
+  const [columns, setColumns] = useState<Record<ColumnKey, boolean>>({ requester: true, service: true, budget: true, created: true, status: true, actions: true })
   const [toasts, setToasts] = useState<ApexToast[]>([])
   const [pending, setPending] = useState(false)
 
@@ -196,7 +188,8 @@ export default function AdminContactSubmissionsTemplateView({
       const dir = sortDir === 'asc' ? 1 : -1
       if (sortKey === 'requester') return a.name.localeCompare(b.name) * dir
       if (sortKey === 'service') return (a.service ?? '').localeCompare(b.service ?? '') * dir
-      if (sortKey === 'message') return (a.message ?? '').localeCompare(b.message ?? '') * dir
+      if (sortKey === 'budget') return (a.budget ?? '').localeCompare(b.budget ?? '') * dir
+      if (sortKey === 'status') return a.status.localeCompare(b.status) * dir
       return (a.createdAt ?? '').localeCompare(b.createdAt ?? '') * dir
     })
     return list
@@ -256,8 +249,8 @@ export default function AdminContactSubmissionsTemplateView({
   }
 
   function exportCsv() {
-    const rows = sorted.map((row) => [row.name, row.email, row.service ?? '', row.message ?? '', row.status, formatCreated(row.createdAt)])
-    downloadCsv('contact-submissions-export.csv', [['Name', 'Email', 'Service', 'Message', 'Status', 'Created'], ...rows])
+    const rows = sorted.map((row) => [row.name, row.email, row.service ?? '', row.budget ?? '', row.status, formatCreated(row.createdAt)])
+    downloadCsv('contact-submissions-export.csv', [['Name', 'Email', 'Service', 'Budget', 'Status', 'Created'], ...rows])
     addToast('Contact submissions CSV exported', 'success')
   }
 
@@ -461,7 +454,7 @@ export default function AdminContactSubmissionsTemplateView({
             columns={[
               { key: 'requester', label: 'Requester', visible: columns.requester },
               { key: 'service', label: 'Service', visible: columns.service },
-              { key: 'message', label: 'Message', visible: columns.message },
+              { key: 'budget', label: 'Budget', visible: columns.budget },
               { key: 'created', label: 'Created', visible: columns.created },
               { key: 'status', label: 'Status', visible: columns.status },
               { key: 'actions', label: 'Actions', visible: columns.actions },
@@ -482,7 +475,7 @@ export default function AdminContactSubmissionsTemplateView({
               {columns.requester ? (
                 <th className="px-4 py-3 font-semibold apx-text">
                   <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('requester')}>
-                    Name / Email
+                    Requester
                     {renderSortIcon('requester')}
                   </button>
                 </th>
@@ -495,11 +488,11 @@ export default function AdminContactSubmissionsTemplateView({
                   </button>
                 </th>
               ) : null}
-              {columns.message ? (
+              {columns.budget ? (
                 <th className="px-4 py-3 font-semibold apx-text">
-                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('message')}>
-                    Message
-                    {renderSortIcon('message')}
+                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('budget')}>
+                    Budget
+                    {renderSortIcon('budget')}
                   </button>
                 </th>
               ) : null}
@@ -541,19 +534,33 @@ export default function AdminContactSubmissionsTemplateView({
                 {columns.requester ? (
                   <td className="px-4 py-3">
                     <p className="font-semibold apx-text">{submission.name}</p>
-                    <p className="text-xs apx-muted">{submission.email}</p>
+                    <p className="text-xs apx-muted">{submission.company || '-'}</p>
+                    <p className="text-xs apx-muted">{submission.email} {submission.phone ? `• ${submission.phone}` : ''}</p>
                   </td>
                 ) : null}
                 {columns.service ? <td className="px-4 py-3 apx-text">{submission.service || '-'}</td> : null}
-                {columns.message ? <td className="px-4 py-3 apx-text">{submission.message ? `${submission.message.slice(0, 80)}${submission.message.length > 80 ? '...' : ''}` : '-'}</td> : null}
+                {columns.budget ? <td className="px-4 py-3 apx-text">{submission.budget || '-'}</td> : null}
+                {columns.created ? <td className="px-4 py-3 apx-text">{formatCreated(submission.createdAt)}</td> : null}
                 {columns.status ? (
-                  <td className="px-4 py-3">
-                    <span className="inline-flex rounded-full px-2 py-1 text-xs font-semibold" style={statusPillStyle(submission.status)}>
-                      {submission.status}
-                    </span>
+                  <td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
+                    <ApexDropdown
+                      value={submission.status}
+                      options={STATUS_OPTIONS.map((option) => ({ value: option, label: option }))}
+                      onChange={(value) => {
+                        setSelectedSubmission(submission)
+                        setStatusDraft(value)
+                        setConfirmConfig({
+                          title: 'Update Status',
+                          description: `Set status to ${value}?`,
+                          confirmLabel: 'Save Status',
+                          tone: 'primary',
+                          kind: 'saveStatus',
+                        })
+                        setConfirmOpen(true)
+                      }}
+                    />
                   </td>
                 ) : null}
-                {columns.created ? <td className="px-4 py-3 apx-text">{formatCreated(submission.createdAt)}</td> : null}
                 {columns.actions ? (
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2" onClick={(event) => event.stopPropagation()}>
@@ -611,20 +618,9 @@ export default function AdminContactSubmissionsTemplateView({
                           setConfirmOpen(true)
                         }}
                         aria-label={`Archive toggle ${submission.name}`}
+                        style={{ color: submission.isArchived ? '#16a34a' : '#f97316' }}
                       >
                         <Archive className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        className="apx-icon-action"
-                        onClick={() => {
-                          setSelectedSubmission(submission)
-                          setStatusDraft(submission.status)
-                          setViewOpen(true)
-                        }}
-                        aria-label={`Open ${submission.name}`}
-                      >
-                        <Edit2 className="h-4 w-4" />
                       </button>
                       <button
                         type="button"
@@ -681,7 +677,7 @@ export default function AdminContactSubmissionsTemplateView({
           }}
           className="grid gap-3 md:grid-cols-2"
         >
-          <div>
+          <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Name</label>
             <ApexInput value={addForm.name} onChange={(event) => setAddForm((prev) => ({ ...prev, name: event.target.value }))} required />
           </div>
@@ -693,9 +689,18 @@ export default function AdminContactSubmissionsTemplateView({
             <label className="mb-1 block text-xs font-medium apx-muted">Phone</label>
             <ApexInput value={addForm.phone} onChange={(event) => setAddForm((prev) => ({ ...prev, phone: event.target.value }))} />
           </div>
-          <div className="md:col-span-2">
+          <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Company</label>
             <ApexInput value={addForm.company} onChange={(event) => setAddForm((prev) => ({ ...prev, company: event.target.value }))} />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium apx-muted">Budget</label>
+            <ApexDropdown
+              value={addForm.budget}
+              options={BUDGET_OPTIONS.map((option) => ({ value: option, label: option }))}
+              placeholder="Select budget"
+              onChange={(value) => setAddForm((prev) => ({ ...prev, budget: value }))}
+            />
           </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Service</label>
@@ -706,17 +711,13 @@ export default function AdminContactSubmissionsTemplateView({
               onChange={(value) => setAddForm((prev) => ({ ...prev, service: value }))}
             />
           </div>
-          <div>
+          <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Status</label>
             <ApexDropdown
               value={addForm.status}
               options={STATUS_OPTIONS.map((option) => ({ value: option, label: option }))}
               onChange={(value) => setAddForm((prev) => ({ ...prev, status: value }))}
             />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Budget</label>
-            <ApexInput value={addForm.budget} onChange={(event) => setAddForm((prev) => ({ ...prev, budget: event.target.value }))} />
           </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Message / Details</label>
@@ -748,7 +749,7 @@ export default function AdminContactSubmissionsTemplateView({
           }}
           className="grid gap-3 md:grid-cols-2"
         >
-          <div>
+          <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Name</label>
             <ApexInput value={editForm.name} onChange={(event) => setEditForm((prev) => ({ ...prev, name: event.target.value }))} required />
           </div>
@@ -760,9 +761,18 @@ export default function AdminContactSubmissionsTemplateView({
             <label className="mb-1 block text-xs font-medium apx-muted">Phone</label>
             <ApexInput value={editForm.phone} onChange={(event) => setEditForm((prev) => ({ ...prev, phone: event.target.value }))} />
           </div>
-          <div className="md:col-span-2">
+          <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Company</label>
             <ApexInput value={editForm.company} onChange={(event) => setEditForm((prev) => ({ ...prev, company: event.target.value }))} />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium apx-muted">Budget</label>
+            <ApexDropdown
+              value={editForm.budget}
+              options={BUDGET_OPTIONS.map((option) => ({ value: option, label: option }))}
+              placeholder="Select budget"
+              onChange={(value) => setEditForm((prev) => ({ ...prev, budget: value }))}
+            />
           </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Service</label>
@@ -773,17 +783,13 @@ export default function AdminContactSubmissionsTemplateView({
               onChange={(value) => setEditForm((prev) => ({ ...prev, service: value }))}
             />
           </div>
-          <div>
+          <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Status</label>
             <ApexDropdown
               value={editForm.status}
               options={STATUS_OPTIONS.map((option) => ({ value: option, label: option }))}
               onChange={(value) => setEditForm((prev) => ({ ...prev, status: value }))}
             />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Budget</label>
-            <ApexInput value={editForm.budget} onChange={(event) => setEditForm((prev) => ({ ...prev, budget: event.target.value }))} />
           </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Message / Details</label>
@@ -863,7 +869,7 @@ export default function AdminContactSubmissionsTemplateView({
         ) : null}
       </ApexModal>
 
-      <ApexModal size="md" open={viewOpen} title="Submission Details" subtitle="Review and reply to this inquiry." onClose={() => setViewOpen(false)}>
+      <ApexModal size="md" open={viewOpen} title="Submission Details" subtitle="View full inquiry details." onClose={() => setViewOpen(false)}>
         {selectedSubmission ? (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
@@ -883,55 +889,42 @@ export default function AdminContactSubmissionsTemplateView({
                 <p className="text-xs font-medium apx-muted">Company</p>
                 <p className="apx-text">{selectedSubmission.company || '-'}</p>
               </div>
+              <div>
+                <p className="text-xs font-medium apx-muted">Phone</p>
+                <p className="apx-text">{selectedSubmission.phone || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium apx-muted">Budget</p>
+                <p className="apx-text">{selectedSubmission.budget || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium apx-muted">Created</p>
+                <p className="apx-text">{formatCreated(selectedSubmission.createdAt)}</p>
+              </div>
             </div>
 
             <div>
-              <p className="mb-1 block text-xs font-medium apx-muted">Budget</p>
-              <p className="apx-text">{selectedSubmission.budget || '-'}</p>
+              <p className="mb-1 block text-xs font-medium apx-muted">Project Details</p>
+              <p className="apx-text whitespace-pre-wrap">{selectedSubmission.message || '-'}</p>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium apx-muted">Status</label>
-              <ApexDropdown
-                value={statusDraft}
-                options={STATUS_OPTIONS.map((option) => ({ value: option, label: option }))}
-                onChange={setStatusDraft}
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-xs font-medium apx-muted">Email Reply</label>
-              <ApexTextarea rows={4} value={emailReply} onChange={(event) => setEmailReply(event.target.value)} placeholder="Write a reply..." />
+              <p className="mb-1 block text-xs font-medium apx-muted">Attachments</p>
+              <div className="space-y-1">
+                {(selectedSubmission.attachmentUrls || []).length ? (
+                  selectedSubmission.attachmentUrls.map((url) => (
+                    <button key={url} type="button" className="inline-flex items-center gap-1.5 text-xs apx-text hover:underline" onClick={() => openFileUrl(url)}>
+                      <Download className="h-3.5 w-3.5" />
+                      {url.split('/').pop() || 'file'}
+                    </button>
+                  ))
+                ) : (
+                  <p className="text-xs apx-muted">No attachments</p>
+                )}
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-1">
               <ApexButton type="button" variant="outline" onClick={() => setViewOpen(false)}>Close</ApexButton>
-              <ApexButton
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setConfirmConfig({
-                    title: 'Update Status',
-                    description: `Set status to ${statusDraft}?`,
-                    confirmLabel: 'Save Status',
-                    tone: 'primary',
-                    kind: 'saveStatus',
-                  })
-                  setConfirmOpen(true)
-                }}
-              >
-                Save Status
-              </ApexButton>
-              <ApexButton
-                type="button"
-                onClick={() => {
-                  setEmailSubject('Your message has been received')
-                  setEmailReply('')
-                  setEmailOpen(true)
-                }}
-              >
-                <Mail className="h-4 w-4" />
-                Send Email
-              </ApexButton>
             </div>
           </div>
         ) : null}
