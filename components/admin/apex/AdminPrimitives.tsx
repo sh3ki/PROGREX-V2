@@ -40,6 +40,14 @@ export function ApexInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={`apx-input ${props.className ?? ''}`.trim()} />
 }
 
+export function ApexDateInput(props: Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'>) {
+  return <ApexInput {...props} type="date" />
+}
+
+export function ApexTimeInput(props: Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'>) {
+  return <ApexInput {...props} type="time" />
+}
+
 export function ApexTextarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return <textarea {...props} className={`apx-textarea ${props.className ?? ''}`.trim()} />
 }
