@@ -33,7 +33,7 @@ type ClientRow = {
   createdAt: string | null
 }
 
-type ColumnKey = 'client' | 'members' | 'roleEmail' | 'contact' | 'createdStatus' | 'actions'
+type ColumnKey = 'client' | 'company' | 'email' | 'fbLink' | 'phone' | 'status' | 'actions'
 type SortKey = Exclude<ColumnKey, 'actions'>
 
 type ClientFormState = {
@@ -109,10 +109,11 @@ export default function AdminClientsTemplateView({
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [columns, setColumns] = useState<Record<ColumnKey, boolean>>({
     client: true,
-    members: true,
-    roleEmail: true,
-    contact: true,
-    createdStatus: true,
+    company: true,
+    email: true,
+    fbLink: true,
+    phone: true,
+    status: true,
     actions: true,
   })
 
@@ -132,7 +133,7 @@ export default function AdminClientsTemplateView({
     description: string
     confirmLabel: string
     tone: 'primary' | 'danger'
-    kind: 'add' | 'edit' | 'delete' | 'toggle' | 'bulkSetActive' | 'bulkSetInactive' | 'bulkDelete'
+    kind: 'add' | 'edit' | 'delete' | 'toggle' | 'bulkSetInactive' | 'bulkDelete'
   } | null>(null)
 
   const filtered = useMemo(() => {
@@ -143,11 +144,11 @@ export default function AdminClientsTemplateView({
         ? true
         : [
             client.fullName,
+            client.otherMemberNames.join(' '),
             client.role ?? '',
             client.email ?? '',
             client.fbLink ?? '',
             client.phone ?? '',
-            client.otherMemberNames.join(' '),
           ]
             .join(' ')
             .toLowerCase()
@@ -161,10 +162,11 @@ export default function AdminClientsTemplateView({
     list.sort((a, b) => {
       const dir = sortDir === 'asc' ? 1 : -1
       if (sortKey === 'client') return a.fullName.localeCompare(b.fullName) * dir
-      if (sortKey === 'members') return a.otherMemberNames.join(', ').localeCompare(b.otherMemberNames.join(', ')) * dir
-      if (sortKey === 'roleEmail') return `${a.role ?? ''} ${a.email ?? ''}`.localeCompare(`${b.role ?? ''} ${b.email ?? ''}`) * dir
-      if (sortKey === 'contact') return `${a.fbLink ?? ''} ${a.phone ?? ''}`.localeCompare(`${b.fbLink ?? ''} ${b.phone ?? ''}`) * dir
-      return `${a.createdAt ?? ''} ${a.isActive ? '1' : '0'}`.localeCompare(`${b.createdAt ?? ''} ${b.isActive ? '1' : '0'}`) * dir
+      if (sortKey === 'company') return (a.role ?? '').localeCompare(b.role ?? '') * dir
+      if (sortKey === 'email') return (a.email ?? '').localeCompare(b.email ?? '') * dir
+      if (sortKey === 'fbLink') return (a.fbLink ?? '').localeCompare(b.fbLink ?? '') * dir
+      if (sortKey === 'phone') return (a.phone ?? '').localeCompare(b.phone ?? '') * dir
+      return Number(a.isActive) === Number(b.isActive) ? 0 : (a.isActive ? 1 : -1) * dir
     })
     return list
   }, [filtered, sortDir, sortKey])
@@ -229,10 +231,9 @@ export default function AdminClientsTemplateView({
       client.email ?? '',
       client.fbLink ?? '',
       client.phone ?? '',
-      client.createdAt ? new Date(client.createdAt).toLocaleDateString() : '',
       client.isActive ? 'Active' : 'Inactive',
     ])
-    downloadCsv('clients-export.csv', [['Full Name', 'Members', 'Company/Org', 'Email', 'Facebook', 'Phone', 'Created', 'Status'], ...rows])
+    downloadCsv('clients-export.csv', [['Full Name', 'Other Members', 'Company/Org', 'Email', 'Facebook', 'Phone', 'Status'], ...rows])
     addToast('Clients CSV exported', 'success')
   }
 
@@ -281,15 +282,6 @@ export default function AdminClientsTemplateView({
         await deleteClientAction(formData)
         setViewOpen(false)
         addToast('Client deleted', 'success')
-      }
-
-      if (confirmConfig.kind === 'bulkSetActive') {
-        const formData = new FormData()
-        formData.set('ids', selectedIds.join(','))
-        formData.set('mode', 'active')
-        await bulkToggleClientsAction(formData)
-        setSelectedIds([])
-        addToast('Selected clients set active', 'success')
       }
 
       if (confirmConfig.kind === 'bulkSetInactive') {
@@ -379,23 +371,6 @@ export default function AdminClientsTemplateView({
                 variant="outline"
                 onClick={() => {
                   setConfirmConfig({
-                    title: 'Set Selected Clients Active',
-                    description: `Set ${selectedIds.length} selected client(s) active?`,
-                    confirmLabel: 'Set Active',
-                    tone: 'primary',
-                    kind: 'bulkSetActive',
-                  })
-                  setConfirmOpen(true)
-                }}
-              >
-                <Power className="h-4 w-4" />
-                Set Active
-              </ApexButton>
-              <ApexButton
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setConfirmConfig({
                     title: 'Set Selected Clients Inactive',
                     description: `Set ${selectedIds.length} selected client(s) inactive?`,
                     confirmLabel: 'Set Inactive',
@@ -431,10 +406,11 @@ export default function AdminClientsTemplateView({
           <ApexColumnsToggle
             columns={[
               { key: 'client', label: 'Client', visible: columns.client },
-              { key: 'members', label: 'Members', visible: columns.members },
-              { key: 'roleEmail', label: 'Company/Org / Email', visible: columns.roleEmail },
-              { key: 'contact', label: 'FB / Phone', visible: columns.contact },
-              { key: 'createdStatus', label: 'Created / Status', visible: columns.createdStatus },
+              { key: 'company', label: 'Company/Org', visible: columns.company },
+              { key: 'email', label: 'Email', visible: columns.email },
+              { key: 'fbLink', label: 'FB Link', visible: columns.fbLink },
+              { key: 'phone', label: 'Phone', visible: columns.phone },
+              { key: 'status', label: 'Status', visible: columns.status },
               { key: 'actions', label: 'Actions', visible: columns.actions },
             ]}
             onToggle={toggleColumn}
@@ -458,35 +434,43 @@ export default function AdminClientsTemplateView({
                   </button>
                 </th>
               ) : null}
-              {columns.members ? (
+              {columns.company ? (
                 <th className="px-4 py-3 font-semibold apx-text">
-                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('members')}>
-                    Members
-                    {renderSortIcon('members')}
+                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('company')}>
+                    Company/Org
+                    {renderSortIcon('company')}
                   </button>
                 </th>
               ) : null}
-              {columns.roleEmail ? (
+              {columns.email ? (
                 <th className="px-4 py-3 font-semibold apx-text">
-                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('roleEmail')}>
-                    Company/Org / Email
-                    {renderSortIcon('roleEmail')}
+                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('email')}>
+                    Email
+                    {renderSortIcon('email')}
                   </button>
                 </th>
               ) : null}
-              {columns.contact ? (
+              {columns.fbLink ? (
                 <th className="px-4 py-3 font-semibold apx-text">
-                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('contact')}>
-                    Contact
-                    {renderSortIcon('contact')}
+                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('fbLink')}>
+                    FB Link
+                    {renderSortIcon('fbLink')}
                   </button>
                 </th>
               ) : null}
-              {columns.createdStatus ? (
+              {columns.phone ? (
                 <th className="px-4 py-3 font-semibold apx-text">
-                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('createdStatus')}>
-                    Created / Status
-                    {renderSortIcon('createdStatus')}
+                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('phone')}>
+                    Phone
+                    {renderSortIcon('phone')}
+                  </button>
+                </th>
+              ) : null}
+              {columns.status ? (
+                <th className="px-4 py-3 font-semibold apx-text">
+                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('status')}>
+                    Status
+                    {renderSortIcon('status')}
                   </button>
                 </th>
               ) : null}
@@ -521,26 +505,23 @@ export default function AdminClientsTemplateView({
                           <div className="flex h-full w-full items-center justify-center text-[10px] apx-muted">N/A</div>
                         )}
                       </div>
-                      <p className="font-semibold apx-text">{client.fullName}</p>
+                      <div>
+                        <p className="font-semibold apx-text">{client.fullName}</p>
+                        <div className="space-y-0.5">
+                          {client.otherMemberNames.length ? client.otherMemberNames.map((member) => (
+                            <p key={`${client.id}-${member}`} className="text-xs apx-muted">{member}</p>
+                          )) : <p className="text-xs apx-muted">No other members</p>}
+                        </div>
+                      </div>
                     </div>
                   </td>
                 ) : null}
-                {columns.members ? <td className="px-4 py-3 apx-text">{client.otherMemberNames.length ? client.otherMemberNames.join(', ') : 'none'}</td> : null}
-                {columns.roleEmail ? (
+                {columns.company ? <td className="px-4 py-3 apx-text">{client.role || '-'}</td> : null}
+                {columns.email ? <td className="px-4 py-3 apx-text">{client.email || '-'}</td> : null}
+                {columns.fbLink ? <td className="px-4 py-3 apx-text break-all">{client.fbLink || '-'}</td> : null}
+                {columns.phone ? <td className="px-4 py-3 apx-text">{client.phone || '-'}</td> : null}
+                {columns.status ? (
                   <td className="px-4 py-3">
-                    <p className="apx-text">{client.role || '-'}</p>
-                    <p className="text-xs apx-muted">{client.email || '-'}</p>
-                  </td>
-                ) : null}
-                {columns.contact ? (
-                  <td className="px-4 py-3">
-                    <p className="apx-text break-all">{client.fbLink || '-'}</p>
-                    <p className="text-xs apx-muted">{client.phone || '-'}</p>
-                  </td>
-                ) : null}
-                {columns.createdStatus ? (
-                  <td className="px-4 py-3">
-                    <p className="apx-text">{client.createdAt ? new Date(client.createdAt).toLocaleDateString() : '-'}</p>
                     <span
                       className="inline-flex rounded-full px-2 py-1 text-xs font-semibold"
                       style={
