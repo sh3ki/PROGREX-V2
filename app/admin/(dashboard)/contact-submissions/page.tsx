@@ -45,6 +45,7 @@ async function ensureContactColumns() {
   await sql('alter table contact_submissions add column if not exists is_active boolean not null default true')
   await sql('alter table contact_submissions add column if not exists is_archived boolean not null default false')
   await sql('alter table contact_submissions add column if not exists attachment_urls text[] default array[]::text[]')
+  await sql('alter table contact_submissions add column if not exists request_meeting boolean not null default false')
 }
 
 async function createContactSubmission(formData: FormData) {
@@ -262,6 +263,7 @@ export default async function AdminContactSubmissionsPage() {
   }>(
     `select id, name, email, phone, company, service, budget, message, status, is_active, is_archived, attachment_urls, created_at::text
      from contact_submissions
+     where coalesce(request_meeting, false) = false
      order by created_at desc`
   )
 
