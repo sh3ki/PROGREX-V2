@@ -128,7 +128,6 @@ export default function AdminBookingsTemplateView({
   updateBookingAction,
   deleteBookingAction,
   bulkDeleteBookingsAction,
-  bulkSetInactiveBookingsAction,
   bulkArchiveBookingsAction,
   toggleArchiveBookingAction,
   sendBookingEmailAction,
@@ -138,7 +137,6 @@ export default function AdminBookingsTemplateView({
   updateBookingAction: (formData: FormData) => Promise<void>
   deleteBookingAction: (formData: FormData) => Promise<void>
   bulkDeleteBookingsAction: (formData: FormData) => Promise<void>
-  bulkSetInactiveBookingsAction: (formData: FormData) => Promise<void>
   bulkArchiveBookingsAction: (formData: FormData) => Promise<void>
   toggleArchiveBookingAction: (formData: FormData) => Promise<void>
   sendBookingEmailAction: (formData: FormData) => Promise<void>
@@ -662,20 +660,20 @@ export default function AdminBookingsTemplateView({
                           setConfirmOpen(true)
                         }}
                         aria-label={`Archive toggle ${booking.name}`}
-                          <ApexDropdown
-                            value={addForm.service}
-                            options={SERVICE_OPTIONS.map((option) => ({ value: option, label: option }))}
-                            placeholder="Select service"
-                            onChange={(value) => setAddForm((prev) => ({ ...prev, service: value }))}
-                          />
+                      >
+                        <Archive className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        className="apx-icon-action-danger"
                         onClick={() => {
                           setSelectedBooking(booking)
                           setConfirmConfig({
-                          <ApexDateInput value={addForm.requestedDate} onChange={(event) => setAddForm((prev) => ({ ...prev, requestedDate: event.target.value }))} />
+                            title: 'Delete Booking',
                             description: `Delete ${booking.name}? This cannot be undone.`,
                             confirmLabel: 'Delete',
                             tone: 'danger',
-                          <ApexTimeInput value={addForm.requestedStartTime} onChange={(event) => setAddForm((prev) => ({ ...prev, requestedStartTime: event.target.value }))} />
+                            kind: 'delete',
                           })
                           setConfirmOpen(true)
                         }}
@@ -775,7 +773,7 @@ export default function AdminBookingsTemplateView({
           </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Attachments (optional, up to 5)</label>
-            <ApexFileDropzone maxFiles={5} maxFileSizeMb={10} files={addAttachments} onFilesChange={setAddAttachments} />
+            <ApexFileDropzone maxFiles={5} maxSizeMb={10} files={addAttachments} onFilesChange={setAddAttachments} />
             {addAttachments.length ? <p className="mt-1 text-xs apx-muted">{addAttachments.length} file(s) selected</p> : null}
           </div>
           <div className="md:col-span-2 flex justify-end gap-2 pt-2">
@@ -873,7 +871,7 @@ export default function AdminBookingsTemplateView({
             <label className="mb-1 block text-xs font-medium apx-muted">Add Attachments (up to 5 total)</label>
             <ApexFileDropzone
               maxFiles={Math.max(0, 5 - editKeptAttachmentUrls.length)}
-              maxFileSizeMb={10}
+              maxSizeMb={10}
               files={editAttachments}
               onFilesChange={setEditAttachments}
             />
