@@ -1,9 +1,9 @@
 ﻿'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Star, Quote, ChevronLeft, ChevronRight, Monitor, Check, Send, CheckCircle, Bot, Paperclip, X as XIcon } from 'lucide-react'
+import { ArrowRight, Star, Quote, ChevronLeft, ChevronRight, Monitor, Check, Bot } from 'lucide-react'
 import Image from 'next/image'
 import Hero from '@/components/Hero'
 import ConstellationDecor from '@/components/ConstellationDecor'
@@ -23,83 +23,6 @@ type HomeClientProps = {
   featuredProjectsData: Array<{ id: string; slug: string; title: string; systemType: string; category: string[]; industry: string; tags: string[]; image: string; shortDesc: string }>
 }
 
-function CtaSelect({ value, onChange, options, placeholder }: {
-  value: string
-  onChange: (v: string) => void
-  options: string[]
-  placeholder: string
-}) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const handle = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handle)
-    return () => document.removeEventListener('mousedown', handle)
-  }, [])
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((p) => !p)}
-        className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-white/4 border text-sm transition-all text-left"
-        style={{ borderColor: open ? 'rgba(14,165,233,0.5)' : 'rgba(103,232,249,0.15)' }}
-      >
-        <span className={value ? 'text-white/90' : 'text-slate-500'}>{value || placeholder}</span>
-        <svg style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M4 6l4 4 4-4" stroke="rgba(103,232,249,0.5)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
-      <AnimatePresence>
-        {open && (
-          <motion.ul
-            initial={{ opacity: 0, y: -6, scaleY: 0.95 }}
-            animate={{ opacity: 1, y: 0, scaleY: 1 }}
-            exit={{ opacity: 0, y: -6, scaleY: 0.95 }}
-            transition={{ duration: 0.15 }}
-            style={{
-              transformOrigin: 'top',
-              background: 'rgba(6,6,22,0.99)',
-              border: '1px solid rgba(14,165,233,0.2)',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(14,165,233,0.06)',
-            }}
-            className="absolute z-50 w-full mt-1 rounded-xl overflow-hidden py-1"
-          >
-            {options.map((opt) => (
-              <li key={opt}>
-                <button
-                  type="button"
-                  onClick={() => { onChange(opt); setOpen(false) }}
-                  className="w-full text-left px-4 py-2 text-sm transition-colors"
-                  style={{
-                    color: value === opt ? '#67E8F9' : 'rgba(255,255,255,0.7)',
-                    background: value === opt ? 'rgba(14,165,233,0.1)' : 'transparent',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (value !== opt) {
-                      e.currentTarget.style.background = 'rgba(14,165,233,0.07)'
-                      e.currentTarget.style.color = '#fff'
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = value === opt ? 'rgba(14,165,233,0.1)' : 'transparent'
-                    e.currentTarget.style.color = value === opt ? '#67E8F9' : 'rgba(255,255,255,0.7)'
-                  }}
-                >
-                  {opt}
-                </button>
-              </li>
-            ))}
-          </motion.ul>
-        )}
-      </AnimatePresence>
-    </div>
-  )
-}
-
 export default function HomeClient({ servicesData, systemsData, testimonialsData, faqsData, featuredProjectsData }: HomeClientProps) {
   const { t, translations } = useTranslation()
   const [contactModalOpen, setContactModalOpen] = useState(false)
@@ -112,65 +35,6 @@ export default function HomeClient({ servicesData, systemsData, testimonialsData
     ? testimonialsData[Math.min(activeTestimonial, testimonialsCount - 1)]
     : null
 
-  const [ctaForm, setCtaForm] = useState({ name: '', email: '', phone: '', company: '', service: '', budget: '', message: '' })
-  const [ctaErrors, setCtaErrors] = useState<{ name?: string; email?: string; message?: string }>({})
-  const [ctaLoading, setCtaLoading] = useState(false)
-  const [ctaSubmitted, setCtaSubmitted] = useState(false)
-  const [ctaServerError, setCtaServerError] = useState('')
-  const [ctaAttachedFile, setCtaAttachedFile] = useState<File | null>(null)
-  const [ctaFileError, setCtaFileError] = useState('')
-  const [ctaDragOver, setCtaDragOver] = useState(false)
-  const ctaFileInputRef = useRef<HTMLInputElement>(null)
-
-  const CTA_MAX_FILE_SIZE = 3 * 1024 * 1024 // 3 MB
-  const handleCtaFileSelect = (file: File) => {
-    setCtaFileError('')
-    if (file.size > CTA_MAX_FILE_SIZE) {
-      setCtaFileError(`File too large (max 3 MB). "${file.name}" is ${(file.size / 1024 / 1024).toFixed(1)} MB.`)
-      return
-    }
-    setCtaAttachedFile(file)
-  }
-
-  const ctaServices = translations.form.ctaServices as unknown as string[]
-
-  const handleCtaSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const errs: typeof ctaErrors = {}
-    if (!ctaForm.name.trim()) errs.name = t('form.nameRequired')
-    if (!ctaForm.email.trim()) errs.email = t('form.emailRequired')
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ctaForm.email)) errs.email = t('form.invalidEmail')
-    if (!ctaForm.message.trim()) errs.message = t('form.messageRequired')
-    setCtaErrors(errs)
-    if (Object.keys(errs).length > 0) return
-    setCtaLoading(true)
-    setCtaServerError('')
-    try {
-      let attachment: { name: string; data: string; contentType: string } | undefined
-      if (ctaAttachedFile) {
-        const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = () => resolve((reader.result as string).split(',')[1])
-          reader.onerror = reject
-          reader.readAsDataURL(ctaAttachedFile)
-        })
-        attachment = { name: ctaAttachedFile.name, data: base64, contentType: ctaAttachedFile.type }
-      }
-      const res = await fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...ctaForm, attachment }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || t('form.failedToSend'))
-      setCtaAttachedFile(null)
-      setCtaSubmitted(true)
-    } catch (err: unknown) {
-      setCtaServerError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
-    } finally {
-      setCtaLoading(false)
-    }
-  }
   const DURATION = 7 // seconds auto-advance
 
   const goTo = (i: number) => {
@@ -704,13 +568,13 @@ export default function HomeClient({ servicesData, systemsData, testimonialsData
             style={{ background: 'rgba(6,6,22,0.97)', border: '1px solid rgba(103,232,249,0.12)', boxShadow: '0 8px 40px rgba(0,0,0,0.4)' }}
           >
             <p className="mb-3 text-sm text-slate-400">Use the same contact and booking form from the Contact page.</p>
-            <button type="button" className="btn-primary !px-7 !py-3" onClick={() => setContactModalOpen(true)}>
+            <button type="button" className="btn-primary px-7! py-3!" onClick={() => setContactModalOpen(true)}>
               {t('home.ctaPrimaryBtn')}
             </button>
           </motion.div>
 
           {contactModalOpen ? (
-            <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4">
+            <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/70 p-4">
               <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-nebula-700/30 bg-[#050511] p-4 sm:p-6">
                 <button
                   type="button"
