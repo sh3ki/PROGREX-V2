@@ -74,6 +74,27 @@ const SERVICE_OPTIONS = [
   'Others',
 ]
 
+const BUDGET_OPTIONS = ['Below ₱10,000', '₱10,000 - ₱50,000', '₱50,000 - ₱150,000', '₱150,000 - ₱500,000', '₱500,000+', "Let's Discuss"]
+const DURATION_OPTIONS = [10, 20, 30, 60, 90, 120]
+
+function formatDateLabel(value: string | null) {
+  if (!value) return '-'
+  const date = new Date(`${value}T00:00:00`)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function formatTimeLabel(value: string | null) {
+  if (!value) return '-'
+  const [hourRaw, minuteRaw] = value.split(':')
+  const hour = Number(hourRaw)
+  const minute = Number(minuteRaw)
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return value
+  const date = new Date()
+  date.setHours(hour, minute, 0, 0)
+  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+}
+
 function defaultForm(): BookingFormState {
   return {
     name: '',
@@ -155,7 +176,6 @@ export default function AdminBookingsTemplateView({
   const [addOpen, setAddOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [viewOpen, setViewOpen] = useState(false)
-  const [statusOpen, setStatusOpen] = useState(false)
   const [filesOpen, setFilesOpen] = useState(false)
   const [emailOpen, setEmailOpen] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -188,8 +208,6 @@ export default function AdminBookingsTemplateView({
           ? true
           : status === 'archived'
           ? booking.isArchived
-          : status === 'in-review'
-          ? booking.status === 'in-review'
           : booking.status === status && !booking.isArchived
       const searchMatch = keyword.length === 0
         ? true
@@ -329,7 +347,6 @@ export default function AdminBookingsTemplateView({
         const next = formFromBooking(statusTargetBooking)
         next.status = normalizeStatusForEdit(statusDraft)
         await updateBookingAction(toFormData(next, [], statusTargetBooking.attachmentUrls || []))
-        setStatusOpen(false)
         setStatusTargetBooking(null)
         addToast('Booking status updated', 'success')
       }
@@ -510,7 +527,7 @@ export default function AdminBookingsTemplateView({
               {columns.requester ? (
                 <th className="px-4 py-3 font-semibold apx-text">
                   <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('requester')}>
-                    Name / Email
+                    Requester
                     {renderSortIcon('requester')}
                   </button>
                 </th>
@@ -569,8 +586,8 @@ export default function AdminBookingsTemplateView({
                 {columns.requester ? (
                   <td className="px-4 py-3">
                     <p className="font-semibold apx-text">{booking.name}</p>
-                    <p className="text-xs apx-muted">{booking.email}</p>
-                    <p className="text-xs apx-muted">{booking.phone || '-'} {booking.company ? `• ${booking.company}` : ''}</p>
+                    <p className="text-xs apx-muted">{booking.company || '-'}</p>
+                    <p className="text-xs apx-muted">{booking.email} {booking.phone ? `• ${booking.phone}` : ''}</p>
                   </td>
                 ) : null}
                 {columns.service ? <td className="px-4 py-3 apx-text">{booking.service || '-'}</td> : null}
@@ -578,29 +595,32 @@ export default function AdminBookingsTemplateView({
                   <td className="px-4 py-3 apx-text">
                     {booking.requestedDate ? (
                       <div>
-                        <p>{booking.requestedDate}</p>
-                        <p className="text-xs apx-muted">{booking.requestedStartTime || '-'} | {booking.requestedDurationMinutes || 0} mins</p>
+                        <p>{formatDateLabel(booking.requestedDate)}</p>
+                        <p className="text-xs apx-muted">{formatTimeLabel(booking.requestedStartTime)} | {booking.requestedDurationMinutes || 0} mins</p>
                       </div>
                     ) : '-'}
                   </td>
                 ) : null}
                 {columns.budget ? <td className="px-4 py-3 apx-text">{booking.budget || '-'}</td> : null}
-                {columns.created ? <td className="px-4 py-3 apx-text">{booking.createdAt ? new Date(booking.createdAt).toLocaleDateString() : '-'}</td> : null}
+                {columns.created ? <td className="px-4 py-3 apx-text">{formatDateLabel(booking.createdAt?.slice(0, 10) ?? null)}</td> : null}
                 {columns.status ? (
-                  <td className="px-4 py-3">
-                    <button
-                      type="button"
-                      className="rounded-lg border px-2 py-1 text-xs font-semibold apx-text"
-                      style={{ borderColor: 'var(--apx-border)' }}
-                      onClick={(event) => {
-                        event.stopPropagation()
+                  <td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
+                    <ApexDropdown
+                      value={booking.status}
+                      options={STATUS_OPTIONS.map((option) => ({ value: option, label: option }))}
+                      onChange={(value) => {
                         setStatusTargetBooking(booking)
-                        setStatusDraft(normalizeStatusForEdit(booking.status))
-                        setStatusOpen(true)
+                        setStatusDraft(normalizeStatusForEdit(value))
+                        setConfirmConfig({
+                          title: 'Update Booking Status',
+                          description: `Set status to ${normalizeStatusForEdit(value)}?`,
+                          confirmLabel: 'Save Status',
+                          tone: 'primary',
+                          kind: 'updateStatus',
+                        })
+                        setConfirmOpen(true)
                       }}
-                    >
-                      {booking.isArchived ? 'archived' : booking.status}
-                    </button>
+                    />
                   </td>
                 ) : null}
                 {columns.actions ? (
@@ -648,6 +668,7 @@ export default function AdminBookingsTemplateView({
                       <button
                         type="button"
                         className="apx-icon-action"
+                        style={{ color: booking.isArchived ? '#16a34a' : '#f97316' }}
                         onClick={() => {
                           setSelectedBooking(booking)
                           setConfirmConfig({
@@ -730,30 +751,43 @@ export default function AdminBookingsTemplateView({
             <label className="mb-1 block text-xs font-medium apx-muted">Phone</label>
             <ApexInput value={addForm.phone} onChange={(event) => setAddForm((prev) => ({ ...prev, phone: event.target.value }))} />
           </div>
-          <div className="md:col-span-2">
+          <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Company</label>
             <ApexInput value={addForm.company} onChange={(event) => setAddForm((prev) => ({ ...prev, company: event.target.value }))} />
           </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium apx-muted">Budget</label>
+            <ApexDropdown
+              value={addForm.budget}
+              options={BUDGET_OPTIONS.map((option) => ({ value: option, label: option }))}
+              placeholder="Select budget"
+              onChange={(value) => setAddForm((prev) => ({ ...prev, budget: value }))}
+            />
+          </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Service</label>
-            <select className="apx-input" value={addForm.service} onChange={(event) => setAddForm((prev) => ({ ...prev, service: event.target.value }))}>
-              <option value="">Select service</option>
-              {SERVICE_OPTIONS.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
+            <ApexDropdown
+              value={addForm.service}
+              options={SERVICE_OPTIONS.map((option) => ({ value: option, label: option }))}
+              placeholder="Select service"
+              onChange={(value) => setAddForm((prev) => ({ ...prev, service: value }))}
+            />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Date</label>
-            <ApexInput type="date" value={addForm.requestedDate} onChange={(event) => setAddForm((prev) => ({ ...prev, requestedDate: event.target.value }))} />
+            <ApexDateInput value={addForm.requestedDate} onChange={(event) => setAddForm((prev) => ({ ...prev, requestedDate: event.target.value }))} />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Start Time</label>
-            <ApexInput type="time" value={addForm.requestedStartTime} onChange={(event) => setAddForm((prev) => ({ ...prev, requestedStartTime: event.target.value }))} />
+            <ApexTimeInput value={addForm.requestedStartTime} onChange={(event) => setAddForm((prev) => ({ ...prev, requestedStartTime: event.target.value }))} />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Duration (mins)</label>
-            <ApexInput type="number" min={0} value={String(addForm.requestedDurationMinutes)} onChange={(event) => setAddForm((prev) => ({ ...prev, requestedDurationMinutes: Number(event.target.value) || 0 }))} />
+            <ApexDropdown
+              value={String(addForm.requestedDurationMinutes || 30)}
+              options={DURATION_OPTIONS.map((option) => ({ value: String(option), label: `${option} mins` }))}
+              onChange={(value) => setAddForm((prev) => ({ ...prev, requestedDurationMinutes: Number(value) || 30 }))}
+            />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Status</label>
@@ -762,10 +796,6 @@ export default function AdminBookingsTemplateView({
               options={STATUS_OPTIONS.map((option) => ({ value: option, label: option }))}
               onChange={(value) => setAddForm((prev) => ({ ...prev, status: normalizeStatusForEdit(value) }))}
             />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Budget</label>
-            <ApexInput value={addForm.budget} onChange={(event) => setAddForm((prev) => ({ ...prev, budget: event.target.value }))} />
           </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Project Details</label>
@@ -810,9 +840,18 @@ export default function AdminBookingsTemplateView({
             <label className="mb-1 block text-xs font-medium apx-muted">Phone</label>
             <ApexInput value={editForm.phone} onChange={(event) => setEditForm((prev) => ({ ...prev, phone: event.target.value }))} />
           </div>
-          <div className="md:col-span-2">
+          <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Company</label>
             <ApexInput value={editForm.company} onChange={(event) => setEditForm((prev) => ({ ...prev, company: event.target.value }))} />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium apx-muted">Budget</label>
+            <ApexDropdown
+              value={editForm.budget}
+              options={BUDGET_OPTIONS.map((option) => ({ value: option, label: option }))}
+              placeholder="Select budget"
+              onChange={(value) => setEditForm((prev) => ({ ...prev, budget: value }))}
+            />
           </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Service</label>
@@ -833,7 +872,11 @@ export default function AdminBookingsTemplateView({
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Duration (mins)</label>
-            <ApexInput type="number" min={0} value={String(editForm.requestedDurationMinutes)} onChange={(event) => setEditForm((prev) => ({ ...prev, requestedDurationMinutes: Number(event.target.value) || 0 }))} />
+            <ApexDropdown
+              value={String(editForm.requestedDurationMinutes || 30)}
+              options={DURATION_OPTIONS.map((option) => ({ value: String(option), label: `${option} mins` }))}
+              onChange={(value) => setEditForm((prev) => ({ ...prev, requestedDurationMinutes: Number(value) || 30 }))}
+            />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Status</label>
@@ -842,10 +885,6 @@ export default function AdminBookingsTemplateView({
               options={STATUS_OPTIONS.map((option) => ({ value: option, label: option }))}
               onChange={(value) => setEditForm((prev) => ({ ...prev, status: normalizeStatusForEdit(value) }))}
             />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Budget</label>
-            <ApexInput value={editForm.budget} onChange={(event) => setEditForm((prev) => ({ ...prev, budget: event.target.value }))} />
           </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Project Details</label>
@@ -897,14 +936,6 @@ export default function AdminBookingsTemplateView({
                 <p className="apx-text">{selectedBooking.email}</p>
               </div>
               <div>
-                <p className="text-xs font-medium apx-muted">Service</p>
-                <p className="apx-text">{selectedBooking.service || '-'}</p>
-              </div>
-              <div>
-                <p className="text-xs font-medium apx-muted">Status</p>
-                <p className="apx-text">{selectedBooking.isArchived ? 'archived' : selectedBooking.status}</p>
-              </div>
-              <div>
                 <p className="text-xs font-medium apx-muted">Phone</p>
                 <p className="apx-text">{selectedBooking.phone || '-'}</p>
               </div>
@@ -913,16 +944,28 @@ export default function AdminBookingsTemplateView({
                 <p className="apx-text">{selectedBooking.company || '-'}</p>
               </div>
               <div>
+                <p className="text-xs font-medium apx-muted">Service</p>
+                <p className="apx-text">{selectedBooking.service || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium apx-muted">Status</p>
+                <p className="apx-text">{selectedBooking.isArchived ? 'archived' : selectedBooking.status}</p>
+              </div>
+              <div>
                 <p className="text-xs font-medium apx-muted">Schedule</p>
-                <p className="apx-text">{selectedBooking.requestedDate || '-'} {selectedBooking.requestedStartTime ? `| ${selectedBooking.requestedStartTime}` : ''}</p>
+                <p className="apx-text">{formatDateLabel(selectedBooking.requestedDate)} {selectedBooking.requestedStartTime ? `| ${formatTimeLabel(selectedBooking.requestedStartTime)}` : ''}</p>
               </div>
               <div>
                 <p className="text-xs font-medium apx-muted">Duration</p>
                 <p className="apx-text">{selectedBooking.requestedDurationMinutes || 0} mins</p>
               </div>
               <div>
-                <p className="text-xs font-medium apx-muted">Budget Range</p>
+                <p className="text-xs font-medium apx-muted">Budget</p>
                 <p className="apx-text">{selectedBooking.budget || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium apx-muted">Created</p>
+                <p className="apx-text">{formatDateLabel(selectedBooking.createdAt?.slice(0, 10) ?? null)}</p>
               </div>
             </div>
             <div>
@@ -934,7 +977,8 @@ export default function AdminBookingsTemplateView({
               <div className="mt-1 space-y-1">
                 {(selectedBooking.attachmentUrls || []).length ? (
                   selectedBooking.attachmentUrls.map((url) => (
-                    <button key={url} type="button" className="block text-xs apx-text hover:underline" onClick={() => openFileUrl(url)}>
+                    <button key={url} type="button" className="inline-flex items-center gap-1.5 text-xs apx-text hover:underline" onClick={() => openFileUrl(url)}>
+                      <Download className="h-3.5 w-3.5" />
                       {url.split('/').pop() || 'file'}
                     </button>
                   ))
@@ -945,17 +989,6 @@ export default function AdminBookingsTemplateView({
             </div>
             <div className="flex justify-end gap-2 pt-1">
               <ApexButton type="button" variant="outline" onClick={() => setViewOpen(false)}>Close</ApexButton>
-              <ApexButton
-                type="button"
-                onClick={() => {
-                  setEmailSubject('Your PROGREX booking update')
-                  setEmailReply('')
-                  setEmailOpen(true)
-                }}
-              >
-                <Mail className="h-4 w-4" />
-                Send Email
-              </ApexButton>
             </div>
           </div>
         ) : null}
@@ -994,39 +1027,6 @@ export default function AdminBookingsTemplateView({
               >
                 <Mail className="h-4 w-4" />
                 Send Email
-              </ApexButton>
-            </div>
-          </div>
-        ) : null}
-      </ApexModal>
-
-      <ApexModal size="sm" open={statusOpen} title="Update Status" subtitle="Choose the booking status." onClose={() => setStatusOpen(false)}>
-        {statusTargetBooking ? (
-          <div className="space-y-3">
-            <div>
-              <label className="mb-1 block text-xs font-medium apx-muted">Status</label>
-              <ApexDropdown
-                value={statusDraft}
-                options={STATUS_OPTIONS.map((item) => ({ value: item, label: item }))}
-                onChange={setStatusDraft}
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-1">
-              <ApexButton type="button" variant="outline" onClick={() => setStatusOpen(false)}>Cancel</ApexButton>
-              <ApexButton
-                type="button"
-                onClick={() => {
-                  setConfirmConfig({
-                    title: 'Update Booking Status',
-                    description: `Set status to ${statusDraft}?`,
-                    confirmLabel: 'Save Status',
-                    tone: 'primary',
-                    kind: 'updateStatus',
-                  })
-                  setConfirmOpen(true)
-                }}
-              >
-                Save Status
               </ApexButton>
             </div>
           </div>
