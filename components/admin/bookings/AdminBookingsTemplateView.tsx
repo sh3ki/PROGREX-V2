@@ -1,9 +1,10 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ArrowDown, ArrowUp, ArrowUpDown, Archive, Download, Edit2, Mail, Plus, Power, Trash2 } from 'lucide-react'
-import { ApexButton, ApexInput, ApexTextarea } from '@/components/admin/apex/AdminPrimitives'
+import { ArrowDown, ArrowUp, ArrowUpDown, Archive, Download, Edit2, Mail, Plus, Trash2 } from 'lucide-react'
+import { ApexButton, ApexDateInput, ApexInput, ApexTextarea, ApexTimeInput } from '@/components/admin/apex/AdminPrimitives'
 import {
+  ApexFileDropzone,
   ApexBlockingSpinner,
   ApexBreadcrumbs,
   ApexCheckbox,
@@ -38,7 +39,7 @@ type BookingRow = {
   createdAt: string | null
 }
 
-type ColumnKey = 'requester' | 'service' | 'schedule' | 'status' | 'budget' | 'actions'
+type ColumnKey = 'requester' | 'service' | 'schedule' | 'budget' | 'created' | 'status' | 'actions'
 type SortKey = Exclude<ColumnKey, 'actions'>
 
 type BookingFormState = {
@@ -149,7 +150,7 @@ export default function AdminBookingsTemplateView({
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [columns, setColumns] = useState<Record<ColumnKey, boolean>>({ requester: true, service: true, schedule: true, status: true, budget: true, actions: true })
+  const [columns, setColumns] = useState<Record<ColumnKey, boolean>>({ requester: true, service: true, schedule: true, budget: true, created: true, status: true, actions: true })
   const [toasts, setToasts] = useState<ApexToast[]>([])
   const [pending, setPending] = useState(false)
 
@@ -158,6 +159,7 @@ export default function AdminBookingsTemplateView({
   const [viewOpen, setViewOpen] = useState(false)
   const [statusOpen, setStatusOpen] = useState(false)
   const [filesOpen, setFilesOpen] = useState(false)
+  const [emailOpen, setEmailOpen] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   const [selectedBooking, setSelectedBooking] = useState<BookingRow | null>(null)
@@ -170,13 +172,14 @@ export default function AdminBookingsTemplateView({
   const [addAttachments, setAddAttachments] = useState<File[]>([])
   const [editAttachments, setEditAttachments] = useState<File[]>([])
   const [editKeptAttachmentUrls, setEditKeptAttachmentUrls] = useState<string[]>([])
+  const [emailSubject, setEmailSubject] = useState('Your PROGREX booking update')
   const [emailReply, setEmailReply] = useState('')
   const [confirmConfig, setConfirmConfig] = useState<{
     title: string
     description: string
     confirmLabel: string
     tone: 'primary' | 'danger'
-    kind: 'add' | 'edit' | 'delete' | 'bulkDelete' | 'bulkInactive' | 'bulkArchive' | 'toggleArchive' | 'sendEmail' | 'updateStatus'
+    kind: 'add' | 'edit' | 'delete' | 'bulkDelete' | 'bulkArchive' | 'toggleArchive' | 'sendEmail' | 'updateStatus'
   } | null>(null)
 
   const filtered = useMemo(() => {
@@ -204,8 +207,10 @@ export default function AdminBookingsTemplateView({
       if (sortKey === 'requester') return a.name.localeCompare(b.name) * dir
       if (sortKey === 'service') return (a.service ?? '').localeCompare(b.service ?? '') * dir
       if (sortKey === 'schedule') return `${a.requestedDate ?? ''} ${a.requestedStartTime ?? ''}`.localeCompare(`${b.requestedDate ?? ''} ${b.requestedStartTime ?? ''}`) * dir
+      if (sortKey === 'budget') return (a.budget ?? '').localeCompare(b.budget ?? '') * dir
+      if (sortKey === 'created') return (a.createdAt ?? '').localeCompare(b.createdAt ?? '') * dir
       if (sortKey === 'status') return a.status.localeCompare(b.status) * dir
-      return (a.budget ?? '').localeCompare(b.budget ?? '') * dir
+      return 0
     })
     return list
   }, [filtered, sortDir, sortKey])
@@ -217,7 +222,6 @@ export default function AdminBookingsTemplateView({
   const counts = useMemo(() => ({
     all: bookings.length,
     new: bookings.filter((b) => b.status === 'new').length,
-    inReview: bookings.filter((b) => b.status === 'in-review').length,
     scheduled: bookings.filter((b) => b.status === 'scheduled').length,
     rescheduled: bookings.filter((b) => b.status === 'rescheduled').length,
     done: bookings.filter((b) => b.status === 'done').length,
@@ -266,8 +270,9 @@ export default function AdminBookingsTemplateView({
       row.requestedDate ?? '',
       row.requestedStartTime ?? '',
       row.budget ?? '',
+      row.createdAt ?? '',
     ])
-    downloadCsv('bookings-export.csv', [['Name', 'Email', 'Service', 'Status', 'Date', 'Time', 'Budget'], ...rows])
+    downloadCsv('bookings-export.csv', [['Name', 'Email', 'Service', 'Status', 'Date', 'Time', 'Budget', 'Created'], ...rows])
     addToast('Bookings CSV exported', 'success')
   }
 
@@ -347,14 +352,6 @@ export default function AdminBookingsTemplateView({
         addToast('Selected bookings deleted', 'success')
       }
 
-      if (confirmConfig.kind === 'bulkInactive') {
-        const formData = new FormData()
-        formData.set('ids', selectedIds.join(','))
-        await bulkSetInactiveBookingsAction(formData)
-        setSelectedIds([])
-        addToast('Selected bookings set inactive', 'success')
-      }
-
       if (confirmConfig.kind === 'bulkArchive') {
         const formData = new FormData()
         formData.set('ids', selectedIds.join(','))
@@ -374,9 +371,12 @@ export default function AdminBookingsTemplateView({
         const formData = new FormData()
         formData.set('email', selectedBooking.email)
         formData.set('name', selectedBooking.name)
+        formData.set('subject', emailSubject.trim() || 'Your PROGREX booking update')
         formData.set('reply', emailReply)
         await sendBookingEmailAction(formData)
+        setEmailSubject('Your PROGREX booking update')
         setEmailReply('')
+        setEmailOpen(false)
         addToast('Email sent', 'success')
       }
 
@@ -420,7 +420,6 @@ export default function AdminBookingsTemplateView({
         tabs={[
           { key: 'all', label: 'All', count: counts.all },
           { key: 'new', label: 'New', count: counts.new, indicatorColor: '#3b82f6' },
-          { key: 'in-review', label: 'In Review', count: counts.inReview, indicatorColor: '#a855f7' },
           { key: 'scheduled', label: 'Scheduled', count: counts.scheduled, indicatorColor: '#eab308' },
           { key: 'rescheduled', label: 'Rescheduled', count: counts.rescheduled, indicatorColor: '#f97316' },
           { key: 'done', label: 'Done', count: counts.done, indicatorColor: '#22c55e' },
@@ -450,23 +449,6 @@ export default function AdminBookingsTemplateView({
         <div className="flex flex-wrap items-center justify-end gap-2">
           {selectedIds.length > 0 ? (
             <>
-              <ApexButton
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setConfirmConfig({
-                    title: 'Set Bookings Inactive',
-                    description: `Set ${selectedIds.length} selected booking(s) inactive?`,
-                    confirmLabel: 'Set Inactive',
-                    tone: 'primary',
-                    kind: 'bulkInactive',
-                  })
-                  setConfirmOpen(true)
-                }}
-              >
-                <Power className="h-4 w-4" />
-                Set Inactive
-              </ApexButton>
               <ApexButton
                 type="button"
                 variant="outline"
@@ -509,8 +491,9 @@ export default function AdminBookingsTemplateView({
               { key: 'requester', label: 'Requester', visible: columns.requester },
               { key: 'service', label: 'Service', visible: columns.service },
               { key: 'schedule', label: 'Schedule', visible: columns.schedule },
-              { key: 'status', label: 'Status', visible: columns.status },
               { key: 'budget', label: 'Budget', visible: columns.budget },
+              { key: 'created', label: 'Created', visible: columns.created },
+              { key: 'status', label: 'Status', visible: columns.status },
               { key: 'actions', label: 'Actions', visible: columns.actions },
             ]}
             onToggle={toggleColumn}
@@ -550,6 +533,15 @@ export default function AdminBookingsTemplateView({
                   </button>
                 </th>
               ) : null}
+              {columns.budget ? <th className="px-4 py-3 font-semibold apx-text">Budget</th> : null}
+              {columns.created ? (
+                <th className="px-4 py-3 font-semibold apx-text">
+                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('created')}>
+                    Created
+                    {renderSortIcon('created')}
+                  </button>
+                </th>
+              ) : null}
               {columns.status ? (
                 <th className="px-4 py-3 font-semibold apx-text">
                   <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('status')}>
@@ -558,7 +550,6 @@ export default function AdminBookingsTemplateView({
                   </button>
                 </th>
               ) : null}
-              {columns.budget ? <th className="px-4 py-3 font-semibold apx-text">Budget</th> : null}
               {columns.actions ? <th className="px-4 py-3 text-right font-semibold apx-text">Actions</th> : null}
             </tr>
           </thead>
@@ -595,6 +586,8 @@ export default function AdminBookingsTemplateView({
                     ) : '-'}
                   </td>
                 ) : null}
+                {columns.budget ? <td className="px-4 py-3 apx-text">{booking.budget || '-'}</td> : null}
+                {columns.created ? <td className="px-4 py-3 apx-text">{booking.createdAt ? new Date(booking.createdAt).toLocaleDateString() : '-'}</td> : null}
                 {columns.status ? (
                   <td className="px-4 py-3">
                     <button
@@ -612,7 +605,6 @@ export default function AdminBookingsTemplateView({
                     </button>
                   </td>
                 ) : null}
-                {columns.budget ? <td className="px-4 py-3 apx-text">{booking.budget || '-'}</td> : null}
                 {columns.actions ? (
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2" onClick={(event) => event.stopPropagation()}>
@@ -621,15 +613,9 @@ export default function AdminBookingsTemplateView({
                         className="apx-icon-action"
                         onClick={() => {
                           setSelectedBooking(booking)
+                          setEmailSubject('Your PROGREX booking update')
                           setEmailReply('')
-                          setConfirmConfig({
-                            title: 'Send Booking Email',
-                            description: `Send reply to ${booking.email}?`,
-                            confirmLabel: 'Send',
-                            tone: 'primary',
-                            kind: 'sendEmail',
-                          })
-                          setConfirmOpen(true)
+                          setEmailOpen(true)
                         }}
                         aria-label={`Email ${booking.name}`}
                       >
@@ -670,26 +656,26 @@ export default function AdminBookingsTemplateView({
                             title: booking.isArchived ? 'Unarchive Booking' : 'Archive Booking',
                             description: `${booking.isArchived ? 'Unarchive' : 'Archive'} ${booking.name}?`,
                             confirmLabel: booking.isArchived ? 'Unarchive' : 'Archive',
-                            tone: 'primary',
+                            tone: booking.isArchived ? 'primary' : 'danger',
                             kind: 'toggleArchive',
                           })
                           setConfirmOpen(true)
                         }}
                         aria-label={`Archive toggle ${booking.name}`}
-                      >
-                        <Archive className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        className="apx-icon-action-danger"
+                          <ApexDropdown
+                            value={addForm.service}
+                            options={SERVICE_OPTIONS.map((option) => ({ value: option, label: option }))}
+                            placeholder="Select service"
+                            onChange={(value) => setAddForm((prev) => ({ ...prev, service: value }))}
+                          />
                         onClick={() => {
                           setSelectedBooking(booking)
                           setConfirmConfig({
-                            title: 'Delete Booking',
+                          <ApexDateInput value={addForm.requestedDate} onChange={(event) => setAddForm((prev) => ({ ...prev, requestedDate: event.target.value }))} />
                             description: `Delete ${booking.name}? This cannot be undone.`,
                             confirmLabel: 'Delete',
                             tone: 'danger',
-                            kind: 'delete',
+                          <ApexTimeInput value={addForm.requestedStartTime} onChange={(event) => setAddForm((prev) => ({ ...prev, requestedStartTime: event.target.value }))} />
                           })
                           setConfirmOpen(true)
                         }}
@@ -734,7 +720,7 @@ export default function AdminBookingsTemplateView({
           }}
           className="grid gap-3 md:grid-cols-2"
         >
-          <div>
+          <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Name</label>
             <ApexInput value={addForm.name} onChange={(event) => setAddForm((prev) => ({ ...prev, name: event.target.value }))} required />
           </div>
@@ -773,11 +759,11 @@ export default function AdminBookingsTemplateView({
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Status</label>
-            <select className="apx-input" value={addForm.status} onChange={(event) => setAddForm((prev) => ({ ...prev, status: normalizeStatusForEdit(event.target.value) }))}>
-              {STATUS_OPTIONS.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
+            <ApexDropdown
+              value={addForm.status}
+              options={STATUS_OPTIONS.map((option) => ({ value: option, label: option }))}
+              onChange={(value) => setAddForm((prev) => ({ ...prev, status: normalizeStatusForEdit(value) }))}
+            />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Budget</label>
@@ -789,15 +775,7 @@ export default function AdminBookingsTemplateView({
           </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Attachments (optional, up to 5)</label>
-            <input
-              type="file"
-              multiple
-              className="apx-input"
-              onChange={(event) => {
-                const files = Array.from(event.target.files || []).slice(0, 5)
-                setAddAttachments(files)
-              }}
-            />
+            <ApexFileDropzone maxFiles={5} maxFileSizeMb={10} files={addAttachments} onFilesChange={setAddAttachments} />
             {addAttachments.length ? <p className="mt-1 text-xs apx-muted">{addAttachments.length} file(s) selected</p> : null}
           </div>
           <div className="md:col-span-2 flex justify-end gap-2 pt-2">
@@ -822,7 +800,7 @@ export default function AdminBookingsTemplateView({
           }}
           className="grid gap-3 md:grid-cols-2"
         >
-          <div>
+          <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Name</label>
             <ApexInput value={editForm.name} onChange={(event) => setEditForm((prev) => ({ ...prev, name: event.target.value }))} required />
           </div>
@@ -840,20 +818,20 @@ export default function AdminBookingsTemplateView({
           </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Service</label>
-            <select className="apx-input" value={editForm.service} onChange={(event) => setEditForm((prev) => ({ ...prev, service: event.target.value }))}>
-              <option value="">Select service</option>
-              {SERVICE_OPTIONS.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
+            <ApexDropdown
+              value={editForm.service}
+              options={SERVICE_OPTIONS.map((option) => ({ value: option, label: option }))}
+              placeholder="Select service"
+              onChange={(value) => setEditForm((prev) => ({ ...prev, service: value }))}
+            />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Date</label>
-            <ApexInput type="date" value={editForm.requestedDate} onChange={(event) => setEditForm((prev) => ({ ...prev, requestedDate: event.target.value }))} />
+            <ApexDateInput value={editForm.requestedDate} onChange={(event) => setEditForm((prev) => ({ ...prev, requestedDate: event.target.value }))} />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Start Time</label>
-            <ApexInput type="time" value={editForm.requestedStartTime} onChange={(event) => setEditForm((prev) => ({ ...prev, requestedStartTime: event.target.value }))} />
+            <ApexTimeInput value={editForm.requestedStartTime} onChange={(event) => setEditForm((prev) => ({ ...prev, requestedStartTime: event.target.value }))} />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Duration (mins)</label>
@@ -861,11 +839,11 @@ export default function AdminBookingsTemplateView({
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Status</label>
-            <select className="apx-input" value={editForm.status} onChange={(event) => setEditForm((prev) => ({ ...prev, status: event.target.value }))}>
-              {STATUS_OPTIONS.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
+            <ApexDropdown
+              value={editForm.status}
+              options={STATUS_OPTIONS.map((option) => ({ value: option, label: option }))}
+              onChange={(value) => setEditForm((prev) => ({ ...prev, status: normalizeStatusForEdit(value) }))}
+            />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Budget</label>
@@ -893,15 +871,11 @@ export default function AdminBookingsTemplateView({
           </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Add Attachments (up to 5 total)</label>
-            <input
-              type="file"
-              multiple
-              className="apx-input"
-              onChange={(event) => {
-                const remain = Math.max(0, 5 - editKeptAttachmentUrls.length)
-                const files = Array.from(event.target.files || []).slice(0, remain)
-                setEditAttachments(files)
-              }}
+            <ApexFileDropzone
+              maxFiles={Math.max(0, 5 - editKeptAttachmentUrls.length)}
+              maxFileSizeMb={10}
+              files={editAttachments}
+              onFilesChange={setEditAttachments}
             />
             {editAttachments.length ? <p className="mt-1 text-xs apx-muted">{editAttachments.length} new file(s) selected</p> : null}
           </div>
@@ -971,12 +945,41 @@ export default function AdminBookingsTemplateView({
                 )}
               </div>
             </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium apx-muted">Email Reply</label>
-              <ApexTextarea rows={4} value={emailReply} onChange={(event) => setEmailReply(event.target.value)} placeholder="Write a reply..." />
-            </div>
             <div className="flex justify-end gap-2 pt-1">
               <ApexButton type="button" variant="outline" onClick={() => setViewOpen(false)}>Close</ApexButton>
+              <ApexButton
+                type="button"
+                onClick={() => {
+                  setEmailSubject('Your PROGREX booking update')
+                  setEmailReply('')
+                  setEmailOpen(true)
+                }}
+              >
+                <Mail className="h-4 w-4" />
+                Send Email
+              </ApexButton>
+            </div>
+          </div>
+        ) : null}
+      </ApexModal>
+
+      <ApexModal size="md" open={emailOpen} title="Send Booking Email" subtitle="Write a subject and response." onClose={() => setEmailOpen(false)}>
+        {selectedBooking ? (
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1 block text-xs font-medium apx-muted">To</label>
+              <ApexInput value={selectedBooking.email} disabled />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium apx-muted">Subject</label>
+              <ApexInput value={emailSubject} onChange={(event) => setEmailSubject(event.target.value)} placeholder="Email subject" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium apx-muted">Message</label>
+              <ApexTextarea rows={5} value={emailReply} onChange={(event) => setEmailReply(event.target.value)} placeholder="Write your response..." />
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <ApexButton type="button" variant="outline" onClick={() => setEmailOpen(false)}>Cancel</ApexButton>
               <ApexButton
                 type="button"
                 onClick={() => {
@@ -989,6 +992,7 @@ export default function AdminBookingsTemplateView({
                   })
                   setConfirmOpen(true)
                 }}
+                disabled={!emailReply.trim()}
               >
                 <Mail className="h-4 w-4" />
                 Send Email
