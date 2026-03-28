@@ -724,7 +724,7 @@ export default function AdminContactSubmissionsTemplateView({
           </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Attachments (optional, up to 5)</label>
-            <ApexFileDropzone maxFiles={5} maxFileSizeMb={10} files={addAttachments} onFilesChange={setAddAttachments} />
+            <ApexFileDropzone maxFiles={5} maxSizeMb={10} files={addAttachments} onFilesChange={setAddAttachments} />
           </div>
           <div className="md:col-span-2 flex justify-end gap-2 pt-2">
             <ApexButton type="button" variant="outline" onClick={() => setAddOpen(false)}>Cancel</ApexButton>
@@ -809,7 +809,7 @@ export default function AdminContactSubmissionsTemplateView({
             <label className="mb-1 block text-xs font-medium apx-muted">Add Attachments (up to 5 total)</label>
             <ApexFileDropzone
               maxFiles={Math.max(0, 5 - editKeptAttachmentUrls.length)}
-              maxFileSizeMb={10}
+              maxSizeMb={10}
               files={editAttachments}
               onFilesChange={setEditAttachments}
             />
