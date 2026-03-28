@@ -9,7 +9,9 @@ import {
   ApexCheckbox,
   ApexColumnsToggle,
   ApexConfirmationModal,
+  ApexDropdown,
   ApexExportButton,
+  ApexFileDropzone,
   ApexModal,
   ApexPagination,
   ApexSearchField,
@@ -46,7 +48,7 @@ type ContactFormState = {
   status: string
 }
 
-type ColumnKey = 'requester' | 'service' | 'company' | 'status' | 'created' | 'actions'
+type ColumnKey = 'requester' | 'service' | 'message' | 'created' | 'status' | 'actions'
 type SortKey = Exclude<ColumnKey, 'actions'>
 
 const STATUS_OPTIONS = ['new', 'in-progress', 'replied', 'resolved', 'archived']
@@ -147,7 +149,7 @@ export default function AdminContactSubmissionsTemplateView({
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [columns, setColumns] = useState<Record<ColumnKey, boolean>>({ requester: true, service: true, company: true, status: true, created: true, actions: true })
+  const [columns, setColumns] = useState<Record<ColumnKey, boolean>>({ requester: true, service: true, message: true, created: true, status: true, actions: true })
   const [toasts, setToasts] = useState<ApexToast[]>([])
   const [pending, setPending] = useState(false)
 
@@ -155,6 +157,7 @@ export default function AdminContactSubmissionsTemplateView({
   const [editOpen, setEditOpen] = useState(false)
   const [viewOpen, setViewOpen] = useState(false)
   const [filesOpen, setFilesOpen] = useState(false)
+  const [emailOpen, setEmailOpen] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [selectedSubmission, setSelectedSubmission] = useState<ContactSubmission | null>(null)
   const [filesTargetSubmission, setFilesTargetSubmission] = useState<ContactSubmission | null>(null)
@@ -164,6 +167,7 @@ export default function AdminContactSubmissionsTemplateView({
   const [addAttachments, setAddAttachments] = useState<File[]>([])
   const [editAttachments, setEditAttachments] = useState<File[]>([])
   const [editKeptAttachmentUrls, setEditKeptAttachmentUrls] = useState<string[]>([])
+  const [emailSubject, setEmailSubject] = useState('Your message has been received')
   const [emailReply, setEmailReply] = useState('')
   const [statusDraft, setStatusDraft] = useState('new')
 
@@ -192,8 +196,7 @@ export default function AdminContactSubmissionsTemplateView({
       const dir = sortDir === 'asc' ? 1 : -1
       if (sortKey === 'requester') return a.name.localeCompare(b.name) * dir
       if (sortKey === 'service') return (a.service ?? '').localeCompare(b.service ?? '') * dir
-      if (sortKey === 'company') return (a.company ?? '').localeCompare(b.company ?? '') * dir
-      if (sortKey === 'status') return a.status.localeCompare(b.status) * dir
+      if (sortKey === 'message') return (a.message ?? '').localeCompare(b.message ?? '') * dir
       return (a.createdAt ?? '').localeCompare(b.createdAt ?? '') * dir
     })
     return list
@@ -253,8 +256,8 @@ export default function AdminContactSubmissionsTemplateView({
   }
 
   function exportCsv() {
-    const rows = sorted.map((row) => [row.name, row.email, row.service ?? '', row.company ?? '', row.status, formatCreated(row.createdAt)])
-    downloadCsv('contact-submissions-export.csv', [['Name', 'Email', 'Service', 'Company', 'Status', 'Created'], ...rows])
+    const rows = sorted.map((row) => [row.name, row.email, row.service ?? '', row.message ?? '', row.status, formatCreated(row.createdAt)])
+    downloadCsv('contact-submissions-export.csv', [['Name', 'Email', 'Service', 'Message', 'Status', 'Created'], ...rows])
     addToast('Contact submissions CSV exported', 'success')
   }
 
@@ -341,9 +344,12 @@ export default function AdminContactSubmissionsTemplateView({
         const formData = new FormData()
         formData.set('email', selectedSubmission.email)
         formData.set('name', selectedSubmission.name)
+        formData.set('subject', emailSubject.trim() || 'Your message has been received')
         formData.set('reply', emailReply)
         await sendContactEmailAction(formData)
+        setEmailSubject('Your message has been received')
         setEmailReply('')
+        setEmailOpen(false)
         addToast('Email sent', 'success')
       }
 
@@ -455,9 +461,9 @@ export default function AdminContactSubmissionsTemplateView({
             columns={[
               { key: 'requester', label: 'Requester', visible: columns.requester },
               { key: 'service', label: 'Service', visible: columns.service },
-              { key: 'company', label: 'Company', visible: columns.company },
-              { key: 'status', label: 'Status', visible: columns.status },
+              { key: 'message', label: 'Message', visible: columns.message },
               { key: 'created', label: 'Created', visible: columns.created },
+              { key: 'status', label: 'Status', visible: columns.status },
               { key: 'actions', label: 'Actions', visible: columns.actions },
             ]}
             onToggle={toggleColumn}
@@ -489,11 +495,11 @@ export default function AdminContactSubmissionsTemplateView({
                   </button>
                 </th>
               ) : null}
-              {columns.company ? (
+              {columns.message ? (
                 <th className="px-4 py-3 font-semibold apx-text">
-                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('company')}>
-                    Company
-                    {renderSortIcon('company')}
+                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('message')}>
+                    Message
+                    {renderSortIcon('message')}
                   </button>
                 </th>
               ) : null}
@@ -539,7 +545,7 @@ export default function AdminContactSubmissionsTemplateView({
                   </td>
                 ) : null}
                 {columns.service ? <td className="px-4 py-3 apx-text">{submission.service || '-'}</td> : null}
-                {columns.company ? <td className="px-4 py-3 apx-text">{submission.company || '-'}</td> : null}
+                {columns.message ? <td className="px-4 py-3 apx-text">{submission.message ? `${submission.message.slice(0, 80)}${submission.message.length > 80 ? '...' : ''}` : '-'}</td> : null}
                 {columns.status ? (
                   <td className="px-4 py-3">
                     <span className="inline-flex rounded-full px-2 py-1 text-xs font-semibold" style={statusPillStyle(submission.status)}>
@@ -568,6 +574,19 @@ export default function AdminContactSubmissionsTemplateView({
                         className="apx-icon-action"
                         onClick={() => {
                           setSelectedSubmission(submission)
+                          setEmailSubject('Your message has been received')
+                          setEmailReply('')
+                          setEmailOpen(true)
+                        }}
+                        aria-label={`Email ${submission.name}`}
+                      >
+                        <Mail className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        className="apx-icon-action"
+                        onClick={() => {
+                          setSelectedSubmission(submission)
                           setEditForm(formFromSubmission(submission))
                           setEditKeptAttachmentUrls(submission.attachmentUrls || [])
                           setEditAttachments([])
@@ -586,7 +605,7 @@ export default function AdminContactSubmissionsTemplateView({
                             title: submission.isArchived ? 'Unarchive Submission' : 'Archive Submission',
                             description: `${submission.isArchived ? 'Unarchive' : 'Archive'} ${submission.name}?`,
                             confirmLabel: submission.isArchived ? 'Unarchive' : 'Archive',
-                            tone: 'primary',
+                            tone: submission.isArchived ? 'primary' : 'danger',
                             kind: 'toggleArchive',
                           })
                           setConfirmOpen(true)
@@ -605,7 +624,7 @@ export default function AdminContactSubmissionsTemplateView({
                         }}
                         aria-label={`Open ${submission.name}`}
                       >
-                        <Mail className="h-4 w-4" />
+                        <Edit2 className="h-4 w-4" />
                       </button>
                       <button
                         type="button"
@@ -680,20 +699,20 @@ export default function AdminContactSubmissionsTemplateView({
           </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Service</label>
-            <select className="apx-input" value={addForm.service} onChange={(event) => setAddForm((prev) => ({ ...prev, service: event.target.value }))}>
-              <option value="">Select service</option>
-              {SERVICE_OPTIONS.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
+            <ApexDropdown
+              value={addForm.service}
+              options={SERVICE_OPTIONS.map((option) => ({ value: option, label: option }))}
+              placeholder="Select service"
+              onChange={(value) => setAddForm((prev) => ({ ...prev, service: value }))}
+            />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Status</label>
-            <select className="apx-input" value={addForm.status} onChange={(event) => setAddForm((prev) => ({ ...prev, status: event.target.value }))}>
-              {STATUS_OPTIONS.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
+            <ApexDropdown
+              value={addForm.status}
+              options={STATUS_OPTIONS.map((option) => ({ value: option, label: option }))}
+              onChange={(value) => setAddForm((prev) => ({ ...prev, status: value }))}
+            />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Budget</label>
@@ -705,7 +724,7 @@ export default function AdminContactSubmissionsTemplateView({
           </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Attachments (optional, up to 5)</label>
-            <input type="file" multiple className="apx-input" onChange={(event) => setAddAttachments(Array.from(event.target.files || []).slice(0, 5))} />
+            <ApexFileDropzone maxFiles={5} maxFileSizeMb={10} files={addAttachments} onFilesChange={setAddAttachments} />
           </div>
           <div className="md:col-span-2 flex justify-end gap-2 pt-2">
             <ApexButton type="button" variant="outline" onClick={() => setAddOpen(false)}>Cancel</ApexButton>
@@ -747,20 +766,20 @@ export default function AdminContactSubmissionsTemplateView({
           </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Service</label>
-            <select className="apx-input" value={editForm.service} onChange={(event) => setEditForm((prev) => ({ ...prev, service: event.target.value }))}>
-              <option value="">Select service</option>
-              {SERVICE_OPTIONS.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
+            <ApexDropdown
+              value={editForm.service}
+              options={SERVICE_OPTIONS.map((option) => ({ value: option, label: option }))}
+              placeholder="Select service"
+              onChange={(value) => setEditForm((prev) => ({ ...prev, service: value }))}
+            />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Status</label>
-            <select className="apx-input" value={editForm.status} onChange={(event) => setEditForm((prev) => ({ ...prev, status: event.target.value }))}>
-              {STATUS_OPTIONS.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
+            <ApexDropdown
+              value={editForm.status}
+              options={STATUS_OPTIONS.map((option) => ({ value: option, label: option }))}
+              onChange={(value) => setEditForm((prev) => ({ ...prev, status: value }))}
+            />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Budget</label>
@@ -788,14 +807,11 @@ export default function AdminContactSubmissionsTemplateView({
           </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Add Attachments (up to 5 total)</label>
-            <input
-              type="file"
-              multiple
-              className="apx-input"
-              onChange={(event) => {
-                const remain = Math.max(0, 5 - editKeptAttachmentUrls.length)
-                setEditAttachments(Array.from(event.target.files || []).slice(0, remain))
-              }}
+            <ApexFileDropzone
+              maxFiles={Math.max(0, 5 - editKeptAttachmentUrls.length)}
+              maxFileSizeMb={10}
+              files={editAttachments}
+              onFilesChange={setEditAttachments}
             />
           </div>
           <div className="md:col-span-2 flex justify-end gap-2 pt-2">
@@ -870,12 +886,16 @@ export default function AdminContactSubmissionsTemplateView({
             </div>
 
             <div>
+              <p className="mb-1 block text-xs font-medium apx-muted">Budget</p>
+              <p className="apx-text">{selectedSubmission.budget || '-'}</p>
+            </div>
+            <div>
               <label className="mb-1 block text-xs font-medium apx-muted">Status</label>
-              <select className="apx-input" value={statusDraft} onChange={(event) => setStatusDraft(event.target.value)}>
-                {STATUS_OPTIONS.map((option) => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
+              <ApexDropdown
+                value={statusDraft}
+                options={STATUS_OPTIONS.map((option) => ({ value: option, label: option }))}
+                onChange={setStatusDraft}
+              />
             </div>
 
             <div>
@@ -904,6 +924,39 @@ export default function AdminContactSubmissionsTemplateView({
               <ApexButton
                 type="button"
                 onClick={() => {
+                  setEmailSubject('Your message has been received')
+                  setEmailReply('')
+                  setEmailOpen(true)
+                }}
+              >
+                <Mail className="h-4 w-4" />
+                Send Email
+              </ApexButton>
+            </div>
+          </div>
+        ) : null}
+      </ApexModal>
+
+      <ApexModal size="md" open={emailOpen} title="Send Contact Email" subtitle="Write a subject and response." onClose={() => setEmailOpen(false)}>
+        {selectedSubmission ? (
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1 block text-xs font-medium apx-muted">To</label>
+              <ApexInput value={selectedSubmission.email} disabled />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium apx-muted">Subject</label>
+              <ApexInput value={emailSubject} onChange={(event) => setEmailSubject(event.target.value)} placeholder="Email subject" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium apx-muted">Message</label>
+              <ApexTextarea rows={5} value={emailReply} onChange={(event) => setEmailReply(event.target.value)} placeholder="Write your response..." />
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <ApexButton type="button" variant="outline" onClick={() => setEmailOpen(false)}>Cancel</ApexButton>
+              <ApexButton
+                type="button"
+                onClick={() => {
                   setConfirmConfig({
                     title: 'Send Contact Email',
                     description: `Send reply to ${selectedSubmission.email}?`,
@@ -913,6 +966,7 @@ export default function AdminContactSubmissionsTemplateView({
                   })
                   setConfirmOpen(true)
                 }}
+                disabled={!emailReply.trim()}
               >
                 <Mail className="h-4 w-4" />
                 Send Email
