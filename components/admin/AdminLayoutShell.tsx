@@ -301,7 +301,7 @@ export default function AdminLayoutShell({
             className="mt-auto border-t px-3 py-2 text-center text-[10px] font-medium tracking-wide"
             style={{ borderColor: 'var(--apx-sidebar-border)', color: 'var(--apx-sidebar-text)' }}
           >
-            {collapsed ? <span title="© 2026 PROGREX - ALL RIGHTS RESERVED">© 2026</span> : '© 2026 PROGREX - ALL RIGHTS RESERVED'}
+            {collapsed ? <span title="© 2026 PROGREX — ALL RIGHTS RESERVED">© 2026</span> : '© 2026 PROGREX — ALL RIGHTS RESERVED'}
           </div>
 
           <button
@@ -338,7 +338,7 @@ export default function AdminLayoutShell({
             className="mt-auto border-t px-3 py-2 text-center text-[10px] font-medium tracking-wide"
             style={{ borderColor: 'var(--apx-sidebar-border)', color: 'var(--apx-sidebar-text)' }}
           >
-            © 2026 PROGREX - ALL RIGHTS RESERVED
+            © 2026 PROGREX — ALL RIGHTS RESERVED
           </div>
 
           <button
