@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
+import path from 'node:path'
 import { NextRequest, NextResponse } from 'next/server'
 import nodemailer from 'nodemailer'
 import { sql } from '@/lib/server/db'
@@ -93,6 +94,7 @@ export async function POST(req: NextRequest) {
     await sql('alter table bookings add column if not exists requested_start_time text')
     await sql('alter table bookings add column if not exists requested_duration_minutes integer')
     await sql('alter table contact_submissions add column if not exists attachment_urls text[] default array[]::text[]')
+    await sql('alter table contact_submissions add column if not exists request_meeting boolean not null default false')
 
     const body = await req.formData()
     const name = String(body.get('name') ?? '').trim()
@@ -155,14 +157,21 @@ export async function POST(req: NextRequest) {
       uploadedAttachmentUrls.push(uploaded)
     }
 
+    const smtpHost = process.env.SMTP_HOST || 'smtp.zoho.com'
+    const smtpPort = Number(process.env.SMTP_PORT || 587)
+    const smtpUser = process.env.SMTP_USER
+    const smtpPass = process.env.SMTP_PASS
+    const smtpSecure = String(process.env.SMTP_SECURE || '').toLowerCase() === 'true'
+
+    if (!smtpUser || !smtpPass) {
+      return NextResponse.json({ error: 'Email transport is not configured.' }, { status: 500 })
+    }
+
     const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpSecure,
+      auth: { user: smtpUser, pass: smtpPass },
     })
 
     const html = `
@@ -187,12 +196,6 @@ export async function POST(req: NextRequest) {
       </div>
     `
 
-    await sql(
-      `insert into contact_submissions(name, email, phone, company, service, budget, message, attachment_urls, status)
-       values ($1, $2, $3, $4, $5, $6, $7, $8::text[], 'new')`,
-      [name, email, phone || null, company || null, service || null, budget || null, message, uploadedAttachmentUrls]
-    )
-
     if (requestMeeting) {
       await sql(
         `insert into bookings(name, email, phone, company, service, budget, message, source, status, is_approved, requested_date, requested_start_time, requested_duration_minutes)
@@ -210,15 +213,66 @@ export async function POST(req: NextRequest) {
           meetingDurationMinutes,
         ]
       )
+    } else {
+      await sql(
+        `insert into contact_submissions(name, email, phone, company, service, budget, message, attachment_urls, status, request_meeting)
+         values ($1, $2, $3, $4, $5, $6, $7, $8::text[], 'new', false)`,
+        [name, email, phone || null, company || null, service || null, budget || null, message, uploadedAttachmentUrls]
+      )
     }
 
+    const logoPath = path.join(process.cwd(), 'public', 'ProgreX Logo Black.png')
+
+    const acknowledgementHtml = `
+      <div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;background:#050511;border:1px solid #1c2d4d;border-radius:14px;overflow:hidden;">
+        <div style="padding:20px 24px;background:linear-gradient(135deg,#0EA5E9 0%,#7C3AED 100%);">
+          <h1 style="margin:0;color:#fff;font-size:20px;">Message Received</h1>
+          <p style="margin:6px 0 0;color:#e6f4ff;font-size:13px;">ProgreX Team has received your inquiry.</p>
+        </div>
+        <div style="padding:22px 24px;color:#dbeafe;">
+          <p style="margin:0 0 12px;font-size:14px;">Hi ${name},</p>
+          <p style="margin:0 0 12px;font-size:14px;line-height:1.7;">Thank you for contacting ProgreX. Our team has received your message and will get back to you as soon as possible.</p>
+          ${requestMeeting ? `<p style="margin:0 0 12px;font-size:14px;line-height:1.7;">Your meeting request has been noted for <strong>${meetingDate}</strong> at <strong>${meetingStartTime}</strong> (${meetingDurationMinutes} minutes).</p>` : ''}
+          <div style="margin-top:16px;padding:14px;border-radius:10px;background:#070f1e;border:1px solid #213557;">
+            <p style="margin:0 0 8px;font-size:12px;color:#93c5fd;text-transform:uppercase;letter-spacing:0.08em;">Summary</p>
+            <p style="margin:0;font-size:13px;color:#e2e8f0;">Service: ${service || 'Not specified'}</p>
+            <p style="margin:6px 0 0;font-size:13px;color:#e2e8f0;">Budget: ${budget || 'Not specified'}</p>
+          </div>
+          <p style="margin:20px 0 8px;font-size:14px;">Best regards,</p>
+          <p style="margin:0;font-size:14px;font-weight:700;">ProgreX Team</p>
+          <p style="margin:2px 0 0;font-size:12px;color:#93c5fd;">Software & Systems Development</p>
+          <div style="margin-top:16px;display:flex;align-items:center;gap:10px;">
+            <img src="cid:progrex-logo" alt="ProgreX" style="height:34px;width:auto;background:#fff;border-radius:6px;padding:4px;" />
+          </div>
+        </div>
+      </div>
+    `
+
     await transporter.sendMail({
-      from: `"PROGREX Contact Form" <${process.env.SMTP_USER}>`,
+      from: `"ProgreX Team" <${smtpUser}>`,
       to: 'progrex.tech@gmail.com, shekaigarcia@gmail.com',
       replyTo: email,
       subject: `[PROGREX] New Inquiry from ${name}${service ? ` — ${service}` : ''}`,
       html,
     })
+
+    try {
+      await transporter.sendMail({
+        from: `"ProgreX Team" <${smtpUser}>`,
+        to: email,
+        subject: `We received your message — ProgreX`,
+        html: acknowledgementHtml,
+        attachments: [
+          {
+            filename: 'ProgreX Logo Black.png',
+            path: logoPath,
+            cid: 'progrex-logo',
+          },
+        ],
+      })
+    } catch {
+      return NextResponse.json({ error: 'Enter a valid email' }, { status: 400 })
+    }
 
     return NextResponse.json({ success: true })
   } catch (err) {
