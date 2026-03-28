@@ -6,9 +6,11 @@ import { ApexButton, ApexInput } from '@/components/admin/apex/AdminPrimitives'
 import {
   ApexBlockingSpinner,
   ApexBreadcrumbs,
+  ApexCheckbox,
   ApexColumnsToggle,
   ApexConfirmationModal,
   ApexExportButton,
+  ApexImageDropzone,
   ApexModal,
   ApexPagination,
   ApexSearchField,
@@ -28,9 +30,10 @@ type ClientRow = {
   phone: string | null
   clientDate: string | null
   isActive: boolean
+  createdAt: string | null
 }
 
-type ColumnKey = 'client' | 'members' | 'roleEmail' | 'contact' | 'dateStatus' | 'actions'
+type ColumnKey = 'client' | 'members' | 'roleEmail' | 'contact' | 'createdStatus' | 'actions'
 type SortKey = Exclude<ColumnKey, 'actions'>
 
 type ClientFormState = {
@@ -41,7 +44,6 @@ type ClientFormState = {
   email: string
   fbLink: string
   phone: string
-  clientDate: string
   existingProfileImage: string
 }
 
@@ -53,7 +55,6 @@ function defaultForm(): ClientFormState {
     email: '',
     fbLink: '',
     phone: '',
-    clientDate: '',
     existingProfileImage: '',
   }
 }
@@ -67,7 +68,6 @@ function formFromClient(client: ClientRow): ClientFormState {
     email: client.email ?? '',
     fbLink: client.fbLink ?? '',
     phone: client.phone ?? '',
-    clientDate: client.clientDate ?? '',
     existingProfileImage: client.profileImage ?? '',
   }
 }
@@ -89,12 +89,16 @@ export default function AdminClientsTemplateView({
   updateClientAction,
   toggleClientAction,
   deleteClientAction,
+  bulkToggleClientsAction,
+  bulkDeleteClientsAction,
 }: {
   clients: ClientRow[]
   createClientAction: (formData: FormData) => Promise<void>
   updateClientAction: (formData: FormData) => Promise<void>
   toggleClientAction: (formData: FormData) => Promise<void>
   deleteClientAction: (formData: FormData) => Promise<void>
+  bulkToggleClientsAction: (formData: FormData) => Promise<void>
+  bulkDeleteClientsAction: (formData: FormData) => Promise<void>
 }) {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<'all' | 'active' | 'inactive'>('all')
@@ -102,12 +106,13 @@ export default function AdminClientsTemplateView({
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [columns, setColumns] = useState<Record<ColumnKey, boolean>>({
     client: true,
     members: true,
     roleEmail: true,
     contact: true,
-    dateStatus: true,
+    createdStatus: true,
     actions: true,
   })
 
@@ -127,7 +132,7 @@ export default function AdminClientsTemplateView({
     description: string
     confirmLabel: string
     tone: 'primary' | 'danger'
-    kind: 'add' | 'edit' | 'delete' | 'toggle'
+    kind: 'add' | 'edit' | 'delete' | 'toggle' | 'bulkSetActive' | 'bulkSetInactive' | 'bulkDelete'
   } | null>(null)
 
   const filtered = useMemo(() => {
@@ -159,7 +164,7 @@ export default function AdminClientsTemplateView({
       if (sortKey === 'members') return a.otherMemberNames.join(', ').localeCompare(b.otherMemberNames.join(', ')) * dir
       if (sortKey === 'roleEmail') return `${a.role ?? ''} ${a.email ?? ''}`.localeCompare(`${b.role ?? ''} ${b.email ?? ''}`) * dir
       if (sortKey === 'contact') return `${a.fbLink ?? ''} ${a.phone ?? ''}`.localeCompare(`${b.fbLink ?? ''} ${b.phone ?? ''}`) * dir
-      return (a.clientDate ?? '').localeCompare(b.clientDate ?? '') * dir
+      return `${a.createdAt ?? ''} ${a.isActive ? '1' : '0'}`.localeCompare(`${b.createdAt ?? ''} ${b.isActive ? '1' : '0'}`) * dir
     })
     return list
   }, [filtered, sortDir, sortKey])
@@ -172,6 +177,9 @@ export default function AdminClientsTemplateView({
     const active = clients.filter((client) => client.isActive).length
     return { all: clients.length, active, inactive: clients.length - active }
   }, [clients])
+
+  const currentPageIds = paged.map((item) => item.id)
+  const allCurrentPageSelected = currentPageIds.length > 0 && currentPageIds.every((id) => selectedIds.includes(id))
 
   function addToast(message: string, tone: ApexToast['tone'] = 'default') {
     const id = Date.now() + Math.floor(Math.random() * 1000)
@@ -207,7 +215,7 @@ export default function AdminClientsTemplateView({
     formData.set('email', form.email)
     formData.set('fbLink', form.fbLink)
     formData.set('phone', form.phone)
-    formData.set('clientDate', form.clientDate)
+    formData.set('clientDate', '')
     formData.set('existingProfileImage', form.existingProfileImage)
     if (imageFile) formData.set('profileImage', imageFile)
     return formData
@@ -221,11 +229,23 @@ export default function AdminClientsTemplateView({
       client.email ?? '',
       client.fbLink ?? '',
       client.phone ?? '',
-      client.clientDate ?? '',
+      client.createdAt ? new Date(client.createdAt).toLocaleDateString() : '',
       client.isActive ? 'Active' : 'Inactive',
     ])
-    downloadCsv('clients-export.csv', [['Full Name', 'Members', 'Role', 'Email', 'Facebook', 'Phone', 'Date', 'Status'], ...rows])
+    downloadCsv('clients-export.csv', [['Full Name', 'Members', 'Company/Org', 'Email', 'Facebook', 'Phone', 'Created', 'Status'], ...rows])
     addToast('Clients CSV exported', 'success')
+  }
+
+  function toggleSelectAllCurrentPage() {
+    if (allCurrentPageSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !currentPageIds.includes(id)))
+      return
+    }
+    setSelectedIds((prev) => Array.from(new Set([...prev, ...currentPageIds])))
+  }
+
+  function toggleSelectOne(id: string) {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
   }
 
   async function executeConfirmedAction() {
@@ -261,6 +281,32 @@ export default function AdminClientsTemplateView({
         await deleteClientAction(formData)
         setViewOpen(false)
         addToast('Client deleted', 'success')
+      }
+
+      if (confirmConfig.kind === 'bulkSetActive') {
+        const formData = new FormData()
+        formData.set('ids', selectedIds.join(','))
+        formData.set('mode', 'active')
+        await bulkToggleClientsAction(formData)
+        setSelectedIds([])
+        addToast('Selected clients set active', 'success')
+      }
+
+      if (confirmConfig.kind === 'bulkSetInactive') {
+        const formData = new FormData()
+        formData.set('ids', selectedIds.join(','))
+        formData.set('mode', 'inactive')
+        await bulkToggleClientsAction(formData)
+        setSelectedIds([])
+        addToast('Selected clients set inactive', 'success')
+      }
+
+      if (confirmConfig.kind === 'bulkDelete') {
+        const formData = new FormData()
+        formData.set('ids', selectedIds.join(','))
+        await bulkDeleteClientsAction(formData)
+        setSelectedIds([])
+        addToast('Selected clients deleted', 'success')
       }
 
       setConfirmOpen(false)
@@ -325,14 +371,70 @@ export default function AdminClientsTemplateView({
           />
         </div>
 
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {selectedIds.length > 0 ? (
+            <>
+              <ApexButton
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setConfirmConfig({
+                    title: 'Set Selected Clients Active',
+                    description: `Set ${selectedIds.length} selected client(s) active?`,
+                    confirmLabel: 'Set Active',
+                    tone: 'primary',
+                    kind: 'bulkSetActive',
+                  })
+                  setConfirmOpen(true)
+                }}
+              >
+                <Power className="h-4 w-4" />
+                Set Active
+              </ApexButton>
+              <ApexButton
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setConfirmConfig({
+                    title: 'Set Selected Clients Inactive',
+                    description: `Set ${selectedIds.length} selected client(s) inactive?`,
+                    confirmLabel: 'Set Inactive',
+                    tone: 'primary',
+                    kind: 'bulkSetInactive',
+                  })
+                  setConfirmOpen(true)
+                }}
+              >
+                <Power className="h-4 w-4" />
+                Set Inactive
+              </ApexButton>
+              <ApexButton
+                type="button"
+                variant="danger"
+                onClick={() => {
+                  setConfirmConfig({
+                    title: 'Delete Selected Clients',
+                    description: `Delete ${selectedIds.length} selected client(s)? This cannot be undone.`,
+                    confirmLabel: 'Delete',
+                    tone: 'danger',
+                    kind: 'bulkDelete',
+                  })
+                  setConfirmOpen(true)
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Selected
+              </ApexButton>
+            </>
+          ) : null}
+
           <ApexColumnsToggle
             columns={[
               { key: 'client', label: 'Client', visible: columns.client },
               { key: 'members', label: 'Members', visible: columns.members },
-              { key: 'roleEmail', label: 'Role / Email', visible: columns.roleEmail },
+              { key: 'roleEmail', label: 'Company/Org / Email', visible: columns.roleEmail },
               { key: 'contact', label: 'FB / Phone', visible: columns.contact },
-              { key: 'dateStatus', label: 'Date / Status', visible: columns.dateStatus },
+              { key: 'createdStatus', label: 'Created / Status', visible: columns.createdStatus },
               { key: 'actions', label: 'Actions', visible: columns.actions },
             ]}
             onToggle={toggleColumn}
@@ -345,6 +447,9 @@ export default function AdminClientsTemplateView({
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b" style={{ borderColor: 'var(--apx-border)' }}>
+              <th className="w-10 px-2 py-3">
+                <ApexCheckbox checked={allCurrentPageSelected} onChange={toggleSelectAllCurrentPage} ariaLabel="Select all current page clients" />
+              </th>
               {columns.client ? (
                 <th className="px-4 py-3 font-semibold apx-text">
                   <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('client')}>
@@ -364,7 +469,7 @@ export default function AdminClientsTemplateView({
               {columns.roleEmail ? (
                 <th className="px-4 py-3 font-semibold apx-text">
                   <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('roleEmail')}>
-                    Role / Email
+                    Company/Org / Email
                     {renderSortIcon('roleEmail')}
                   </button>
                 </th>
@@ -377,11 +482,11 @@ export default function AdminClientsTemplateView({
                   </button>
                 </th>
               ) : null}
-              {columns.dateStatus ? (
+              {columns.createdStatus ? (
                 <th className="px-4 py-3 font-semibold apx-text">
-                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('dateStatus')}>
-                    Date / Status
-                    {renderSortIcon('dateStatus')}
+                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('createdStatus')}>
+                    Created / Status
+                    {renderSortIcon('createdStatus')}
                   </button>
                 </th>
               ) : null}
@@ -392,13 +497,19 @@ export default function AdminClientsTemplateView({
             {paged.map((client) => (
               <tr
                 key={client.id}
-                className="apx-table-row cursor-pointer border-b last:border-b-0"
+                className={[
+                  'apx-table-row cursor-pointer border-b last:border-b-0',
+                  selectedIds.includes(client.id) ? 'apx-table-row-selected' : '',
+                ].join(' ').trim()}
                 style={{ borderColor: 'var(--apx-border)' }}
                 onClick={() => {
                   setSelectedClient(client)
                   setViewOpen(true)
                 }}
               >
+                <td className="px-2 py-3" onClick={(event) => event.stopPropagation()}>
+                  <ApexCheckbox checked={selectedIds.includes(client.id)} onChange={() => toggleSelectOne(client.id)} ariaLabel={`Select ${client.fullName}`} />
+                </td>
                 {columns.client ? (
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
@@ -427,9 +538,9 @@ export default function AdminClientsTemplateView({
                     <p className="text-xs apx-muted">{client.phone || '-'}</p>
                   </td>
                 ) : null}
-                {columns.dateStatus ? (
+                {columns.createdStatus ? (
                   <td className="px-4 py-3">
-                    <p className="apx-text">{client.clientDate || '-'}</p>
+                    <p className="apx-text">{client.createdAt ? new Date(client.createdAt).toLocaleDateString() : '-'}</p>
                     <span
                       className="inline-flex rounded-full px-2 py-1 text-xs font-semibold"
                       style={
@@ -530,10 +641,7 @@ export default function AdminClientsTemplateView({
             setConfirmOpen(true)
           }}
         >
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Profile Image</label>
-            <ApexInput type="file" accept="image/*" onChange={(event) => setAddImageFile(event.target.files?.[0] ?? null)} />
-          </div>
+          <ApexImageDropzone previewUrl={addImageFile ? URL.createObjectURL(addImageFile) : ''} onFileSelect={setAddImageFile} label="Profile Image" />
           <div className="grid gap-3 md:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-medium apx-muted">Full Name</label>
@@ -544,7 +652,7 @@ export default function AdminClientsTemplateView({
               <ApexInput value={addForm.otherMemberNames} onChange={(event) => setAddForm((prev) => ({ ...prev, otherMemberNames: event.target.value }))} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium apx-muted">Role</label>
+              <label className="mb-1 block text-xs font-medium apx-muted">Company/Organization</label>
               <ApexInput value={addForm.role} onChange={(event) => setAddForm((prev) => ({ ...prev, role: event.target.value }))} />
             </div>
             <div>
@@ -558,10 +666,6 @@ export default function AdminClientsTemplateView({
             <div>
               <label className="mb-1 block text-xs font-medium apx-muted">Phone (Optional)</label>
               <ApexInput value={addForm.phone} onChange={(event) => setAddForm((prev) => ({ ...prev, phone: event.target.value }))} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium apx-muted">Date</label>
-              <ApexInput type="date" value={addForm.clientDate} onChange={(event) => setAddForm((prev) => ({ ...prev, clientDate: event.target.value }))} />
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-1">
@@ -586,11 +690,12 @@ export default function AdminClientsTemplateView({
             setConfirmOpen(true)
           }}
         >
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Profile Image</label>
-            <ApexInput type="file" accept="image/*" onChange={(event) => setEditImageFile(event.target.files?.[0] ?? null)} />
-            {editForm.existingProfileImage ? <p className="mt-1 text-xs apx-muted">Current image is kept if you do not upload a new file.</p> : null}
-          </div>
+          <ApexImageDropzone
+            previewUrl={editImageFile ? URL.createObjectURL(editImageFile) : editForm.existingProfileImage}
+            onFileSelect={setEditImageFile}
+            label="Profile Image"
+          />
+          {editForm.existingProfileImage ? <p className="-mt-1 text-xs apx-muted">Current image is kept if you do not upload a new file.</p> : null}
           <div className="grid gap-3 md:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-medium apx-muted">Full Name</label>
@@ -601,7 +706,7 @@ export default function AdminClientsTemplateView({
               <ApexInput value={editForm.otherMemberNames} onChange={(event) => setEditForm((prev) => ({ ...prev, otherMemberNames: event.target.value }))} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium apx-muted">Role</label>
+              <label className="mb-1 block text-xs font-medium apx-muted">Company/Organization</label>
               <ApexInput value={editForm.role} onChange={(event) => setEditForm((prev) => ({ ...prev, role: event.target.value }))} />
             </div>
             <div>
@@ -615,10 +720,6 @@ export default function AdminClientsTemplateView({
             <div>
               <label className="mb-1 block text-xs font-medium apx-muted">Phone (Optional)</label>
               <ApexInput value={editForm.phone} onChange={(event) => setEditForm((prev) => ({ ...prev, phone: event.target.value }))} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium apx-muted">Date</label>
-              <ApexInput type="date" value={editForm.clientDate} onChange={(event) => setEditForm((prev) => ({ ...prev, clientDate: event.target.value }))} />
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-1">
@@ -637,64 +738,16 @@ export default function AdminClientsTemplateView({
         {selectedClient ? (
           <div className="space-y-3 text-sm">
             <div className="grid gap-2 md:grid-cols-2">
-              <p className="apx-text"><span className="font-semibold">Role:</span> {selectedClient.role || '-'}</p>
+              <p className="apx-text"><span className="font-semibold">Company/Organization:</span> {selectedClient.role || '-'}</p>
               <p className="apx-text"><span className="font-semibold">Email:</span> {selectedClient.email || '-'}</p>
               <p className="apx-text"><span className="font-semibold">Facebook:</span> {selectedClient.fbLink || '-'}</p>
               <p className="apx-text"><span className="font-semibold">Phone:</span> {selectedClient.phone || '-'}</p>
-              <p className="apx-text"><span className="font-semibold">Date:</span> {selectedClient.clientDate || '-'}</p>
+              <p className="apx-text"><span className="font-semibold">Created:</span> {selectedClient.createdAt ? new Date(selectedClient.createdAt).toLocaleDateString() : '-'}</p>
               <p className="apx-text"><span className="font-semibold">Status:</span> {selectedClient.isActive ? 'Active' : 'Inactive'}</p>
             </div>
             <div>
               <p className="mb-1 text-xs font-semibold uppercase tracking-wide apx-muted">Other Members</p>
               <p className="apx-text">{selectedClient.otherMemberNames.length ? selectedClient.otherMemberNames.join(', ') : 'none'}</p>
-            </div>
-            <div className="flex flex-wrap justify-end gap-2 pt-1">
-              <ApexButton
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setEditForm(formFromClient(selectedClient))
-                  setEditImageFile(null)
-                  setEditOpen(true)
-                }}
-              >
-                <Edit2 className="h-4 w-4" />
-                Edit
-              </ApexButton>
-              <ApexButton
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setConfirmConfig({
-                    title: selectedClient.isActive ? 'Set Client Inactive' : 'Set Client Active',
-                    description: `Update status for ${selectedClient.fullName}?`,
-                    confirmLabel: selectedClient.isActive ? 'Set Inactive' : 'Set Active',
-                    tone: 'primary',
-                    kind: 'toggle',
-                  })
-                  setConfirmOpen(true)
-                }}
-              >
-                <Power className="h-4 w-4" />
-                {selectedClient.isActive ? 'Set Inactive' : 'Set Active'}
-              </ApexButton>
-              <ApexButton
-                type="button"
-                variant="danger"
-                onClick={() => {
-                  setConfirmConfig({
-                    title: 'Delete Client',
-                    description: `Delete ${selectedClient.fullName}? This cannot be undone.`,
-                    confirmLabel: 'Delete',
-                    tone: 'danger',
-                    kind: 'delete',
-                  })
-                  setConfirmOpen(true)
-                }}
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete
-              </ApexButton>
             </div>
           </div>
         ) : null}
