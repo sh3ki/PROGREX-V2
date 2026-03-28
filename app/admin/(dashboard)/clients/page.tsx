@@ -156,6 +156,39 @@ async function toggleClient(formData: FormData) {
   revalidatePath('/admin/clients')
 }
 
+async function bulkToggleClients(formData: FormData) {
+  'use server'
+  await requirePermission('teams', 'write')
+
+  const ids = String(formData.get('ids') ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+
+  if (ids.length === 0) return
+
+  const mode = String(formData.get('mode') ?? 'inactive').trim().toLowerCase()
+  const setActive = mode === 'active'
+
+  await sql('update clients set is_active = $2, updated_at = now() where id = any($1::uuid[])', [ids, setActive])
+  revalidatePath('/admin/clients')
+}
+
+async function bulkDeleteClients(formData: FormData) {
+  'use server'
+  await requirePermission('teams', 'delete')
+
+  const ids = String(formData.get('ids') ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+
+  if (ids.length === 0) return
+
+  await sql('delete from clients where id = any($1::uuid[])', [ids])
+  revalidatePath('/admin/clients')
+}
+
 export default async function AdminClientsPage() {
   await requirePermission('teams', 'read')
   await ensureClientsTable()
@@ -171,6 +204,7 @@ export default async function AdminClientsPage() {
     phone: string | null
     client_date: string | null
     is_active: boolean
+    created_at: string | null
   }>(
     `select id,
             full_name,
@@ -181,7 +215,8 @@ export default async function AdminClientsPage() {
             fb_link,
             phone,
             case when client_date is null then null else to_char(client_date, 'YYYY-MM-DD') end as client_date,
-            is_active
+            is_active,
+            created_at::text
      from clients
      order by created_at desc`
   )
@@ -199,11 +234,14 @@ export default async function AdminClientsPage() {
         phone: client.phone,
         clientDate: client.client_date,
         isActive: client.is_active,
+        createdAt: client.created_at,
       }))}
       createClientAction={createClient}
       updateClientAction={updateClient}
       toggleClientAction={toggleClient}
       deleteClientAction={deleteClient}
+      bulkToggleClientsAction={bulkToggleClients}
+      bulkDeleteClientsAction={bulkDeleteClients}
     />
   )
 }
