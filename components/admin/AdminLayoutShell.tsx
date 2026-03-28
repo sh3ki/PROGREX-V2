@@ -226,6 +226,7 @@ export default function AdminLayoutShell({
               key={`${section.title}-${item.label}`}
               href={item.href}
               onClick={() => setMobileOpen(false)}
+              title={collapsed ? item.label : undefined}
               className={[
                 'apx-sidebar-link group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 hover:text-slate-100',
                 collapsed ? 'justify-center px-2' : '',
@@ -290,11 +291,18 @@ export default function AdminLayoutShell({
             )}
           </div>
 
-          <nav role="navigation" aria-label="Main navigation" className="flex-1 space-y-3 overflow-y-auto px-3 py-4">
+          <nav role="navigation" aria-label="Main navigation" className="flex-1 space-y-3 overflow-y-auto overflow-x-visible px-3 py-4">
             {NAV_SECTIONS.map(renderNavSection)}
 
             {!collapsed && <div className="my-2 border-t" style={{ borderColor: 'var(--apx-sidebar-border)' }} />}
           </nav>
+
+          <div
+            className="mt-auto border-t px-3 py-2 text-center text-[10px] font-medium tracking-wide"
+            style={{ borderColor: 'var(--apx-sidebar-border)', color: 'var(--apx-sidebar-text)' }}
+          >
+            {collapsed ? <span title="© 2026 PROGREX - ALL RIGHTS RESERVED">© 2026</span> : '© 2026 PROGREX - ALL RIGHTS RESERVED'}
+          </div>
 
           <button
             aria-label="Collapse sidebar"
@@ -325,6 +333,13 @@ export default function AdminLayoutShell({
           <nav role="navigation" aria-label="Main navigation" className="flex-1 space-y-3 overflow-y-auto px-3 py-4">
             {NAV_SECTIONS.map(renderNavSection)}
           </nav>
+
+          <div
+            className="mt-auto border-t px-3 py-2 text-center text-[10px] font-medium tracking-wide"
+            style={{ borderColor: 'var(--apx-sidebar-border)', color: 'var(--apx-sidebar-text)' }}
+          >
+            © 2026 PROGREX - ALL RIGHTS RESERVED
+          </div>
 
           <button
             aria-label="Close sidebar"
