@@ -12,6 +12,7 @@ import FeaturedProjectsCarousel from '@/components/FeaturedProjectsCarousel'
 import TechMarqueeSection from '@/components/TechMarqueeSection'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
 import IntroLoader from '@/components/IntroLoader'
+import ContactFormCard from '@/components/contact/ContactFormCard'
 import { useTranslation } from '@/components/TranslationProvider'
 
 type HomeClientProps = {
@@ -101,6 +102,7 @@ function CtaSelect({ value, onChange, options, placeholder }: {
 
 export default function HomeClient({ servicesData, systemsData, testimonialsData, faqsData, featuredProjectsData }: HomeClientProps) {
   const { t, translations } = useTranslation()
+  const [contactModalOpen, setContactModalOpen] = useState(false)
   const [activeTestimonial, setActiveTestimonial] = useState(0)
   const [direction, setDirection] = useState(1)
   const [openFaq, setOpenFaq] = useState<string | null>(null)
@@ -698,217 +700,29 @@ export default function HomeClient({ servicesData, systemsData, testimonialsData
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.15 }}
+            className="rounded-2xl p-6 text-center"
+            style={{ background: 'rgba(6,6,22,0.97)', border: '1px solid rgba(103,232,249,0.12)', boxShadow: '0 8px 40px rgba(0,0,0,0.4)' }}
           >
-            <AnimatePresence mode="wait">
-              {ctaSubmitted ? (
-                <motion.div
-                  key="success"
-                  initial={{ opacity: 0, scale: 0.93 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.93 }}
-                  transition={{ duration: 0.4, type: 'spring' }}
-                  className="rounded-2xl p-12 text-center"
-                  style={{ background: 'rgba(6,6,22,0.97)', border: '1px solid rgba(14,165,233,0.25)', boxShadow: '0 0 40px rgba(14,165,233,0.08)' }}
-                >
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 200, delay: 0.15 }}
-                    className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-5"
-                    style={{ background: 'linear-gradient(135deg, #0EA5E9, #7C3AED)' }}
-                  >
-                    <CheckCircle size={26} className="text-white" />
-                  </motion.div>
-                  <h3 className="text-xl font-bold text-white mb-2">{t('form.successTitle')}</h3>
-                  <p className="text-slate-400 text-sm leading-relaxed mb-6">
-                    Thanks, <strong className="text-white">{ctaForm.name}</strong>! We&apos;ll get back to you within 24 hours.
-                  </p>
-                  <button
-                    onClick={() => { setCtaSubmitted(false); setCtaForm({ name: '', email: '', phone: '', company: '', service: '', budget: '', message: '' }); setCtaAttachedFile(null); setCtaServerError('') }}
-                    className="btn-outline text-sm px-6 py-2.5 inline-flex"
-                  >
-                    {t('form.sendAnother')}
-                  </button>
-                </motion.div>
-              ) : (
-                <motion.form
-                  key="form"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  onSubmit={handleCtaSubmit}
-                  className="rounded-2xl p-6 sm:p-8 space-y-5"
-                  style={{ background: 'rgba(6,6,22,0.97)', border: '1px solid rgba(103,232,249,0.1)', boxShadow: '0 8px 40px rgba(0,0,0,0.4)' }}
-                >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    {/* Name */}
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('form.fullName')} <span className="text-nebula-400">{t('form.required')}</span></label>
-                      <input
-                        type="text"
-                        value={ctaForm.name}
-                        onChange={(e) => { setCtaForm((p) => ({ ...p, name: e.target.value })); setCtaErrors((p) => ({ ...p, name: undefined })) }}
-                        placeholder={t('form.namePlaceholder')}
-                        className="w-full px-4 py-2.5 rounded-xl bg-white/4 border text-white/90 text-sm placeholder-slate-500 focus:outline-none transition-all"
-                        style={{ borderColor: ctaErrors.name ? 'rgba(239,68,68,0.6)' : 'rgba(103,232,249,0.15)', boxShadow: 'none' }}
-                        onFocus={(e) => { if (!ctaErrors.name) e.currentTarget.style.borderColor = 'rgba(14,165,233,0.5)' }}
-                        onBlur={(e) => { if (!ctaErrors.name) e.currentTarget.style.borderColor = 'rgba(103,232,249,0.15)' }}
-                      />
-                      {ctaErrors.name && <p className="text-red-400 text-xs mt-1">{ctaErrors.name}</p>}
-                    </div>
-                    {/* Email */}
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('form.email')} <span className="text-nebula-400">{t('form.required')}</span></label>
-                      <input
-                        type="email"
-                        value={ctaForm.email}
-                        onChange={(e) => { setCtaForm((p) => ({ ...p, email: e.target.value })); setCtaErrors((p) => ({ ...p, email: undefined })) }}
-                        placeholder={t('form.emailPlaceholder')}
-                        className="w-full px-4 py-2.5 rounded-xl bg-white/4 border text-white/90 text-sm placeholder-slate-500 focus:outline-none transition-all"
-                        style={{ borderColor: ctaErrors.email ? 'rgba(239,68,68,0.6)' : 'rgba(103,232,249,0.15)' }}
-                        onFocus={(e) => { if (!ctaErrors.email) e.currentTarget.style.borderColor = 'rgba(14,165,233,0.5)' }}
-                        onBlur={(e) => { if (!ctaErrors.email) e.currentTarget.style.borderColor = 'rgba(103,232,249,0.15)' }}
-                      />
-                      {ctaErrors.email && <p className="text-red-400 text-xs mt-1">{ctaErrors.email}</p>}
-                    </div>
-                    {/* Phone */}
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('form.phone')}</label>
-                      <input
-                        type="tel"
-                        value={ctaForm.phone}
-                        onChange={(e) => setCtaForm((p) => ({ ...p, phone: e.target.value }))}
-                        placeholder={t('form.phonePlaceholder')}
-                        className="w-full px-4 py-2.5 rounded-xl bg-white/4 border text-white/90 text-sm placeholder-slate-500 focus:outline-none transition-all"
-                        style={{ borderColor: 'rgba(103,232,249,0.15)' }}
-                        onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(14,165,233,0.5)' }}
-                        onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(103,232,249,0.15)' }}
-                      />
-                    </div>
-                    {/* Company */}
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('form.company')}</label>
-                      <input
-                        type="text"
-                        value={ctaForm.company}
-                        onChange={(e) => setCtaForm((p) => ({ ...p, company: e.target.value }))}
-                        placeholder={t('form.companyPlaceholder')}
-                        className="w-full px-4 py-2.5 rounded-xl bg-white/4 border text-white/90 text-sm placeholder-slate-500 focus:outline-none transition-all"
-                        style={{ borderColor: 'rgba(103,232,249,0.15)' }}
-                        onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(14,165,233,0.5)' }}
-                        onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(103,232,249,0.15)' }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Service */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('form.service')}</label>
-                    <CtaSelect
-                      value={ctaForm.service}
-                      onChange={(v) => setCtaForm((p) => ({ ...p, service: v }))}
-                      options={ctaServices}
-                      placeholder={t('form.servicePlaceholder')}
-                    />
-                  </div>
-
-                  {/* Budget Range */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('form.budget')}</label>
-                    <CtaSelect
-                      value={ctaForm.budget}
-                      onChange={(v) => setCtaForm((p) => ({ ...p, budget: v }))}
-                      options={translations.form.budgetOptions as unknown as string[]}
-                      placeholder={t('form.budgetPlaceholder')}
-                    />
-                  </div>
-
-                  {/* Message */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('form.message')} <span className="text-nebula-400">{t('form.required')}</span></label>
-                    <textarea
-                      value={ctaForm.message}
-                      onChange={(e) => { setCtaForm((p) => ({ ...p, message: e.target.value })); setCtaErrors((p) => ({ ...p, message: undefined })) }}
-                      rows={4}
-                      placeholder={t('form.messagePlaceholder')}
-                      className="w-full px-4 py-2.5 rounded-xl bg-transparent border text-slate-200 text-sm placeholder-slate-500 focus:outline-none transition-all resize-none"
-                      style={{ borderColor: ctaErrors.message ? 'rgba(239,68,68,0.6)' : 'rgba(103,232,249,0.15)' }}
-                      onFocus={(e) => { if (!ctaErrors.message) e.currentTarget.style.borderColor = 'rgba(14,165,233,0.5)' }}
-                      onBlur={(e) => { if (!ctaErrors.message) e.currentTarget.style.borderColor = 'rgba(103,232,249,0.15)' }}
-                    />
-                    {ctaErrors.message && <p className="text-red-400 text-xs mt-1">{ctaErrors.message}</p>}
-
-                    {/* File attachment drop zone */}
-                    <div
-                      onClick={() => ctaFileInputRef.current?.click()}
-                      onDragOver={(e) => { e.preventDefault(); setCtaDragOver(true) }}
-                      onDragLeave={() => setCtaDragOver(false)}
-                      onDrop={(e) => { e.preventDefault(); setCtaDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleCtaFileSelect(f) }}
-                      className="mt-3 flex items-center gap-3 px-4 py-3 rounded-xl border border-dashed cursor-pointer transition-all duration-200"
-                      style={{
-                        borderColor: ctaDragOver ? 'rgba(14,165,233,0.6)' : 'rgba(103,232,249,0.2)',
-                        background: ctaDragOver ? 'rgba(14,165,233,0.06)' : 'transparent',
-                      }}
-                    >
-                      <input
-                        ref={ctaFileInputRef}
-                        type="file"
-                        className="hidden"
-                        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleCtaFileSelect(f); e.target.value = '' }}
-                      />
-                      {ctaAttachedFile ? (
-                        <>
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <Check size={14} className="text-emerald-400 shrink-0" />
-                            <span className="text-white/70 text-xs truncate">{ctaAttachedFile.name}</span>
-                            <span className="text-slate-500 text-xs shrink-0">({(ctaAttachedFile.size / 1024).toFixed(0)} KB)</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setCtaAttachedFile(null); setCtaFileError('') }}
-                            className="shrink-0 text-slate-500 hover:text-red-400 transition-colors"
-                          >
-                            <XIcon size={14} />
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <Paperclip size={14} className="shrink-0" style={{ color: 'rgba(103,232,249,0.45)' }} />
-                          <span className="text-slate-500 text-xs">
-                            {ctaDragOver ? t('form.fileDrop') : t('form.fileAttach')}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                    {ctaFileError && <p className="text-red-400 text-xs mt-1.5">{ctaFileError}</p>}
-                  </div>
-
-                  {ctaServerError && (
-                    <p className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2.5">{ctaServerError}</p>
-                  )}
-
-                  <motion.button
-                    type="submit"
-                    disabled={ctaLoading}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="btn-primary w-full justify-center py-3.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <span>{ctaLoading ? t('form.sending') : t('form.send')}</span>
-                    {ctaLoading ? (
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                        className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
-                      />
-                    ) : (
-                      <Send size={16} />
-                    )}
-                  </motion.button>
-                </motion.form>
-              )}
-            </AnimatePresence>
+            <p className="mb-3 text-sm text-slate-400">Use the same contact and booking form from the Contact page.</p>
+            <button type="button" className="btn-primary !px-7 !py-3" onClick={() => setContactModalOpen(true)}>
+              {t('home.ctaPrimaryBtn')}
+            </button>
           </motion.div>
+
+          {contactModalOpen ? (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4">
+              <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-nebula-700/30 bg-[#050511] p-4 sm:p-6">
+                <button
+                  type="button"
+                  onClick={() => setContactModalOpen(false)}
+                  className="absolute top-3 right-3 rounded-lg border border-nebula-700/40 px-2 py-1 text-xs text-slate-300 hover:bg-nebula-700/20"
+                >
+                  Close
+                </button>
+                <ContactFormCard onSuccess={() => setContactModalOpen(false)} />
+              </div>
+            </div>
+          ) : null}
         </div>
       </section>
     </>
