@@ -152,6 +152,13 @@ function categoryBadgeStyle() {
 	return { backgroundColor: 'var(--apx-primary-soft)', color: 'var(--apx-primary)' }
 }
 
+function formatBlogDate(value: string) {
+	if (!value) return '-'
+	const date = new Date(`${value}T00:00:00`)
+	if (Number.isNaN(date.getTime())) return value
+	return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
 export default function AdminBlogsTemplateView({
 	blogs,
 	teamOptions,
@@ -626,7 +633,7 @@ export default function AdminBlogsTemplateView({
 									<p className="apx-text">{blog.authorName || '-'}</p>
 									</td>
 								) : null}
-								{columns.date ? <td className="px-4 py-3 apx-text">{blog.publishedAt || '-'}</td> : null}
+								{columns.date ? <td className="px-4 py-3 apx-text">{formatBlogDate(blog.publishedAt)}</td> : null}
 								{columns.status ? (
 									<td className="px-4 py-3">
 									<span className="inline-flex rounded-full px-2 py-1 text-xs font-semibold" style={blog.isPublished ? { backgroundColor: 'rgba(22,163,74,0.15)', color: '#15803d' } : { backgroundColor: 'rgba(100,116,139,0.2)', color: '#334155' }}>
