@@ -449,7 +449,7 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
 
           {bookingModalOpen ? (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4">
-              <div className="w-full max-w-4xl rounded-2xl border border-nebula-700/40 bg-[#070f1e] p-5">
+              <div className="flex w-full max-w-4xl max-h-[90vh] flex-col overflow-hidden rounded-2xl border border-nebula-700/40 bg-[#070f1e]/82 p-5 backdrop-blur-md">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="text-xl font-semibold text-white">Book a Meeting</h3>
                   <button type="button" onClick={() => setBookingModalOpen(false)} className="text-slate-400 hover:text-white">
@@ -457,7 +457,7 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
                   </button>
                 </div>
 
-                <div className="grid gap-4 xl:grid-cols-[minmax(0,1.75fr)_minmax(300px,0.8fr)]">
+                <div className="grid gap-4 overflow-y-auto pr-1 xl:grid-cols-[minmax(0,1.75fr)_minmax(300px,0.8fr)]">
                   <section className="rounded-2xl border border-nebula-700/30 p-4">
                     <div className="mb-3 flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -467,7 +467,7 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
                         <button type="button" className="apx-icon-action" onClick={() => setMonthCursor((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}>
                           <ChevronRight className="h-4 w-4" />
                         </button>
-                        <h4 className="text-3xl font-semibold text-white">{monthCursor.toLocaleString(undefined, { month: 'long', year: 'numeric' })}</h4>
+                        <h4 className="text-3xl leading-none font-semibold text-white">{monthCursor.toLocaleString(undefined, { month: 'long', year: 'numeric' })}</h4>
                       </div>
                       <button type="button" className="apx-btn-outline" onClick={() => { const now = new Date(); setMonthCursor(startOfMonth(now)); setSelectedDate(toDateKey(now)) }}>
                         Today
@@ -482,7 +482,7 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
 
                     <div className="mt-2 grid grid-cols-7 gap-2">
                       {calendarCells.map((cell) => {
-                        if (!cell.date) return <div key={cell.key} className="h-24 rounded-xl border border-transparent" />
+                        if (!cell.date) return <div key={cell.key} className="h-18 rounded-xl border border-transparent" />
                         const key = toDateKey(cell.date)
                         const isSelected = key === selectedDate
                         const count = availability.filter((event) => event.event_date === key && event.start_time).length
@@ -491,7 +491,7 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
                             key={cell.key}
                             type="button"
                             onClick={() => setSelectedDate(key)}
-                            className="flex aspect-square min-h-24 flex-col items-start justify-start rounded-xl border p-2 text-left transition"
+                            className="flex h-18 flex-col items-start justify-start rounded-xl border p-2 text-left transition"
                             style={{
                               borderColor: isSelected ? 'var(--apx-primary)' : 'rgba(103,232,249,0.18)',
                               backgroundColor: isSelected ? 'color-mix(in oklab, var(--apx-primary) 18%, transparent)' : 'rgba(103,232,249,0.03)',
@@ -517,7 +517,8 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
                           type="time"
                           value={bookingStartTime}
                           onChange={(event) => setBookingStartTime(event.target.value)}
-                          className="w-full rounded-xl border border-nebula-700/30 bg-transparent px-3 py-2 text-sm text-slate-200"
+                          className="contact-time-input w-full rounded-xl border border-nebula-700/30 bg-[#081426] px-3 py-2 text-sm text-slate-100"
+                          style={{ colorScheme: 'dark' }}
                         />
                       </div>
                       <div>
@@ -525,7 +526,8 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
                         <select
                           value={String(bookingDuration)}
                           onChange={(event) => setBookingDuration(Number(event.target.value) || 30)}
-                          className="w-full rounded-xl border border-nebula-700/30 bg-transparent px-3 py-2 text-sm text-slate-200"
+                          className="w-full rounded-xl border border-nebula-700/30 bg-[#081426] px-3 py-2 text-sm text-slate-100"
+                          style={{ colorScheme: 'dark' }}
                         >
                           {DURATION_OPTIONS.map((minutes) => (
                             <option key={minutes} value={minutes}>{minutes} minutes</option>
