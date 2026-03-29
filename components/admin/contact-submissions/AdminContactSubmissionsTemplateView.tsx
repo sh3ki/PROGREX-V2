@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { ArrowDown, ArrowUp, ArrowUpDown, Archive, Download, Edit2, Mail, Plus, Trash2 } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { ArrowDown, ArrowUp, ArrowUpDown, Archive, Check, ChevronDown, Download, Edit2, Mail, Plus, Trash2 } from 'lucide-react'
 import { ApexButton, ApexInput, ApexTextarea } from '@/components/admin/apex/AdminPrimitives'
 import {
   ApexBlockingSpinner,
@@ -152,6 +152,7 @@ export default function AdminContactSubmissionsTemplateView({
   const [emailOpen, setEmailOpen] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [selectedSubmission, setSelectedSubmission] = useState<ContactSubmission | null>(null)
+  const [statusMenu, setStatusMenu] = useState<null | { submissionId: string; top: number; left: number; width: number }>(null)
   const [filesTargetSubmission, setFilesTargetSubmission] = useState<ContactSubmission | null>(null)
   const [selectedFileUrls, setSelectedFileUrls] = useState<string[]>([])
   const [addForm, setAddForm] = useState<ContactFormState>(defaultForm())
@@ -210,6 +211,35 @@ export default function AdminContactSubmissionsTemplateView({
 
   const currentPageIds = paged.map((item) => item.id)
   const allCurrentPageSelected = currentPageIds.length > 0 && currentPageIds.every((id) => selectedIds.includes(id))
+
+  useEffect(() => {
+    function handleOutsideClick(event: MouseEvent) {
+      const target = event.target as HTMLElement
+      if (target.closest('[data-contact-status-menu="true"]')) return
+      if (target.closest('[data-contact-status-trigger="true"]')) return
+      setStatusMenu(null)
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setStatusMenu(null)
+    }
+
+    function handleViewportChange() {
+      setStatusMenu(null)
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    document.addEventListener('keydown', handleEscape)
+    window.addEventListener('resize', handleViewportChange)
+    window.addEventListener('scroll', handleViewportChange, true)
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick)
+      document.removeEventListener('keydown', handleEscape)
+      window.removeEventListener('resize', handleViewportChange)
+      window.removeEventListener('scroll', handleViewportChange, true)
+    }
+  }, [])
 
   function addToast(message: string, tone: ApexToast['tone'] = 'default') {
     const id = Date.now() + Math.floor(Math.random() * 1000)
@@ -496,19 +526,19 @@ export default function AdminContactSubmissionsTemplateView({
                   </button>
                 </th>
               ) : null}
-              {columns.status ? (
-                <th className="px-4 py-3 font-semibold apx-text">
-                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('status')}>
-                    Status
-                    {renderSortIcon('status')}
-                  </button>
-                </th>
-              ) : null}
               {columns.created ? (
                 <th className="px-4 py-3 font-semibold apx-text">
                   <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('created')}>
                     Created
                     {renderSortIcon('created')}
+                  </button>
+                </th>
+              ) : null}
+              {columns.status ? (
+                <th className="px-4 py-3 font-semibold apx-text" style={{ minWidth: '11rem' }}>
+                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('status')}>
+                    Status
+                    {renderSortIcon('status')}
                   </button>
                 </th>
               ) : null}
@@ -543,23 +573,28 @@ export default function AdminContactSubmissionsTemplateView({
                 {columns.budget ? <td className="px-4 py-3 apx-text">{submission.budget || '-'}</td> : null}
                 {columns.created ? <td className="px-4 py-3 apx-text">{formatCreated(submission.createdAt)}</td> : null}
                 {columns.status ? (
-                  <td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
-                    <ApexDropdown
-                      value={submission.status}
-                      options={STATUS_OPTIONS.map((option) => ({ value: option, label: option }))}
-                      onChange={(value) => {
-                        setSelectedSubmission(submission)
-                        setStatusDraft(value)
-                        setConfirmConfig({
-                          title: 'Update Status',
-                          description: `Set status to ${value}?`,
-                          confirmLabel: 'Save Status',
-                          tone: 'primary',
-                          kind: 'saveStatus',
+                  <td className="px-4 py-3" style={{ minWidth: '11rem' }} onClick={(event) => event.stopPropagation()}>
+                    <button
+                      type="button"
+                      data-contact-status-trigger="true"
+                      onClick={(event) => {
+                        const rect = (event.currentTarget as HTMLButtonElement).getBoundingClientRect()
+                        setStatusMenu((prev) => {
+                          if (prev?.submissionId === submission.id) return null
+                          return {
+                            submissionId: submission.id,
+                            top: rect.bottom + 6,
+                            left: rect.left,
+                            width: Math.max(rect.width, 140),
+                          }
                         })
-                        setConfirmOpen(true)
                       }}
-                    />
+                      className="inline-flex h-8 min-w-35 items-center justify-between rounded-lg border px-2.5 text-xs font-medium capitalize transition"
+                      style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface-alt)', color: 'var(--apx-text)' }}
+                    >
+                      <span>{submission.status}</span>
+                      <ChevronDown className="h-3.5 w-3.5 opacity-80" />
+                    </button>
                   </td>
                 ) : null}
                 {columns.actions ? (
@@ -649,6 +684,50 @@ export default function AdminContactSubmissionsTemplateView({
           </tbody>
         </table>
       </div>
+
+      {statusMenu ? (
+        <div
+          data-contact-status-menu="true"
+          className="fixed z-80 overflow-hidden rounded-xl border py-1 shadow-2xl"
+          style={{
+            top: statusMenu.top,
+            left: statusMenu.left,
+            minWidth: `${statusMenu.width}px`,
+            borderColor: 'var(--apx-border)',
+            backgroundColor: 'var(--apx-surface)',
+          }}
+        >
+          {STATUS_OPTIONS.map((option) => {
+            const submission = paged.find((item) => item.id === statusMenu.submissionId) || sorted.find((item) => item.id === statusMenu.submissionId)
+            const isCurrent = submission?.status === option
+            return (
+              <button
+                key={option}
+                type="button"
+                className="flex w-full items-center justify-between px-2.5 py-1.5 text-left text-xs capitalize transition-colors hover:bg-black/5"
+                style={isCurrent ? { color: 'var(--apx-primary)', backgroundColor: 'var(--apx-primary-soft)' } : { color: 'var(--apx-text)' }}
+                onClick={() => {
+                  if (!submission) return
+                  setStatusMenu(null)
+                  setSelectedSubmission(submission)
+                  setStatusDraft(option)
+                  setConfirmConfig({
+                    title: 'Update Status',
+                    description: `Set status to ${option}?`,
+                    confirmLabel: 'Save Status',
+                    tone: 'primary',
+                    kind: 'saveStatus',
+                  })
+                  setConfirmOpen(true)
+                }}
+              >
+                <span>{option}</span>
+                {isCurrent ? <Check className="h-3.5 w-3.5" /> : null}
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
 
       <ApexPagination
         page={safePage}
