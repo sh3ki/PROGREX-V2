@@ -128,7 +128,14 @@ export default function AdminLayoutShell({
 }) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false
+    try {
+      return localStorage.getItem('apx-sidebar-collapsed') === '1'
+    } catch {
+      return false
+    }
+  })
   const [isDark, setIsDark] = useState(initialIsDark)
   const [customizerOpen, setCustomizerOpen] = useState(false)
   const [colorPreset, setColorPreset] = useState<ColorPreset>(initialColorPreset)
@@ -194,6 +201,15 @@ export default function AdminLayoutShell({
     }
   }, [isDark, colorPreset, density, activePreset.value])
 
+  useEffect(() => {
+    try {
+      localStorage.setItem('apx-sidebar-collapsed', collapsed ? '1' : '0')
+      document.cookie = `apx-sidebar-collapsed=${collapsed ? '1' : '0'}; path=/; max-age=31536000; samesite=lax`
+    } catch {
+      // ignore
+    }
+  }, [collapsed])
+
   const sidebarWidth = collapsed ? 'lg:w-[84px]' : 'lg:w-[260px]'
   const contentOffset = collapsed ? 'lg:ms-[84px]' : 'lg:ms-[260px]'
   const contentPaddingClass = density === 'compact' ? 'p-3 sm:p-4' : density === 'spacious' ? 'p-6 sm:p-8' : 'p-4 sm:p-6'
@@ -209,10 +225,13 @@ export default function AdminLayoutShell({
       <button
         type="button"
         onClick={() => setOpenSections((prev) => ({ ...prev, [section.title]: !prev[section.title] }))}
-        className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest transition-colors hover:text-slate-100"
+        className={[
+          'flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest transition-colors hover:text-slate-100',
+          collapsed ? 'justify-center px-2 text-[9px]' : '',
+        ].join(' ')}
         style={{ color: 'var(--apx-sidebar-text)' }}
       >
-        <span className={collapsed ? 'sr-only' : 'flex-1 text-start'}>{section.title}</span>
+        <span className={collapsed ? 'text-center opacity-80' : 'flex-1 text-start'}>{section.title}</span>
         {!collapsed && <ChevronRight className={['size-3 transition-transform duration-200', openSections[section.title] ? 'rotate-90' : 'rotate-0'].join(' ')} />}
       </button>
 
@@ -291,7 +310,7 @@ export default function AdminLayoutShell({
             )}
           </div>
 
-          <nav role="navigation" aria-label="Main navigation" className="flex-1 space-y-3 overflow-y-auto overflow-x-visible px-3 py-4">
+          <nav role="navigation" aria-label="Main navigation" className="flex-1 space-y-3 overflow-y-auto overflow-x-hidden px-3 py-4">
             {NAV_SECTIONS.map(renderNavSection)}
 
             {!collapsed && <div className="my-2 border-t" style={{ borderColor: 'var(--apx-sidebar-border)' }} />}
