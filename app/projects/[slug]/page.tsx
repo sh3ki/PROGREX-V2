@@ -57,11 +57,17 @@ export default async function ProjectPage({ params }: Props) {
       .filter((item) => item.metric || item.value)
 
     const testimonialRaw = (details.testimonial ?? {}) as Record<string, unknown>
+    const overview = String(details.overview ?? value.shortDesc ?? '').trim()
+    const problem = String(details.problem ?? '').trim()
+    const solution = String(details.solution ?? '').trim()
 
-    return {
+    const normalized: CaseStudyProps['project'] = {
       ...value,
       ...details,
       tags,
+      overview,
+      problem,
+      solution,
       features,
       technologies,
       results,
@@ -72,7 +78,9 @@ export default async function ProjectPage({ params }: Props) {
       },
       images: asStringArray(details.images),
       category: Array.isArray(value.category) ? value.category : [value.category].filter(Boolean),
-    } as CaseStudyProps['project']
+    }
+
+    return normalized
   }
 
   const normalizedProject = normalizeCaseStudyProject(project)
