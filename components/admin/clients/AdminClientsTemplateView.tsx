@@ -1,7 +1,8 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ArrowDown, ArrowUp, ArrowUpDown, Edit2, Plus, Power, Trash2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { ArrowDown, ArrowUp, ArrowUpDown, Edit2, FolderPlus, Plus, Power, Trash2 } from 'lucide-react'
 import { ApexButton, ApexInput } from '@/components/admin/apex/AdminPrimitives'
 import {
   ApexBlockingSpinner,
@@ -100,6 +101,7 @@ export default function AdminClientsTemplateView({
   bulkToggleClientsAction: (formData: FormData) => Promise<void>
   bulkDeleteClientsAction: (formData: FormData) => Promise<void>
 }) {
+  const router = useRouter()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<'all' | 'active' | 'inactive'>('all')
   const [sortKey, setSortKey] = useState<SortKey>('client')
@@ -541,6 +543,16 @@ export default function AdminClientsTemplateView({
                         type="button"
                         className="apx-icon-action"
                         onClick={() => {
+                          router.push(`/admin/ongoing-projects?openAdd=1&clientId=${client.id}`)
+                        }}
+                        aria-label="Add ongoing project"
+                      >
+                        <FolderPlus className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        className="apx-icon-action"
+                        onClick={() => {
                           setEditForm(formFromClient(client))
                           setEditImageFile(null)
                           setSelectedClient(client)
@@ -564,6 +576,7 @@ export default function AdminClientsTemplateView({
                           })
                           setConfirmOpen(true)
                         }}
+                        style={client.isActive ? { borderColor: 'rgba(234, 88, 12, 0.45)', color: '#c2410c', backgroundColor: 'rgba(249, 115, 22, 0.08)' } : { borderColor: 'rgba(22, 163, 74, 0.5)', color: '#15803d', backgroundColor: 'rgba(22, 163, 74, 0.12)' }}
                         aria-label="Toggle client status"
                       >
                         <Power className="h-4 w-4" />
@@ -711,24 +724,50 @@ export default function AdminClientsTemplateView({
       </ApexModal>
 
       <ApexModal
+        size="md"
         open={viewOpen}
-        title={selectedClient?.fullName || 'Client Details'}
-        subtitle="View profile details"
+        title="Client Details"
+        subtitle="View complete client information."
         onClose={() => setViewOpen(false)}
       >
         {selectedClient ? (
-          <div className="space-y-3 text-sm">
-            <div className="grid gap-2 md:grid-cols-2">
-              <p className="apx-text"><span className="font-semibold">Company/Organization:</span> {selectedClient.role || '-'}</p>
-              <p className="apx-text"><span className="font-semibold">Email:</span> {selectedClient.email || '-'}</p>
-              <p className="apx-text"><span className="font-semibold">Facebook:</span> {selectedClient.fbLink || '-'}</p>
-              <p className="apx-text"><span className="font-semibold">Phone:</span> {selectedClient.phone || '-'}</p>
-              <p className="apx-text"><span className="font-semibold">Created:</span> {selectedClient.createdAt ? new Date(selectedClient.createdAt).toLocaleDateString() : '-'}</p>
-              <p className="apx-text"><span className="font-semibold">Status:</span> {selectedClient.isActive ? 'Active' : 'Inactive'}</p>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs font-medium apx-muted">Full Name</p>
+                <p className="apx-text font-semibold">{selectedClient.fullName}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium apx-muted">Status</p>
+                <p className="apx-text">{selectedClient.isActive ? 'Active' : 'Inactive'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium apx-muted">Company/Organization</p>
+                <p className="apx-text">{selectedClient.role || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium apx-muted">Email</p>
+                <p className="apx-text">{selectedClient.email || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium apx-muted">Facebook</p>
+                <p className="apx-text">{selectedClient.fbLink || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium apx-muted">Phone</p>
+                <p className="apx-text">{selectedClient.phone || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium apx-muted">Created</p>
+                <p className="apx-text">{selectedClient.createdAt ? new Date(selectedClient.createdAt).toLocaleDateString() : '-'}</p>
+              </div>
             </div>
             <div>
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wide apx-muted">Other Members</p>
-              <p className="apx-text">{selectedClient.otherMemberNames.length ? selectedClient.otherMemberNames.join(', ') : 'none'}</p>
+              <p className="text-xs font-medium apx-muted">Other Members</p>
+              <p className="apx-text whitespace-pre-wrap">{selectedClient.otherMemberNames.length ? selectedClient.otherMemberNames.join(', ') : 'none'}</p>
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <ApexButton type="button" variant="outline" onClick={() => setViewOpen(false)}>Close</ApexButton>
             </div>
           </div>
         ) : null}
