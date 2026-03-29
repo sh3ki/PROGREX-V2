@@ -535,7 +535,8 @@ export default function AdminContactSubmissionsTemplateView({
                   <td className="px-4 py-3">
                     <p className="font-semibold apx-text">{submission.name}</p>
                     <p className="text-xs apx-muted">{submission.company || '-'}</p>
-                    <p className="text-xs apx-muted">{submission.email} {submission.phone ? `• ${submission.phone}` : ''}</p>
+                    <p className="text-xs apx-muted">{submission.email || '-'}</p>
+                    <p className="text-xs apx-muted">{submission.phone || '-'}</p>
                   </td>
                 ) : null}
                 {columns.service ? <td className="px-4 py-3 apx-text">{submission.service || '-'}</td> : null}
