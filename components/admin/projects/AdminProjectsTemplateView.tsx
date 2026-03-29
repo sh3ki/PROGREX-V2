@@ -1860,6 +1860,38 @@ export default function AdminProjectsTemplateView({
                               type="button"
                               onClick={(event) => {
                                 event.stopPropagation()
+                                setPendingFeaturedProject(project)
+                                setFeaturedPositionInput(project.isFeatured ? project.featureOrder : nextFeaturedOrder)
+                                setConfirmConfig({
+                                  title: project.isFeatured ? 'Remove from Featured' : 'Set as Featured',
+                                  description: project.isFeatured
+                                    ? `Remove ${project.title} from featured projects?`
+                                    : `Set ${project.title} as featured.`,
+                                  label: project.isFeatured ? 'Remove Featured' : 'Set Featured',
+                                  tone: 'primary',
+                                  kind: 'toggleFeatured',
+                                })
+                                setConfirmOpen(true)
+                              }}
+                              className="apx-icon-action"
+                              style={
+                                project.isFeatured
+                                  ? {
+                                      borderColor: 'rgba(250, 204, 21, 0.45)',
+                                      color: '#a16207',
+                                      backgroundColor: 'rgba(250, 204, 21, 0.14)',
+                                    }
+                                  : undefined
+                              }
+                              aria-label={`Toggle featured for ${project.title}`}
+                            >
+                              <Star className="h-4 w-4" />
+                            </button>
+                            
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation()
                                 openEditModal(project)
                               }}
                               className="apx-icon-action"
@@ -1899,38 +1931,6 @@ export default function AdminProjectsTemplateView({
                               aria-label={`Toggle ${project.title} status`}
                             >
                               <Power className="h-4 w-4" />
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                setPendingFeaturedProject(project)
-                                setFeaturedPositionInput(project.isFeatured ? project.featureOrder : nextFeaturedOrder)
-                                setConfirmConfig({
-                                  title: project.isFeatured ? 'Remove from Featured' : 'Set as Featured',
-                                  description: project.isFeatured
-                                    ? `Remove ${project.title} from featured projects?`
-                                    : `Set ${project.title} as featured.`,
-                                  label: project.isFeatured ? 'Remove Featured' : 'Set Featured',
-                                  tone: 'primary',
-                                  kind: 'toggleFeatured',
-                                })
-                                setConfirmOpen(true)
-                              }}
-                              className="apx-icon-action"
-                              style={
-                                project.isFeatured
-                                  ? {
-                                      borderColor: 'rgba(250, 204, 21, 0.45)',
-                                      color: '#a16207',
-                                      backgroundColor: 'rgba(250, 204, 21, 0.14)',
-                                    }
-                                  : undefined
-                              }
-                              aria-label={`Toggle featured for ${project.title}`}
-                            >
-                              <Star className="h-4 w-4" />
                             </button>
 
                             <button
