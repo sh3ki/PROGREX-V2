@@ -117,6 +117,7 @@ export default function AdminLayoutShell({
   initialIsDark,
   initialColorPreset,
   initialDensity,
+  initialCollapsed,
 }: {
   children: React.ReactNode
   adminName: string
@@ -125,17 +126,11 @@ export default function AdminLayoutShell({
   initialIsDark: boolean
   initialColorPreset: ColorPreset
   initialDensity: Density
+  initialCollapsed: boolean
 }) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false
-    try {
-      return localStorage.getItem('apx-sidebar-collapsed') === '1'
-    } catch {
-      return false
-    }
-  })
+  const [collapsed, setCollapsed] = useState(initialCollapsed)
   const [isDark, setIsDark] = useState(initialIsDark)
   const [customizerOpen, setCustomizerOpen] = useState(false)
   const [colorPreset, setColorPreset] = useState<ColorPreset>(initialColorPreset)
