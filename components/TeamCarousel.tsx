@@ -155,10 +155,15 @@ export default function TeamCarousel({ teamData }: { teamData: TeamMember[] }) {
                         </a>
                       ) : null}
 
-                      <div className="inline-flex max-w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/65" style={{ border: '1px solid rgba(103,232,249,0.15)' }}>
+                      <a
+                        href={`mailto:${member.email}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex flex-1 min-w-0 items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/65 transition-all duration-200 hover:text-nebula-300 cursor-pointer"
+                        style={{ border: '1px solid rgba(103,232,249,0.15)' }}
+                      >
                         <Mail size={14} />
                         <span className="truncate">{member.email || 'No email provided'}</span>
-                      </div>
+                      </a>
                       </div>
                     </div>
                   </div>
