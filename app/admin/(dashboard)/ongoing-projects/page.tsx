@@ -2,7 +2,7 @@ import { revalidatePath } from 'next/cache'
 import { createHash, randomBytes } from 'node:crypto'
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
-import AdminOngoingProjectsTemplateView from '@/components/admin/ongoing-projects/AdminOngoingProjectsTemplateView'
+import AdminOngoingProjectsTemplateView from '../../../../components/admin/ongoing-projects/AdminOngoingProjectsTemplateView'
 
 async function uploadRawToCloudinary(file: File, opts: { folder: string; filename: string }) {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
@@ -51,6 +51,7 @@ async function ensureOngoingProjectsTable() {
       assigned_team_member_ids uuid[] default array[]::uuid[],
       agreement_file_url text,
       project_scope_file_url text,
+      other_files_urls text[] default array[]::text[],
       payment_term text,
       is_active boolean not null default true,
       total_price numeric(12,2),
@@ -61,6 +62,13 @@ async function ensureOngoingProjectsTable() {
   `)
 
   await sql('alter table ongoing_projects add column if not exists is_active boolean not null default true')
+  await sql('alter table ongoing_projects add column if not exists other_files_urls text[] default array[]::text[]')
+}
+
+function parseCurrency(value: FormDataEntryValue | null) {
+  const raw = String(value ?? '').trim().replace(/[^0-9.\-]/g, '')
+  const parsed = Number(raw)
+  return Number.isFinite(parsed) ? parsed : 0
 }
 
 async function createOngoingProject(formData: FormData) {
@@ -78,15 +86,17 @@ async function createOngoingProject(formData: FormData) {
   const paymentTerm = String(formData.get('paymentTerm') ?? '').trim()
   const status = String(formData.get('status') ?? 'active').trim().toLowerCase()
   const isActive = status !== 'inactive'
-  const totalPrice = Number(formData.get('totalPrice') ?? 0) || 0
-  const balance = Number(formData.get('balance') ?? 0) || 0
+  const totalPrice = parseCurrency(formData.get('totalPrice'))
+  const balance = parseCurrency(formData.get('balance'))
 
   if (!projectName) return
 
   const agreementFile = formData.get('agreementFile')
   const scopeFile = formData.get('scopeFile')
+  const otherFiles = formData.getAll('otherFiles').filter((value) => value instanceof File) as File[]
   let agreementUrl = ''
   let scopeUrl = ''
+  const otherFileUrls: string[] = []
 
   if (agreementFile instanceof File && agreementFile.size > 0) {
     const filename = `${projectName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 50) || 'agreement'}-${randomBytes(3).toString('hex')}`
@@ -96,6 +106,13 @@ async function createOngoingProject(formData: FormData) {
   if (scopeFile instanceof File && scopeFile.size > 0) {
     const filename = `${projectName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 50) || 'scope'}-${randomBytes(3).toString('hex')}`
     scopeUrl = await uploadRawToCloudinary(scopeFile, { folder: 'ProgreX Project Scope', filename })
+  }
+
+  for (const file of otherFiles.slice(0, 5)) {
+    const base = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60) || 'other-file'
+    const filename = `${base}-${randomBytes(3).toString('hex')}`
+    const uploaded = await uploadRawToCloudinary(file, { folder: 'Other Files', filename })
+    otherFileUrls.push(uploaded)
   }
 
   await sql(
@@ -109,11 +126,12 @@ async function createOngoingProject(formData: FormData) {
       assigned_team_member_ids,
       agreement_file_url,
       project_scope_file_url,
+      other_files_urls,
       payment_term,
       is_active,
       total_price,
       balance
-    ) values ($1, $2, $3::date, $4::date, nullif($5, '')::uuid, $6, $7::uuid[], $8, $9, $10, $11, $12, $13)`,
+    ) values ($1, $2, $3::date, $4::date, nullif($5, '')::uuid, $6, $7::uuid[], $8, $9, $10::text[], $11, $12, $13, $14)`,
     [
       projectName,
       projectDescription || null,
@@ -124,6 +142,7 @@ async function createOngoingProject(formData: FormData) {
       assignedTeamIds,
       agreementUrl || null,
       scopeUrl || null,
+      otherFileUrls,
       paymentTerm || null,
       isActive,
       totalPrice,
@@ -152,17 +171,23 @@ async function updateOngoingProject(formData: FormData) {
   const paymentTerm = String(formData.get('paymentTerm') ?? '').trim()
   const status = String(formData.get('status') ?? 'active').trim().toLowerCase()
   const isActive = status !== 'inactive'
-  const totalPrice = Number(formData.get('totalPrice') ?? 0) || 0
-  const balance = Number(formData.get('balance') ?? 0) || 0
+  const totalPrice = parseCurrency(formData.get('totalPrice'))
+  const balance = parseCurrency(formData.get('balance'))
   const existingAgreementFileUrl = String(formData.get('existingAgreementFileUrl') ?? '').trim()
   const existingScopeFileUrl = String(formData.get('existingScopeFileUrl') ?? '').trim()
+  const keptOtherFileUrls = String(formData.get('keptOtherFileUrls') ?? '')
+    .split('||')
+    .map((value) => value.trim())
+    .filter(Boolean)
 
   if (!projectName) return
 
   const agreementFile = formData.get('agreementFile')
   const scopeFile = formData.get('scopeFile')
+  const otherFiles = formData.getAll('otherFiles').filter((value) => value instanceof File) as File[]
   let agreementUrl = existingAgreementFileUrl
   let scopeUrl = existingScopeFileUrl
+  let otherFileUrls = [...keptOtherFileUrls]
 
   if (agreementFile instanceof File && agreementFile.size > 0) {
     const filename = `${projectName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 50) || 'agreement'}-${randomBytes(3).toString('hex')}`
@@ -173,6 +198,15 @@ async function updateOngoingProject(formData: FormData) {
     const filename = `${projectName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 50) || 'scope'}-${randomBytes(3).toString('hex')}`
     scopeUrl = await uploadRawToCloudinary(scopeFile, { folder: 'ProgreX Project Scope', filename })
   }
+
+  for (const file of otherFiles.slice(0, 5)) {
+    const base = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60) || 'other-file'
+    const filename = `${base}-${randomBytes(3).toString('hex')}`
+    const uploaded = await uploadRawToCloudinary(file, { folder: 'Other Files', filename })
+    otherFileUrls = [...otherFileUrls, uploaded]
+  }
+
+  if (otherFileUrls.length > 5) otherFileUrls = otherFileUrls.slice(0, 5)
 
   await sql(
     `update ongoing_projects
@@ -185,10 +219,11 @@ async function updateOngoingProject(formData: FormData) {
          assigned_team_member_ids = $8::uuid[],
          agreement_file_url = nullif($9, ''),
          project_scope_file_url = nullif($10, ''),
-         payment_term = nullif($11, ''),
-         is_active = $12,
-         total_price = $13,
-         balance = $14,
+         other_files_urls = $11::text[],
+         payment_term = nullif($12, ''),
+         is_active = $13,
+         total_price = $14,
+         balance = $15,
          updated_at = now()
      where id = $1::uuid`,
     [
@@ -202,6 +237,7 @@ async function updateOngoingProject(formData: FormData) {
       assignedTeamIds,
       agreementUrl,
       scopeUrl,
+      otherFileUrls,
       paymentTerm,
       isActive,
       totalPrice,
@@ -227,6 +263,62 @@ async function toggleOngoingProjectActive(formData: FormData) {
   const id = String(formData.get('id') ?? '').trim()
   if (!id) return
   await sql('update ongoing_projects set is_active = not is_active, updated_at = now() where id = $1::uuid', [id])
+  revalidatePath('/admin/ongoing-projects')
+}
+
+async function updateOngoingProjectFiles(formData: FormData) {
+  'use server'
+  await requirePermission('projects', 'write')
+  await ensureOngoingProjectsTable()
+
+  const id = String(formData.get('id') ?? '').trim()
+  const projectName = String(formData.get('projectName') ?? '').trim() || 'project'
+  if (!id) return
+
+  const keptAgreement = String(formData.get('existingAgreementFileUrl') ?? '').trim()
+  const keptScope = String(formData.get('existingScopeFileUrl') ?? '').trim()
+  const keptOtherFileUrls = String(formData.get('keptOtherFileUrls') ?? '')
+    .split('||')
+    .map((value) => value.trim())
+    .filter(Boolean)
+
+  let agreementUrl = keptAgreement
+  let scopeUrl = keptScope
+  let otherFileUrls = [...keptOtherFileUrls]
+
+  const agreementFile = formData.get('agreementFile')
+  const scopeFile = formData.get('scopeFile')
+  const otherFiles = formData.getAll('otherFiles').filter((value) => value instanceof File) as File[]
+
+  if (agreementFile instanceof File && agreementFile.size > 0) {
+    const filename = `${projectName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 50) || 'agreement'}-${randomBytes(3).toString('hex')}`
+    agreementUrl = await uploadRawToCloudinary(agreementFile, { folder: 'ProgreX Agreement', filename })
+  }
+
+  if (scopeFile instanceof File && scopeFile.size > 0) {
+    const filename = `${projectName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 50) || 'scope'}-${randomBytes(3).toString('hex')}`
+    scopeUrl = await uploadRawToCloudinary(scopeFile, { folder: 'ProgreX Project Scope', filename })
+  }
+
+  for (const file of otherFiles.slice(0, 5)) {
+    const base = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60) || 'other-file'
+    const filename = `${base}-${randomBytes(3).toString('hex')}`
+    const uploaded = await uploadRawToCloudinary(file, { folder: 'Other Files', filename })
+    otherFileUrls = [...otherFileUrls, uploaded]
+  }
+
+  if (otherFileUrls.length > 5) otherFileUrls = otherFileUrls.slice(0, 5)
+
+  await sql(
+    `update ongoing_projects
+     set agreement_file_url = nullif($2, ''),
+         project_scope_file_url = nullif($3, ''),
+         other_files_urls = $4::text[],
+         updated_at = now()
+     where id = $1::uuid`,
+    [id, agreementUrl, scopeUrl, otherFileUrls]
+  )
+
   revalidatePath('/admin/ongoing-projects')
 }
 
@@ -273,10 +365,12 @@ export default async function AdminOngoingProjectsPage() {
       target_date: string | null
       client_id: string | null
       client_name: string | null
+      client_profile_image: string | null
       category: string | null
       assigned_team_member_ids: string[]
       agreement_file_url: string | null
       project_scope_file_url: string | null
+      other_files_urls: string[]
       payment_term: string | null
       is_active: boolean
       total_price: string | null
@@ -289,22 +383,22 @@ export default async function AdminOngoingProjectsPage() {
               case when op.target_date is null then null else to_char(op.target_date, 'YYYY-MM-DD') end as target_date,
               op.client_id::text,
               c.full_name as client_name,
+                    c.profile_image as client_profile_image,
               op.category,
-              array_remove(array_agg(tm.id::text order by tm.sort_order asc, tm.name asc), null) as assigned_team_member_ids,
+                    op.assigned_team_member_ids,
               op.agreement_file_url,
               op.project_scope_file_url,
+                    op.other_files_urls,
               op.payment_term,
               op.is_active,
               op.total_price::text,
               op.balance::text
        from ongoing_projects op
        left join clients c on c.id = op.client_id
-            left join team_members tm on tm.id = any(op.assigned_team_member_ids)
-            group by op.id, c.full_name
             order by op.created_at desc`
     ),
-    sql<{ id: string; full_name: string }>('select id, full_name from clients where is_active = true order by full_name asc'),
-    sql<{ id: string; name: string }>('select id, name from team_members where is_active = true order by sort_order asc, name asc'),
+                sql<{ id: string; full_name: string; profile_image: string | null }>('select id, full_name, profile_image from clients where is_active = true order by full_name asc'),
+                sql<{ id: string; name: string; avatar: string | null }>('select id, name, avatar from team_members where is_active = true order by sort_order asc, name asc'),
     sql<{ category: string }>(
       `select distinct unnest(categories) as category
        from projects
@@ -323,20 +417,23 @@ export default async function AdminOngoingProjectsPage() {
         targetDate: project.target_date,
         clientId: project.client_id,
         clientName: project.client_name,
+        clientProfileImage: project.client_profile_image,
         category: project.category,
         assignedTeamIds: project.assigned_team_member_ids ?? [],
         agreementFileUrl: project.agreement_file_url,
         projectScopeFileUrl: project.project_scope_file_url,
+        otherFileUrls: project.other_files_urls || [],
         paymentTerm: project.payment_term,
         isActive: project.is_active,
         totalPrice: project.total_price,
         balance: project.balance,
       }))}
-      clients={clients.map((client) => ({ id: client.id, fullName: client.full_name }))}
-      teamMembers={teamMembers}
+      clients={clients.map((client) => ({ id: client.id, fullName: client.full_name, profileImage: client.profile_image }))}
+      teamMembers={teamMembers.map((member) => ({ id: member.id, name: member.name, avatar: member.avatar || '' }))}
       categories={categories.map((item) => item.category).filter(Boolean)}
       createProjectAction={createOngoingProject}
       updateProjectAction={updateOngoingProject}
+      updateProjectFilesAction={updateOngoingProjectFiles}
       toggleProjectAction={toggleOngoingProjectActive}
       bulkSetInactiveProjectsAction={bulkSetInactiveOngoingProjects}
       bulkDeleteProjectsAction={bulkDeleteOngoingProjects}
