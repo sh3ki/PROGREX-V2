@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -18,6 +18,10 @@ import {
   FolderOpen,
   Inbox,
   Bell,
+  MessageSquareText,
+  KanbanSquare,
+  CreditCard,
+  ScrollText,
   Menu,
   X,
   Moon,
@@ -69,9 +73,10 @@ const NAV_SECTIONS: NavSection[] = [
       { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
       { href: '/admin/calendar', label: 'Calendar', icon: Calendar },
       { href: '/admin/bookings', label: 'Bookings', icon: CalendarCheck },
+      { href: '/admin/contact-submissions', label: 'Contact Submissions', icon: Inbox },
       { href: '/admin/clients', label: 'Clients', icon: Building2 },
       { href: '/admin/ongoing-projects', label: 'Ongoing Projects', icon: FolderOpen },
-      { href: '/admin/contact-submissions', label: 'Contact Submissions', icon: Inbox },
+      { href: '/admin/payment', label: 'Payments', icon: CreditCard },
     ],
   },
   {
@@ -84,10 +89,19 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    title: 'Apps',
+    items: [
+      { href: '/admin/kanban', label: 'Kanban', icon: KanbanSquare },
+      { href: '/admin/chats', label: 'Chats', icon: MessageSquareText },
+    ],
+  },
+  {
     title: 'System',
     items: [
+      { href: '/admin/notifications', label: 'Notifications', icon: Bell },
       { href: '/admin/users', label: 'Users', icon: Users },
       { href: '/admin/roles', label: 'Roles & Permissions', icon: ShieldCheck },
+      { href: '/admin/audit-logs', label: 'Audit Logs', icon: ScrollText },
     ],
   },
 ]
@@ -145,6 +159,10 @@ export default function AdminLayoutShell({
   const commandRef = useRef<HTMLDivElement | null>(null)
   const profileRef = useRef<HTMLDivElement | null>(null)
   const logoutFormRef = useRef<HTMLFormElement | null>(null)
+  const lastActivityRef = useRef(0)
+  const hasAutoLoggedOutRef = useRef(false)
+  const [idleWarningOpen, setIdleWarningOpen] = useState(false)
+  const [idleSecondsLeft, setIdleSecondsLeft] = useState(120)
 
   const title = useMemo(() => getPageTitle(pathname), [pathname])
   const activePreset = COLOR_PRESETS.find((preset) => preset.key === colorPreset) ?? COLOR_PRESETS[0]
@@ -208,6 +226,52 @@ export default function AdminLayoutShell({
   const sidebarWidth = collapsed ? 'lg:w-[84px]' : 'lg:w-[260px]'
   const contentOffset = collapsed ? 'lg:ms-[84px]' : 'lg:ms-[260px]'
   const contentPaddingClass = density === 'compact' ? 'p-3 sm:p-4' : density === 'spacious' ? 'p-6 sm:p-8' : 'p-4 sm:p-6'
+
+  const markActivity = useCallback(() => {
+    lastActivityRef.current = Date.now()
+    hasAutoLoggedOutRef.current = false
+    setIdleSecondsLeft(120)
+    setIdleWarningOpen(false)
+  }, [])
+
+  useEffect(() => {
+    const warningMs = 13 * 60 * 1000
+    const logoutMs = 15 * 60 * 1000
+
+    lastActivityRef.current = Date.now()
+
+    const onActivity = () => {
+      markActivity()
+    }
+
+    const activityEvents: Array<keyof WindowEventMap> = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart']
+    for (const eventName of activityEvents) {
+      window.addEventListener(eventName, onActivity, { passive: true })
+    }
+
+    const timer = window.setInterval(() => {
+      const idleMs = Date.now() - lastActivityRef.current
+      if (idleMs >= logoutMs) {
+        if (hasAutoLoggedOutRef.current) return
+        hasAutoLoggedOutRef.current = true
+        logoutFormRef.current?.requestSubmit()
+        return
+      }
+
+      if (idleMs >= warningMs) {
+        const seconds = Math.max(0, Math.ceil((logoutMs - idleMs) / 1000))
+        setIdleSecondsLeft(seconds)
+        setIdleWarningOpen(true)
+      }
+    }, 1000)
+
+    return () => {
+      window.clearInterval(timer)
+      for (const eventName of activityEvents) {
+        window.removeEventListener(eventName, onActivity)
+      }
+    }
+  }, [markActivity])
 
   function resetToDefaults() {
     setIsDark(true)
@@ -470,7 +534,7 @@ export default function AdminLayoutShell({
                       <div className="p-2">
                         <button className="apx-list-hover flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm apx-text">
                           <Settings className="h-4 w-4" />
-                          Settings
+                          Profile Settings
                         </button>
                         <button className="apx-list-hover flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm apx-text">
                           <Bell className="h-4 w-4" />
@@ -574,6 +638,40 @@ export default function AdminLayoutShell({
           logoutFormRef.current?.requestSubmit()
         }}
       />
+
+      {idleWarningOpen ? (
+        <div className="fixed inset-0 z-120 flex items-center justify-center bg-black/60 p-4">
+          <div
+            className="w-full max-w-md rounded-2xl border p-5 shadow-2xl"
+            style={{
+              borderColor: 'var(--apx-border)',
+              backgroundColor: 'color-mix(in oklab, var(--apx-surface) 88%, transparent)',
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-lg font-semibold apx-text">Inactivity Warning</h3>
+              <button
+                type="button"
+                aria-label="Close inactivity warning"
+                onClick={markActivity}
+                className="rounded p-1.5 transition-colors hover:bg-black/10"
+                style={{ color: 'var(--apx-muted)' }}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <p className="text-sm apx-text">Hello {adminName}, are you still there?</p>
+            <p className="mt-2 text-sm apx-muted">2 more minutes of inactivity will force logout. Time left: {Math.max(0, idleSecondsLeft)}s</p>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={markActivity} className="apx-btn-outline">Close</button>
+              <button type="button" onClick={markActivity} className="apx-btn-primary">Stay Logged In</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <span className="sr-only">{title}</span>
     </div>
