@@ -1,11 +1,8 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import Navbar from '@/components/Navbar'
-import Footer from '@/components/Footer'
-import CustomCursor from '@/components/CustomCursor'
-import Chatbot from '@/components/Chatbot'
 import StarfieldCanvas from '@/components/StarfieldCanvas'
 import TranslationProvider from '@/components/TranslationProvider'
+import RootChrome from '@/components/RootChrome'
 
 
 export const metadata: Metadata = {
@@ -77,12 +74,8 @@ export default function RootLayout({
       <body className="bg-[#03030F] text-slate-100 antialiased cursor-none-desktop">
         {/* Global starfield — fixed, behind everything */}
         <StarfieldCanvas />
-        <CustomCursor />
         <TranslationProvider>
-          <Navbar />
-          <main>{children}</main>
-          <Footer />
-          <Chatbot />
+          <RootChrome>{children}</RootChrome>
         </TranslationProvider>
       </body>
     </html>

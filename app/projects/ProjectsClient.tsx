@@ -6,10 +6,21 @@ import Hero from '@/components/Hero'
 import ProjectCard from '@/components/ProjectCard'
 import CTASection from '@/components/CTASection'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
-import { projects } from '@/lib/mockData'
 import { useTranslation } from '@/components/TranslationProvider'
 
-export default function ProjectsClient() {
+type ProjectListItem = {
+  id: string
+  slug: string
+  title: string
+  systemType: string
+  category: string[]
+  industry: string
+  shortDesc: string
+  image: string
+  tags: string[]
+}
+
+export default function ProjectsClient({ projectsData }: { projectsData: ProjectListItem[] }) {
   const { t, translations } = useTranslation()
   const translatedCategories = translations.projects.categories as unknown as string[]
   const allLabel = translatedCategories[0] || 'All'
@@ -26,7 +37,7 @@ export default function ProjectsClient() {
 
   const sortedProjectCategories = Array.from(
     new Set(
-      projects.flatMap((p) => (Array.isArray(p.category) ? p.category : [p.category]))
+      projectsData.flatMap((p) => (Array.isArray(p.category) ? p.category : [p.category]))
     )
   ).sort((a, b) => {
     const aIndex = preferredCategoryOrder.indexOf(a)
@@ -45,8 +56,8 @@ export default function ProjectsClient() {
   const [activeFilter, setActiveFilter] = useState(allLabel)
 
   const filtered = activeFilter === allLabel
-    ? projects
-    : projects.filter((p) => {
+    ? projectsData
+    : projectsData.filter((p) => {
         const projectCategories = Array.isArray(p.category) ? p.category : [p.category]
         return projectCategories.includes(activeFilter)
       })
@@ -99,6 +110,7 @@ export default function ProjectsClient() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.3, delay: i * 0.05 }}
+                className="h-full"
               >
                 <ProjectCard
                   title={

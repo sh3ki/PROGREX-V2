@@ -1,187 +1,69 @@
 ﻿'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Star, Quote, ChevronLeft, ChevronRight, Monitor, Check, Send, CheckCircle, Bot, Paperclip, X as XIcon } from 'lucide-react'
+import { ArrowRight, Star, Quote, ChevronLeft, ChevronRight, Monitor, Check, Bot } from 'lucide-react'
 import Image from 'next/image'
-import TechConstellation from '@/components/TechConstellation'
 import Hero from '@/components/Hero'
 import ConstellationDecor from '@/components/ConstellationDecor'
 import ServiceCard from '@/components/ServiceCard'
 import FeaturedProjectsCarousel from '@/components/FeaturedProjectsCarousel'
 import TechMarqueeSection from '@/components/TechMarqueeSection'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
-import { services, systems, testimonials, faqs } from '@/lib/mockData'
 import IntroLoader from '@/components/IntroLoader'
+import ContactFormCard from '@/components/contact/ContactFormCard'
 import { useTranslation } from '@/components/TranslationProvider'
 
-function CtaSelect({ value, onChange, options, placeholder }: {
-  value: string
-  onChange: (v: string) => void
-  options: string[]
-  placeholder: string
-}) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const handle = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handle)
-    return () => document.removeEventListener('mousedown', handle)
-  }, [])
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((p) => !p)}
-        className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-white/4 border text-sm transition-all text-left"
-        style={{ borderColor: open ? 'rgba(14,165,233,0.5)' : 'rgba(103,232,249,0.15)' }}
-      >
-        <span className={value ? 'text-white/90' : 'text-slate-500'}>{value || placeholder}</span>
-        <svg style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M4 6l4 4 4-4" stroke="rgba(103,232,249,0.5)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
-      <AnimatePresence>
-        {open && (
-          <motion.ul
-            initial={{ opacity: 0, y: -6, scaleY: 0.95 }}
-            animate={{ opacity: 1, y: 0, scaleY: 1 }}
-            exit={{ opacity: 0, y: -6, scaleY: 0.95 }}
-            transition={{ duration: 0.15 }}
-            style={{
-              transformOrigin: 'top',
-              background: 'rgba(6,6,22,0.99)',
-              border: '1px solid rgba(14,165,233,0.2)',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(14,165,233,0.06)',
-            }}
-            className="absolute z-50 w-full mt-1 rounded-xl overflow-hidden py-1"
-          >
-            {options.map((opt) => (
-              <li key={opt}>
-                <button
-                  type="button"
-                  onClick={() => { onChange(opt); setOpen(false) }}
-                  className="w-full text-left px-4 py-2 text-sm transition-colors"
-                  style={{
-                    color: value === opt ? '#67E8F9' : 'rgba(255,255,255,0.7)',
-                    background: value === opt ? 'rgba(14,165,233,0.1)' : 'transparent',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (value !== opt) {
-                      e.currentTarget.style.background = 'rgba(14,165,233,0.07)'
-                      e.currentTarget.style.color = '#fff'
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = value === opt ? 'rgba(14,165,233,0.1)' : 'transparent'
-                    e.currentTarget.style.color = value === opt ? '#67E8F9' : 'rgba(255,255,255,0.7)'
-                  }}
-                >
-                  {opt}
-                </button>
-              </li>
-            ))}
-          </motion.ul>
-        )}
-      </AnimatePresence>
-    </div>
-  )
+type HomeClientProps = {
+  servicesData: Array<{ id: string; title: string; shortDesc: string; icon: string; slug: string; color: string }>
+  systemsData: Array<{ id: string; slug: string; category: string; industry: string; name: string; shortDesc: string; image: string; features: string[] }>
+  testimonialsData: Array<{ rating: number; quote: string; name: string; role: string; company: string }>
+  faqsData: Array<{ id: string; question: string; answer: string }>
+  featuredProjectsData: Array<{ id: string; slug: string; title: string; systemType: string; category: string[]; industry: string; tags: string[]; image: string; shortDesc: string }>
 }
 
-export default function HomeClient() {
+export default function HomeClient({ servicesData, systemsData, testimonialsData, faqsData, featuredProjectsData }: HomeClientProps) {
   const { t, translations } = useTranslation()
+  const [contactModalOpen, setContactModalOpen] = useState(false)
   const [activeTestimonial, setActiveTestimonial] = useState(0)
   const [direction, setDirection] = useState(1)
-  const [openFaq, setOpenFaq] = useState<number | null>(null)
+  const [openFaq, setOpenFaq] = useState<string | null>(null)
+  const testimonialsCount = testimonialsData.length
+  const hasTestimonials = testimonialsCount > 0
+  const currentTestimonial = hasTestimonials
+    ? testimonialsData[Math.min(activeTestimonial, testimonialsCount - 1)]
+    : null
 
-  const [ctaForm, setCtaForm] = useState({ name: '', email: '', phone: '', company: '', service: '', budget: '', message: '' })
-  const [ctaErrors, setCtaErrors] = useState<{ name?: string; email?: string; message?: string }>({})
-  const [ctaLoading, setCtaLoading] = useState(false)
-  const [ctaSubmitted, setCtaSubmitted] = useState(false)
-  const [ctaServerError, setCtaServerError] = useState('')
-  const [ctaAttachedFile, setCtaAttachedFile] = useState<File | null>(null)
-  const [ctaFileError, setCtaFileError] = useState('')
-  const [ctaDragOver, setCtaDragOver] = useState(false)
-  const ctaFileInputRef = useRef<HTMLInputElement>(null)
-
-  const CTA_MAX_FILE_SIZE = 3 * 1024 * 1024 // 3 MB
-  const handleCtaFileSelect = (file: File) => {
-    setCtaFileError('')
-    if (file.size > CTA_MAX_FILE_SIZE) {
-      setCtaFileError(`File too large (max 3 MB). "${file.name}" is ${(file.size / 1024 / 1024).toFixed(1)} MB.`)
-      return
-    }
-    setCtaAttachedFile(file)
-  }
-
-  const ctaServices = translations.form.ctaServices as unknown as string[]
-
-  const handleCtaSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const errs: typeof ctaErrors = {}
-    if (!ctaForm.name.trim()) errs.name = t('form.nameRequired')
-    if (!ctaForm.email.trim()) errs.email = t('form.emailRequired')
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ctaForm.email)) errs.email = t('form.invalidEmail')
-    if (!ctaForm.message.trim()) errs.message = t('form.messageRequired')
-    setCtaErrors(errs)
-    if (Object.keys(errs).length > 0) return
-    setCtaLoading(true)
-    setCtaServerError('')
-    try {
-      let attachment: { name: string; data: string; contentType: string } | undefined
-      if (ctaAttachedFile) {
-        const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = () => resolve((reader.result as string).split(',')[1])
-          reader.onerror = reject
-          reader.readAsDataURL(ctaAttachedFile)
-        })
-        attachment = { name: ctaAttachedFile.name, data: base64, contentType: ctaAttachedFile.type }
-      }
-      const res = await fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...ctaForm, attachment }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || t('form.failedToSend'))
-      setCtaAttachedFile(null)
-      setCtaSubmitted(true)
-    } catch (err: unknown) {
-      setCtaServerError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
-    } finally {
-      setCtaLoading(false)
-    }
-  }
   const DURATION = 7 // seconds auto-advance
 
   const goTo = (i: number) => {
+    if (!hasTestimonials) return
     setDirection(i > activeTestimonial ? 1 : -1)
     setActiveTestimonial(i)
   }
   const prevTestimonial = () => {
-    const i = (activeTestimonial - 1 + testimonials.length) % testimonials.length
+    if (!hasTestimonials) return
+    const i = (activeTestimonial - 1 + testimonialsCount) % testimonialsCount
     setDirection(-1)
     setActiveTestimonial(i)
   }
   const nextTestimonial = () => {
-    const i = (activeTestimonial + 1) % testimonials.length
+    if (!hasTestimonials) return
+    const i = (activeTestimonial + 1) % testimonialsCount
     setDirection(1)
     setActiveTestimonial(i)
   }
 
   useEffect(() => {
+    if (testimonialsCount === 0) return
+
     const id = setInterval(() => {
       setDirection(1)
-      setActiveTestimonial((p) => (p + 1) % testimonials.length)
+      setActiveTestimonial((p) => (p + 1) % testimonialsCount)
     }, DURATION * 1000)
     return () => clearInterval(id)
-  }, [DURATION])
+  }, [DURATION, testimonialsCount])
 
   return (
     <>
@@ -218,7 +100,7 @@ export default function HomeClient() {
           viewport={{ once: true }}
           transition={{ duration: 0.7, delay: 0.2 }}
         >
-          <FeaturedProjectsCarousel />
+          <FeaturedProjectsCarousel projectsData={featuredProjectsData} />
         </motion.div>
 
         <motion.div
@@ -247,7 +129,7 @@ export default function HomeClient() {
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {services.slice(0, 6).map((service, i) => (
+          {servicesData.slice(0, 6).map((service, i) => (
             <ServiceCard
               key={service.id}
               title={service.title}
@@ -288,7 +170,7 @@ export default function HomeClient() {
           subtitle={t('home.systemsSubtitle')}
         />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {systems.map((sys, i) => (
+          {systemsData.map((sys, i) => (
             <motion.div
               key={sys.id}
               initial={{ opacity: 0, y: 30 }}
@@ -315,7 +197,7 @@ export default function HomeClient() {
                 }}
               >
                 {/* 16:9 image */}
-                <div className="relative aspect-[16/9] overflow-hidden">
+                <div className="relative aspect-video overflow-hidden">
                   {sys.image ? (
                     <>
                       <Image
@@ -326,7 +208,7 @@ export default function HomeClient() {
                         sizes="(max-width: 768px) 100vw, 33vw"
                       />
                       <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(3,3,15,0.08) 0%, rgba(3,3,15,0.60) 100%)' }} />
-                      <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: 'linear-gradient(to right, transparent, #0EA5E9, #7C3AED, transparent)' }} />
+                      <div className="absolute inset-x-0 top-0 h-0.5" style={{ background: 'linear-gradient(to right, transparent, #0EA5E9, #7C3AED, transparent)' }} />
                       {/* Category badge — top left */}
                       <div className="absolute top-3 left-3 z-10">
                         <span className="font-mono text-[10px] px-2.5 py-1 rounded-full backdrop-blur-sm"
@@ -415,7 +297,7 @@ export default function HomeClient() {
 
         <div className="max-w-3xl mx-auto">
           {/* Card */}
-          <div className="relative overflow-hidden rounded-2xl min-h-[280px] sm:min-h-[320px]">
+          <div className="relative overflow-hidden rounded-2xl min-h-70 sm:min-h-80">
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
                 key={activeTestimonial}
@@ -448,7 +330,7 @@ export default function HomeClient() {
 
                 {/* Stars */}
                 <div className="flex gap-1 mb-5">
-                  {Array.from({ length: testimonials[activeTestimonial].rating }).map((_, i) => (
+                  {Array.from({ length: currentTestimonial?.rating ?? 0 }).map((_, i) => (
                     <motion.div
                       key={i}
                       initial={{ opacity: 0, scale: 0 }}
@@ -462,21 +344,21 @@ export default function HomeClient() {
 
                 {/* Quote text */}
                 <p className="text-white/80 text-base sm:text-lg leading-relaxed mb-8 italic relative z-10">
-                  &ldquo;{translations.data.testimonials[activeTestimonial]?.quote ?? testimonials[activeTestimonial].quote}&rdquo;
+                  &ldquo;{translations.data.testimonials[activeTestimonial]?.quote ?? currentTestimonial?.quote ?? ''}&rdquo;
                 </p>
 
                 {/* Author row */}
                 <div className="flex items-center gap-4 relative z-10">
                   <div>
-                    <div className="font-bold text-white">{translations.data.testimonials[activeTestimonial]?.name ?? testimonials[activeTestimonial].name}</div>
-                    <div className="font-mono text-xs text-nebula-400/70 mt-0.5">{translations.data.testimonials[activeTestimonial]?.role ?? testimonials[activeTestimonial].role}</div>
+                    <div className="font-bold text-white">{translations.data.testimonials[activeTestimonial]?.name ?? currentTestimonial?.name ?? ''}</div>
+                    <div className="font-mono text-xs text-nebula-400/70 mt-0.5">{translations.data.testimonials[activeTestimonial]?.role ?? currentTestimonial?.role ?? ''}</div>
                   </div>
                   <div className="ml-auto shrink-0">
                     <span
                       className="font-mono text-[10px] px-3 py-1 rounded-full"
                       style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', color: '#a78bfa' }}
                     >
-                      {translations.data.testimonials[activeTestimonial]?.company ?? testimonials[activeTestimonial].company}
+                      {translations.data.testimonials[activeTestimonial]?.company ?? currentTestimonial?.company ?? ''}
                     </span>
                   </div>
                 </div>
@@ -498,7 +380,7 @@ export default function HomeClient() {
             </motion.button>
 
             <div className="flex gap-1.5 flex-wrap justify-center">
-              {testimonials.map((_, i) => (
+              {testimonialsData.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => goTo(i)}
@@ -529,7 +411,7 @@ export default function HomeClient() {
 
           {/* Counter */}
           <p className="text-center font-mono text-[11px] text-white/25 mt-3 tracking-widest">
-            {String(activeTestimonial + 1).padStart(2, '0')} / {String(testimonials.length).padStart(2, '0')}
+            {String(activeTestimonial + 1).padStart(2, '0')} / {String(testimonialsData.length).padStart(2, '0')}
           </p>
         </div>
       </SectionWrapper>
@@ -545,7 +427,7 @@ export default function HomeClient() {
           subtitle={t('home.faqsSubtitle')}
         />
         <div className="max-w-3xl mx-auto space-y-3">
-          {faqs.map((faq, i) => {
+            {faqsData.map((faq, i) => {
             const isOpen = openFaq === faq.id
             const tFaq = translations.data.generalFaqs[i] as unknown as string[] | undefined
             const question = tFaq?.[0] ?? faq.question
@@ -682,217 +564,29 @@ export default function HomeClient() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.15 }}
+            className="rounded-2xl p-6 text-center"
+            style={{ background: 'rgba(6,6,22,0.97)', border: '1px solid rgba(103,232,249,0.12)', boxShadow: '0 8px 40px rgba(0,0,0,0.4)' }}
           >
-            <AnimatePresence mode="wait">
-              {ctaSubmitted ? (
-                <motion.div
-                  key="success"
-                  initial={{ opacity: 0, scale: 0.93 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.93 }}
-                  transition={{ duration: 0.4, type: 'spring' }}
-                  className="rounded-2xl p-12 text-center"
-                  style={{ background: 'rgba(6,6,22,0.97)', border: '1px solid rgba(14,165,233,0.25)', boxShadow: '0 0 40px rgba(14,165,233,0.08)' }}
-                >
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 200, delay: 0.15 }}
-                    className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-5"
-                    style={{ background: 'linear-gradient(135deg, #0EA5E9, #7C3AED)' }}
-                  >
-                    <CheckCircle size={26} className="text-white" />
-                  </motion.div>
-                  <h3 className="text-xl font-bold text-white mb-2">{t('form.successTitle')}</h3>
-                  <p className="text-slate-400 text-sm leading-relaxed mb-6">
-                    Thanks, <strong className="text-white">{ctaForm.name}</strong>! We&apos;ll get back to you within 24 hours.
-                  </p>
-                  <button
-                    onClick={() => { setCtaSubmitted(false); setCtaForm({ name: '', email: '', phone: '', company: '', service: '', budget: '', message: '' }); setCtaAttachedFile(null); setCtaServerError('') }}
-                    className="btn-outline text-sm px-6 py-2.5 inline-flex"
-                  >
-                    {t('form.sendAnother')}
-                  </button>
-                </motion.div>
-              ) : (
-                <motion.form
-                  key="form"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  onSubmit={handleCtaSubmit}
-                  className="rounded-2xl p-6 sm:p-8 space-y-5"
-                  style={{ background: 'rgba(6,6,22,0.97)', border: '1px solid rgba(103,232,249,0.1)', boxShadow: '0 8px 40px rgba(0,0,0,0.4)' }}
-                >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    {/* Name */}
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('form.fullName')} <span className="text-nebula-400">{t('form.required')}</span></label>
-                      <input
-                        type="text"
-                        value={ctaForm.name}
-                        onChange={(e) => { setCtaForm((p) => ({ ...p, name: e.target.value })); setCtaErrors((p) => ({ ...p, name: undefined })) }}
-                        placeholder={t('form.namePlaceholder')}
-                        className="w-full px-4 py-2.5 rounded-xl bg-white/4 border text-white/90 text-sm placeholder-slate-500 focus:outline-none transition-all"
-                        style={{ borderColor: ctaErrors.name ? 'rgba(239,68,68,0.6)' : 'rgba(103,232,249,0.15)', boxShadow: 'none' }}
-                        onFocus={(e) => { if (!ctaErrors.name) e.currentTarget.style.borderColor = 'rgba(14,165,233,0.5)' }}
-                        onBlur={(e) => { if (!ctaErrors.name) e.currentTarget.style.borderColor = 'rgba(103,232,249,0.15)' }}
-                      />
-                      {ctaErrors.name && <p className="text-red-400 text-xs mt-1">{ctaErrors.name}</p>}
-                    </div>
-                    {/* Email */}
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('form.email')} <span className="text-nebula-400">{t('form.required')}</span></label>
-                      <input
-                        type="email"
-                        value={ctaForm.email}
-                        onChange={(e) => { setCtaForm((p) => ({ ...p, email: e.target.value })); setCtaErrors((p) => ({ ...p, email: undefined })) }}
-                        placeholder={t('form.emailPlaceholder')}
-                        className="w-full px-4 py-2.5 rounded-xl bg-white/4 border text-white/90 text-sm placeholder-slate-500 focus:outline-none transition-all"
-                        style={{ borderColor: ctaErrors.email ? 'rgba(239,68,68,0.6)' : 'rgba(103,232,249,0.15)' }}
-                        onFocus={(e) => { if (!ctaErrors.email) e.currentTarget.style.borderColor = 'rgba(14,165,233,0.5)' }}
-                        onBlur={(e) => { if (!ctaErrors.email) e.currentTarget.style.borderColor = 'rgba(103,232,249,0.15)' }}
-                      />
-                      {ctaErrors.email && <p className="text-red-400 text-xs mt-1">{ctaErrors.email}</p>}
-                    </div>
-                    {/* Phone */}
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('form.phone')}</label>
-                      <input
-                        type="tel"
-                        value={ctaForm.phone}
-                        onChange={(e) => setCtaForm((p) => ({ ...p, phone: e.target.value }))}
-                        placeholder={t('form.phonePlaceholder')}
-                        className="w-full px-4 py-2.5 rounded-xl bg-white/4 border text-white/90 text-sm placeholder-slate-500 focus:outline-none transition-all"
-                        style={{ borderColor: 'rgba(103,232,249,0.15)' }}
-                        onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(14,165,233,0.5)' }}
-                        onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(103,232,249,0.15)' }}
-                      />
-                    </div>
-                    {/* Company */}
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('form.company')}</label>
-                      <input
-                        type="text"
-                        value={ctaForm.company}
-                        onChange={(e) => setCtaForm((p) => ({ ...p, company: e.target.value }))}
-                        placeholder={t('form.companyPlaceholder')}
-                        className="w-full px-4 py-2.5 rounded-xl bg-white/4 border text-white/90 text-sm placeholder-slate-500 focus:outline-none transition-all"
-                        style={{ borderColor: 'rgba(103,232,249,0.15)' }}
-                        onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(14,165,233,0.5)' }}
-                        onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(103,232,249,0.15)' }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Service */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('form.service')}</label>
-                    <CtaSelect
-                      value={ctaForm.service}
-                      onChange={(v) => setCtaForm((p) => ({ ...p, service: v }))}
-                      options={ctaServices}
-                      placeholder={t('form.servicePlaceholder')}
-                    />
-                  </div>
-
-                  {/* Budget Range */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('form.budget')}</label>
-                    <CtaSelect
-                      value={ctaForm.budget}
-                      onChange={(v) => setCtaForm((p) => ({ ...p, budget: v }))}
-                      options={translations.form.budgetOptions as unknown as string[]}
-                      placeholder={t('form.budgetPlaceholder')}
-                    />
-                  </div>
-
-                  {/* Message */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1.5">{t('form.message')} <span className="text-nebula-400">{t('form.required')}</span></label>
-                    <textarea
-                      value={ctaForm.message}
-                      onChange={(e) => { setCtaForm((p) => ({ ...p, message: e.target.value })); setCtaErrors((p) => ({ ...p, message: undefined })) }}
-                      rows={4}
-                      placeholder={t('form.messagePlaceholder')}
-                      className="w-full px-4 py-2.5 rounded-xl bg-transparent border text-slate-200 text-sm placeholder-slate-500 focus:outline-none transition-all resize-none"
-                      style={{ borderColor: ctaErrors.message ? 'rgba(239,68,68,0.6)' : 'rgba(103,232,249,0.15)' }}
-                      onFocus={(e) => { if (!ctaErrors.message) e.currentTarget.style.borderColor = 'rgba(14,165,233,0.5)' }}
-                      onBlur={(e) => { if (!ctaErrors.message) e.currentTarget.style.borderColor = 'rgba(103,232,249,0.15)' }}
-                    />
-                    {ctaErrors.message && <p className="text-red-400 text-xs mt-1">{ctaErrors.message}</p>}
-
-                    {/* File attachment drop zone */}
-                    <div
-                      onClick={() => ctaFileInputRef.current?.click()}
-                      onDragOver={(e) => { e.preventDefault(); setCtaDragOver(true) }}
-                      onDragLeave={() => setCtaDragOver(false)}
-                      onDrop={(e) => { e.preventDefault(); setCtaDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleCtaFileSelect(f) }}
-                      className="mt-3 flex items-center gap-3 px-4 py-3 rounded-xl border border-dashed cursor-pointer transition-all duration-200"
-                      style={{
-                        borderColor: ctaDragOver ? 'rgba(14,165,233,0.6)' : 'rgba(103,232,249,0.2)',
-                        background: ctaDragOver ? 'rgba(14,165,233,0.06)' : 'transparent',
-                      }}
-                    >
-                      <input
-                        ref={ctaFileInputRef}
-                        type="file"
-                        className="hidden"
-                        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleCtaFileSelect(f); e.target.value = '' }}
-                      />
-                      {ctaAttachedFile ? (
-                        <>
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <Check size={14} className="text-emerald-400 shrink-0" />
-                            <span className="text-white/70 text-xs truncate">{ctaAttachedFile.name}</span>
-                            <span className="text-slate-500 text-xs shrink-0">({(ctaAttachedFile.size / 1024).toFixed(0)} KB)</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setCtaAttachedFile(null); setCtaFileError('') }}
-                            className="shrink-0 text-slate-500 hover:text-red-400 transition-colors"
-                          >
-                            <XIcon size={14} />
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <Paperclip size={14} className="shrink-0" style={{ color: 'rgba(103,232,249,0.45)' }} />
-                          <span className="text-slate-500 text-xs">
-                            {ctaDragOver ? t('form.fileDrop') : t('form.fileAttach')}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                    {ctaFileError && <p className="text-red-400 text-xs mt-1.5">{ctaFileError}</p>}
-                  </div>
-
-                  {ctaServerError && (
-                    <p className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2.5">{ctaServerError}</p>
-                  )}
-
-                  <motion.button
-                    type="submit"
-                    disabled={ctaLoading}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="btn-primary w-full justify-center py-3.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <span>{ctaLoading ? t('form.sending') : t('form.send')}</span>
-                    {ctaLoading ? (
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                        className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
-                      />
-                    ) : (
-                      <Send size={16} />
-                    )}
-                  </motion.button>
-                </motion.form>
-              )}
-            </AnimatePresence>
+            <p className="mb-3 text-sm text-slate-400">Use the same contact and booking form from the Contact page.</p>
+            <button type="button" className="btn-primary px-7! py-3!" onClick={() => setContactModalOpen(true)}>
+              {t('home.ctaPrimaryBtn')}
+            </button>
           </motion.div>
+
+          {contactModalOpen ? (
+            <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/70 p-4">
+              <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-nebula-700/30 bg-[#050511] p-4 sm:p-6">
+                <button
+                  type="button"
+                  onClick={() => setContactModalOpen(false)}
+                  className="absolute top-3 right-3 rounded-lg border border-nebula-700/40 px-2 py-1 text-xs text-slate-300 hover:bg-nebula-700/20"
+                >
+                  Close
+                </button>
+                <ContactFormCard onSuccess={() => setContactModalOpen(false)} />
+              </div>
+            </div>
+          ) : null}
         </div>
       </section>
     </>

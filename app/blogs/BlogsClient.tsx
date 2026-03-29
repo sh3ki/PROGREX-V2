@@ -9,17 +9,16 @@ import BlogCard from '@/components/BlogCard'
 import CTASection from '@/components/CTASection'
 import ConstellationDecor from '@/components/ConstellationDecor'
 import SectionWrapper, { SectionHeader } from '@/components/SectionWrapper'
-import { blogs, blogCategories } from '@/lib/mockData'
 import { useTranslation } from '@/components/TranslationProvider'
+
+const blogCategories = ['All', 'Tech', 'Business', 'Academic', 'Case Studies']
 
 // Sort blogs latest → oldest
 function parseBlogDate(dateStr: string): number {
   return new Date(dateStr).getTime() || 0
 }
 
-const sortedBlogs = [...blogs].sort((a, b) => parseBlogDate(b.date) - parseBlogDate(a.date))
-
-export default function BlogsClient() {
+export default function BlogsClient({ blogsData }: { blogsData: BlogPost[] }) {
   const { t, translations } = useTranslation()
   const [activeCategory, setActiveCategory] = useState('All')
   const [search, setSearch] = useState('')
@@ -62,11 +61,12 @@ export default function BlogsClient() {
       setTimeout(() => { dragMoved.current = 0 }, 100)
     }
 
-    // Vertical wheel → horizontal scroll
+    // Horizontal wheel/trackpad movement scrolls the strip.
+    // Vertical movement should keep normal page scrolling behavior.
     const onWheel = (e: WheelEvent) => {
-      if (e.deltaY === 0) return
+      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return
       e.preventDefault()
-      el.scrollLeft += e.deltaY * 1.5
+      el.scrollLeft += e.deltaX
     }
 
     // Block link/card clicks if the user was dragging
@@ -91,6 +91,8 @@ export default function BlogsClient() {
       el.removeEventListener('click', onClickCapture, true)
     }
   }, [])
+
+  const sortedBlogs = [...blogsData].sort((a, b) => parseBlogDate(b.date) - parseBlogDate(a.date))
 
   const filtered = sortedBlogs.filter((b) => {
     const matchCat = activeCategory === 'All' || b.category === activeCategory
@@ -241,14 +243,14 @@ export default function BlogsClient() {
                     cursor: 'grab',
                     scrollbarWidth: 'none',
                     msOverflowStyle: 'none',
-                    touchAction: 'pan-y',
+                    touchAction: 'pan-x',
                     paddingBottom: '4px',
                   } as React.CSSProperties}
                 >
                   {rest.map((blog, i) => (
                     <div
                       key={blog.id}
-                      className="shrink-0 w-[280px] sm:w-80"
+                      className="shrink-0 w-70 sm:w-80"
                     >
                       <BlogCard
                         title={blog.title}

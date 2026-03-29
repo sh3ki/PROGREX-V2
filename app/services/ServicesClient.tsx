@@ -9,15 +9,23 @@ import CTASection from '@/components/CTASection'
 import ServicesTechMarquee from '@/components/ServicesTechMarquee'
 import ServiceCarousel from '@/components/ServiceCarousel'
 import { OutcomesSection, QualitySection, ArchitectureSection, GuaranteesSection, ApproachCards } from '@/components/ServicesDetailSections'
-import { services } from '@/lib/mockData'
 import { useTranslation } from '@/components/TranslationProvider'
 
-export default function ServicesClient() {
+type ServiceItem = {
+  id: string
+  slug: string
+  title: string
+  shortDesc: string
+  icon: string
+  color: string
+}
+
+export default function ServicesClient({ servicesData }: { servicesData: ServiceItem[] }) {
   const { t, translations } = useTranslation()
 
   /* Overlay translated title + shortDesc onto each service for the carousel */
   const svcMap = translations.data.services as unknown as Record<string, { title?: string; shortDesc?: string }>
-  const translatedServices = services.map((s) => ({
+  const translatedServices = servicesData.map((s) => ({
     ...s,
     title: svcMap[s.slug]?.title ?? s.title,
     shortDesc: svcMap[s.slug]?.shortDesc ?? s.shortDesc,
