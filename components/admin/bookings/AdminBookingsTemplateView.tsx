@@ -587,7 +587,8 @@ export default function AdminBookingsTemplateView({
                   <td className="px-4 py-3">
                     <p className="font-semibold apx-text">{booking.name}</p>
                     <p className="text-xs apx-muted">{booking.company || '-'}</p>
-                    <p className="text-xs apx-muted">{booking.email} {booking.phone ? `• ${booking.phone}` : ''}</p>
+					<p className="text-xs apx-muted">{booking.email || '-'}</p>
+					<p className="text-xs apx-muted">{booking.phone || '-'}</p>
                   </td>
                 ) : null}
                 {columns.service ? <td className="px-4 py-3 apx-text">{booking.service || '-'}</td> : null}
