@@ -629,5 +629,15 @@
   .neon-text {
     text-shadow: 0 0 20px rgba(34,211,238,0.6), 0 0 40px rgba(14,165,233,0.3);
   }
+
+  .contact-time-input::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(1.3);
+    opacity: 0.95;
+  }
+
+  .contact-time-input::-webkit-clear-button,
+  .contact-time-input::-webkit-inner-spin-button {
+    display: none;
+  }
 }
 
