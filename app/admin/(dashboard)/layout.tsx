@@ -16,6 +16,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const themeMode = cookieStore.get('apx-theme-mode')?.value
   const preset = cookieStore.get('apx-color-preset')?.value
   const density = cookieStore.get('apx-density')?.value
+  const collapsed = cookieStore.get('apx-sidebar-collapsed')?.value
 
   const initialIsDark = themeMode ? themeMode === 'dark' : true
   const initialColorPreset: ColorPreset =
@@ -33,6 +34,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       : 'blue'
   const initialDensity: Density =
     density === 'compact' || density === 'comfortable' || density === 'spacious' ? density : 'comfortable'
+  const initialCollapsed = collapsed === '1'
 
   return (
     <AdminLayoutShell
@@ -42,6 +44,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       initialIsDark={initialIsDark}
       initialColorPreset={initialColorPreset}
       initialDensity={initialDensity}
+      initialCollapsed={initialCollapsed}
     >
       {children}
     </AdminLayoutShell>
