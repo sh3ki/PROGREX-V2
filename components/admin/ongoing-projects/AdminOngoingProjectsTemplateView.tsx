@@ -1027,7 +1027,6 @@ export default function AdminOngoingProjectsTemplateView({
                 <p className="text-xs font-medium apx-muted">Total Price</p>
                 <p className="apx-text">{formatCurrency(selectedProject.totalPrice)}</p>
               </div>
-              <div />
               <div>
                 <p className="text-xs font-medium apx-muted">Balance</p>
                 <p className="apx-text">{formatCurrency(selectedProject.balance)}</p>
