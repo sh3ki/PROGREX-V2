@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { ArrowDown, ArrowUp, ArrowUpDown, Archive, Download, Edit2, Mail, Plus, Trash2 } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { ArrowDown, ArrowUp, ArrowUpDown, Archive, Check, ChevronDown, Download, Edit2, Mail, Plus, Trash2 } from 'lucide-react'
 import { ApexButton, ApexDateInput, ApexInput, ApexTextarea, ApexTimeInput } from '@/components/admin/apex/AdminPrimitives'
 import {
   ApexFileDropzone,
@@ -183,6 +183,7 @@ export default function AdminBookingsTemplateView({
   const [selectedBooking, setSelectedBooking] = useState<BookingRow | null>(null)
   const [statusTargetBooking, setStatusTargetBooking] = useState<BookingRow | null>(null)
   const [statusDraft, setStatusDraft] = useState('new')
+  const [statusMenu, setStatusMenu] = useState<null | { bookingId: string; top: number; left: number; width: number }>(null)
   const [filesTargetBooking, setFilesTargetBooking] = useState<BookingRow | null>(null)
   const [selectedFileUrls, setSelectedFileUrls] = useState<string[]>([])
   const [addForm, setAddForm] = useState<BookingFormState>(defaultForm())
@@ -247,6 +248,35 @@ export default function AdminBookingsTemplateView({
 
   const currentPageIds = paged.map((item) => item.id)
   const allCurrentPageSelected = currentPageIds.length > 0 && currentPageIds.every((id) => selectedIds.includes(id))
+
+  useEffect(() => {
+    function handleOutsideClick(event: MouseEvent) {
+      const target = event.target as HTMLElement
+      if (target.closest('[data-booking-status-menu="true"]')) return
+      if (target.closest('[data-booking-status-trigger="true"]')) return
+      setStatusMenu(null)
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setStatusMenu(null)
+    }
+
+    function handleViewportChange() {
+      setStatusMenu(null)
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    document.addEventListener('keydown', handleEscape)
+    window.addEventListener('resize', handleViewportChange)
+    window.addEventListener('scroll', handleViewportChange, true)
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick)
+      document.removeEventListener('keydown', handleEscape)
+      window.removeEventListener('resize', handleViewportChange)
+      window.removeEventListener('scroll', handleViewportChange, true)
+    }
+  }, [])
 
   function addToast(message: string, tone: ApexToast['tone'] = 'default') {
     const id = Date.now() + Math.floor(Math.random() * 1000)
@@ -558,7 +588,7 @@ export default function AdminBookingsTemplateView({
                 </th>
               ) : null}
               {columns.status ? (
-                <th className="px-4 py-3 font-semibold apx-text">
+                <th className="px-4 py-3 font-semibold apx-text" style={{ minWidth: '12rem' }}>
                   <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('status')}>
                     Status
                     {renderSortIcon('status')}
@@ -605,23 +635,28 @@ export default function AdminBookingsTemplateView({
                 {columns.budget ? <td className="px-4 py-3 apx-text">{booking.budget || '-'}</td> : null}
                 {columns.created ? <td className="px-4 py-3 apx-text">{formatDateLabel(booking.createdAt?.slice(0, 10) ?? null)}</td> : null}
                 {columns.status ? (
-                  <td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
-                    <ApexDropdown
-                      value={booking.status}
-                      options={STATUS_OPTIONS.map((option) => ({ value: option, label: option }))}
-                      onChange={(value) => {
-                        setStatusTargetBooking(booking)
-                        setStatusDraft(normalizeStatusForEdit(value))
-                        setConfirmConfig({
-                          title: 'Update Booking Status',
-                          description: `Set status to ${normalizeStatusForEdit(value)}?`,
-                          confirmLabel: 'Save Status',
-                          tone: 'primary',
-                          kind: 'updateStatus',
+                  <td className="px-4 py-3" style={{ minWidth: '12rem' }} onClick={(event) => event.stopPropagation()}>
+                    <button
+                      type="button"
+                      data-booking-status-trigger="true"
+                      onClick={(event) => {
+                        const rect = (event.currentTarget as HTMLButtonElement).getBoundingClientRect()
+                        setStatusMenu((prev) => {
+                          if (prev?.bookingId === booking.id) return null
+                          return {
+                            bookingId: booking.id,
+                            top: rect.bottom + 6,
+                            left: rect.left,
+                            width: Math.max(rect.width, 152),
+                          }
                         })
-                        setConfirmOpen(true)
                       }}
-                    />
+                      className="inline-flex h-8 min-w-38 items-center justify-between rounded-lg border px-2.5 text-xs font-medium capitalize transition"
+                      style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface-alt)', color: 'var(--apx-text)' }}
+                    >
+                      <span>{booking.status}</span>
+                      <ChevronDown className="h-3.5 w-3.5 opacity-80" />
+                    </button>
                   </td>
                 ) : null}
                 {columns.actions ? (
@@ -711,6 +746,50 @@ export default function AdminBookingsTemplateView({
           </tbody>
         </table>
       </div>
+
+      {statusMenu ? (
+        <div
+          data-booking-status-menu="true"
+          className="fixed z-80 overflow-hidden rounded-xl border py-1 shadow-2xl"
+          style={{
+            top: statusMenu.top,
+            left: statusMenu.left,
+            minWidth: `${statusMenu.width}px`,
+            borderColor: 'var(--apx-border)',
+            backgroundColor: 'var(--apx-surface)',
+          }}
+        >
+          {STATUS_OPTIONS.map((option) => {
+            const booking = paged.find((item) => item.id === statusMenu.bookingId) || sorted.find((item) => item.id === statusMenu.bookingId)
+            const isCurrent = booking?.status === option
+            return (
+              <button
+                key={option}
+                type="button"
+                className="flex w-full items-center justify-between px-2.5 py-1.5 text-left text-xs capitalize transition-colors hover:bg-black/5"
+                style={isCurrent ? { color: 'var(--apx-primary)', backgroundColor: 'var(--apx-primary-soft)' } : { color: 'var(--apx-text)' }}
+                onClick={() => {
+                  if (!booking) return
+                  setStatusMenu(null)
+                  setStatusTargetBooking(booking)
+                  setStatusDraft(normalizeStatusForEdit(option))
+                  setConfirmConfig({
+                    title: 'Update Booking Status',
+                    description: `Set status to ${normalizeStatusForEdit(option)}?`,
+                    confirmLabel: 'Save Status',
+                    tone: 'primary',
+                    kind: 'updateStatus',
+                  })
+                  setConfirmOpen(true)
+                }}
+              >
+                <span>{option}</span>
+                {isCurrent ? <Check className="h-3.5 w-3.5" /> : null}
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
 
       <ApexPagination
         page={safePage}
@@ -1040,8 +1119,8 @@ export default function AdminBookingsTemplateView({
             <div className="space-y-2">
               {(filesTargetBooking.attachmentUrls || []).length ? (
                 filesTargetBooking.attachmentUrls.map((url) => (
-                  <div key={url} className="flex items-center justify-between rounded-lg border px-3 py-2" style={{ borderColor: 'var(--apx-border)' }}>
-                    <div className="flex items-center gap-2">
+                  <div key={url} className="flex items-center justify-between rounded-lg border px-3 py-2 gap-6" style={{ borderColor: 'var(--apx-border)' }}>
+                    <div className="flex items-center gap-2 truncate">
                       <ApexCheckbox
                         checked={selectedFileUrls.includes(url)}
                         onChange={() => {
