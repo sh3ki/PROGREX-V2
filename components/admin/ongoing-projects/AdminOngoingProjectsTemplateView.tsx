@@ -1,17 +1,22 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { ArrowDown, ArrowUp, ArrowUpDown, Download, Edit2, Plus, Trash2 } from 'lucide-react'
-import { ApexButton, ApexInput, ApexSelect, ApexTextarea } from '@/components/admin/apex/AdminPrimitives'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { ArrowDown, ArrowUp, ArrowUpDown, Edit2, Plus, Power, Trash2 } from 'lucide-react'
+import { ApexButton, ApexDateInput, ApexInput, ApexTextarea } from '@/components/admin/apex/AdminPrimitives'
 import {
   ApexBlockingSpinner,
   ApexBreadcrumbs,
+  ApexCheckbox,
   ApexColumnsToggle,
   ApexConfirmationModal,
+  ApexDropdown,
   ApexExportButton,
+  ApexFileDropzone,
   ApexModal,
   ApexPagination,
   ApexSearchField,
+  ApexStatusTabs,
   ApexToast,
   ApexToastStack,
 } from '@/components/admin/apex/ApexDataUi'
@@ -29,6 +34,7 @@ type ProjectRow = {
   agreementFileUrl: string | null
   projectScopeFileUrl: string | null
   paymentTerm: string | null
+  isActive: boolean
   totalPrice: string | null
   balance: string | null
 }
@@ -36,8 +42,9 @@ type ProjectRow = {
 type ClientOption = { id: string; fullName: string }
 type TeamMemberOption = { id: string; name: string }
 
-type ColumnKey = 'project' | 'dates' | 'client' | 'category' | 'team' | 'payment' | 'actions'
+type ColumnKey = 'project' | 'client' | 'team' | 'startDate' | 'targetDate' | 'price' | 'balance' | 'status' | 'actions'
 type SortKey = Exclude<ColumnKey, 'actions'>
+type StatusFilter = 'all' | 'active' | 'inactive'
 
 type ProjectFormState = {
   id?: string
@@ -46,14 +53,17 @@ type ProjectFormState = {
   startDate: string
   targetDate: string
   clientId: string
-  category: string
+  categories: string[]
   assignedTeamIds: string[]
   paymentTerm: string
+  status: 'active' | 'inactive'
   totalPrice: string
   balance: string
   existingAgreementFileUrl: string
   existingScopeFileUrl: string
 }
+
+const PAYMENT_TERMS = ['One-time Payment', 'Progress-based', 'Monthly billing']
 
 function defaultForm(): ProjectFormState {
   return {
@@ -62,9 +72,10 @@ function defaultForm(): ProjectFormState {
     startDate: '',
     targetDate: '',
     clientId: '',
-    category: '',
+    categories: [],
     assignedTeamIds: [],
     paymentTerm: 'One-time Payment',
+    status: 'active',
     totalPrice: '',
     balance: '',
     existingAgreementFileUrl: '',
@@ -80,9 +91,10 @@ function formFromProject(project: ProjectRow): ProjectFormState {
     startDate: project.startDate ?? '',
     targetDate: project.targetDate ?? '',
     clientId: project.clientId ?? '',
-    category: project.category ?? '',
+    categories: project.category ? project.category.split(',').map((item) => item.trim()).filter(Boolean) : [],
     assignedTeamIds: project.assignedTeamIds ?? [],
     paymentTerm: project.paymentTerm ?? 'One-time Payment',
+    status: project.isActive ? 'active' : 'inactive',
     totalPrice: project.totalPrice ?? '',
     balance: project.balance ?? '',
     existingAgreementFileUrl: project.agreementFileUrl ?? '',
@@ -105,29 +117,44 @@ export default function AdminOngoingProjectsTemplateView({
   projects,
   clients,
   teamMembers,
+  categories,
   createProjectAction,
   updateProjectAction,
+  toggleProjectAction,
+  bulkSetInactiveProjectsAction,
+  bulkDeleteProjectsAction,
   deleteProjectAction,
 }: {
   projects: ProjectRow[]
   clients: ClientOption[]
   teamMembers: TeamMemberOption[]
+  categories: string[]
   createProjectAction: (formData: FormData) => Promise<void>
   updateProjectAction: (formData: FormData) => Promise<void>
+  toggleProjectAction: (formData: FormData) => Promise<void>
+  bulkSetInactiveProjectsAction: (formData: FormData) => Promise<void>
+  bulkDeleteProjectsAction: (formData: FormData) => Promise<void>
   deleteProjectAction: (formData: FormData) => Promise<void>
 }) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
   const [search, setSearch] = useState('')
+  const [status, setStatus] = useState<StatusFilter>('all')
   const [sortKey, setSortKey] = useState<SortKey>('project')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [columns, setColumns] = useState<Record<ColumnKey, boolean>>({
     project: true,
-    dates: true,
     client: true,
-    category: true,
     team: true,
-    payment: true,
+    startDate: true,
+    targetDate: true,
+    price: true,
+    balance: true,
+    status: true,
     actions: true,
   })
 
@@ -140,23 +167,52 @@ export default function AdminOngoingProjectsTemplateView({
   const [selectedProject, setSelectedProject] = useState<ProjectRow | null>(null)
   const [addForm, setAddForm] = useState<ProjectFormState>(defaultForm())
   const [editForm, setEditForm] = useState<ProjectFormState>(defaultForm())
-  const [addAgreementFile, setAddAgreementFile] = useState<File | null>(null)
-  const [addScopeFile, setAddScopeFile] = useState<File | null>(null)
-  const [editAgreementFile, setEditAgreementFile] = useState<File | null>(null)
-  const [editScopeFile, setEditScopeFile] = useState<File | null>(null)
+  const [addAgreementFiles, setAddAgreementFiles] = useState<File[]>([])
+  const [addScopeFiles, setAddScopeFiles] = useState<File[]>([])
+  const [editAgreementFiles, setEditAgreementFiles] = useState<File[]>([])
+  const [editScopeFiles, setEditScopeFiles] = useState<File[]>([])
   const [confirmConfig, setConfirmConfig] = useState<{
     title: string
     description: string
     confirmLabel: string
     tone: 'primary' | 'danger'
-    kind: 'add' | 'edit' | 'delete'
+    kind: 'add' | 'edit' | 'delete' | 'toggle' | 'bulkSetInactive' | 'bulkDelete'
   } | null>(null)
+
+  const queryHandledRef = useRef(false)
+
+  useEffect(() => {
+    if (queryHandledRef.current) return
+
+    const openAdd = searchParams.get('openAdd')
+    if (openAdd !== '1') return
+
+    const clientId = searchParams.get('clientId') ?? ''
+    const hasClient = clientId && clients.some((client) => client.id === clientId)
+    const next = defaultForm()
+    next.clientId = hasClient ? clientId : ''
+    setAddForm(next)
+    setAddAgreementFiles([])
+    setAddScopeFiles([])
+    setAddOpen(true)
+    queryHandledRef.current = true
+    router.replace('/admin/ongoing-projects')
+  }, [clients, router, searchParams])
 
   const teamById = useMemo(() => new Map(teamMembers.map((member) => [member.id, member.name])), [teamMembers])
 
   const filtered = useMemo(() => {
     const keyword = search.trim().toLowerCase()
     return projects.filter((project) => {
+      const statusMatch =
+        status === 'all'
+          ? true
+          : status === 'active'
+          ? project.isActive
+          : !project.isActive
+
+      if (!statusMatch) return false
+
       if (!keyword) return true
       const teamNames = (project.assignedTeamIds ?? []).map((id) => teamById.get(id) ?? '').join(' ')
       return [
@@ -171,29 +227,39 @@ export default function AdminOngoingProjectsTemplateView({
         .toLowerCase()
         .includes(keyword)
     })
-  }, [projects, search, teamById])
+  }, [projects, search, status, teamById])
 
   const sorted = useMemo(() => {
     const list = [...filtered]
     list.sort((a, b) => {
       const dir = sortDir === 'asc' ? 1 : -1
       if (sortKey === 'project') return a.projectName.localeCompare(b.projectName) * dir
-      if (sortKey === 'dates') return `${a.startDate ?? ''} ${a.targetDate ?? ''}`.localeCompare(`${b.startDate ?? ''} ${b.targetDate ?? ''}`) * dir
       if (sortKey === 'client') return (a.clientName ?? '').localeCompare(b.clientName ?? '') * dir
-      if (sortKey === 'category') return (a.category ?? '').localeCompare(b.category ?? '') * dir
       if (sortKey === 'team') {
         const aNames = (a.assignedTeamIds ?? []).map((id) => teamById.get(id) ?? '').join(', ')
         const bNames = (b.assignedTeamIds ?? []).map((id) => teamById.get(id) ?? '').join(', ')
         return aNames.localeCompare(bNames) * dir
       }
-      return `${a.paymentTerm ?? ''} ${a.totalPrice ?? ''} ${a.balance ?? ''}`.localeCompare(`${b.paymentTerm ?? ''} ${b.totalPrice ?? ''} ${b.balance ?? ''}`) * dir
+      if (sortKey === 'startDate') return (a.startDate ?? '').localeCompare(b.startDate ?? '') * dir
+      if (sortKey === 'targetDate') return (a.targetDate ?? '').localeCompare(b.targetDate ?? '') * dir
+      if (sortKey === 'price') return Number(a.totalPrice ?? 0) > Number(b.totalPrice ?? 0) ? dir : -dir
+      if (sortKey === 'balance') return Number(a.balance ?? 0) > Number(b.balance ?? 0) ? dir : -dir
+      return Number(a.isActive) === Number(b.isActive) ? 0 : (a.isActive ? 1 : -1) * dir
     })
     return list
   }, [filtered, sortDir, sortKey, teamById])
 
+  const counts = useMemo(() => ({
+    all: projects.length,
+    active: projects.filter((item) => item.isActive).length,
+    inactive: projects.filter((item) => !item.isActive).length,
+  }), [projects])
+
   const totalPages = Math.max(1, Math.ceil(sorted.length / perPage))
   const safePage = Math.min(page, totalPages)
   const paged = sorted.slice((safePage - 1) * perPage, safePage * perPage)
+  const currentPageIds = paged.map((item) => item.id)
+  const allCurrentPageSelected = currentPageIds.length > 0 && currentPageIds.every((id) => selectedIds.includes(id))
 
   function addToast(message: string, tone: ApexToast['tone'] = 'default') {
     const id = Date.now() + Math.floor(Math.random() * 1000)
@@ -220,7 +286,7 @@ export default function AdminOngoingProjectsTemplateView({
     return sortDir === 'asc' ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />
   }
 
-  function toFormData(form: ProjectFormState, agreementFile: File | null, scopeFile: File | null) {
+  function toFormData(form: ProjectFormState, agreementFiles: File[] = [], scopeFiles: File[] = []) {
     const formData = new FormData()
     if (form.id) formData.set('id', form.id)
     formData.set('projectName', form.projectName)
@@ -228,32 +294,45 @@ export default function AdminOngoingProjectsTemplateView({
     formData.set('startDate', form.startDate)
     formData.set('targetDate', form.targetDate)
     formData.set('clientId', form.clientId)
-    formData.set('category', form.category)
+    formData.set('category', form.categories.join(', '))
     for (const teamId of form.assignedTeamIds) formData.append('assignedTeamIds', teamId)
     formData.set('paymentTerm', form.paymentTerm)
+    formData.set('status', form.status)
     formData.set('totalPrice', form.totalPrice)
     formData.set('balance', form.balance)
     formData.set('existingAgreementFileUrl', form.existingAgreementFileUrl)
     formData.set('existingScopeFileUrl', form.existingScopeFileUrl)
-    if (agreementFile) formData.set('agreementFile', agreementFile)
-    if (scopeFile) formData.set('scopeFile', scopeFile)
+    if (agreementFiles[0]) formData.set('agreementFile', agreementFiles[0])
+    if (scopeFiles[0]) formData.set('scopeFile', scopeFiles[0])
     return formData
+  }
+
+  function toggleSelectAllCurrentPage() {
+    if (allCurrentPageSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !currentPageIds.includes(id)))
+      return
+    }
+    setSelectedIds((prev) => Array.from(new Set([...prev, ...currentPageIds])))
+  }
+
+  function toggleSelectOne(id: string) {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
   }
 
   function exportCsv() {
     const rows = sorted.map((project) => [
       project.projectName,
-      project.projectDescription ?? '',
+      project.category ?? '',
+      project.clientName ?? '',
+      (project.assignedTeamIds ?? []).map((id) => teamById.get(id) ?? id).join(', '),
       project.startDate ?? '',
       project.targetDate ?? '',
-      project.clientName ?? '',
-      project.category ?? '',
-      (project.assignedTeamIds ?? []).map((id) => teamById.get(id) ?? id).join(', '),
-      project.paymentTerm ?? '',
       project.totalPrice ?? '0',
+      project.paymentTerm ?? '',
       project.balance ?? '0',
+      project.isActive ? 'Active' : 'Inactive',
     ])
-    downloadCsv('ongoing-projects-export.csv', [['Project', 'Description', 'Start Date', 'Target Date', 'Client', 'Category', 'Team', 'Payment Term', 'Total Price', 'Balance'], ...rows])
+    downloadCsv('ongoing-projects-export.csv', [['Project Name', 'Category', 'Client', 'Team', 'Start Date', 'Target Date', 'Price', 'Payment Term', 'Balance', 'Status'], ...rows])
     addToast('Ongoing projects CSV exported', 'success')
   }
 
@@ -263,20 +342,27 @@ export default function AdminOngoingProjectsTemplateView({
 
     try {
       if (confirmConfig.kind === 'add') {
-        await createProjectAction(toFormData(addForm, addAgreementFile, addScopeFile))
+        await createProjectAction(toFormData(addForm, addAgreementFiles, addScopeFiles))
         setAddOpen(false)
         setAddForm(defaultForm())
-        setAddAgreementFile(null)
-        setAddScopeFile(null)
+        setAddAgreementFiles([])
+        setAddScopeFiles([])
         addToast('Project added', 'success')
       }
 
       if (confirmConfig.kind === 'edit') {
-        await updateProjectAction(toFormData(editForm, editAgreementFile, editScopeFile))
+        await updateProjectAction(toFormData(editForm, editAgreementFiles, editScopeFiles))
         setEditOpen(false)
-        setEditAgreementFile(null)
-        setEditScopeFile(null)
+        setEditAgreementFiles([])
+        setEditScopeFiles([])
         addToast('Project updated', 'success')
+      }
+
+      if (confirmConfig.kind === 'toggle' && selectedProject) {
+        const formData = new FormData()
+        formData.set('id', selectedProject.id)
+        await toggleProjectAction(formData)
+        addToast(selectedProject.isActive ? 'Project set inactive' : 'Project set active', 'success')
       }
 
       if (confirmConfig.kind === 'delete' && selectedProject) {
@@ -285,6 +371,22 @@ export default function AdminOngoingProjectsTemplateView({
         await deleteProjectAction(formData)
         setViewOpen(false)
         addToast('Project deleted', 'success')
+      }
+
+      if (confirmConfig.kind === 'bulkSetInactive') {
+        const formData = new FormData()
+        formData.set('ids', selectedIds.join(','))
+        await bulkSetInactiveProjectsAction(formData)
+        setSelectedIds([])
+        addToast('Selected projects set inactive', 'success')
+      }
+
+      if (confirmConfig.kind === 'bulkDelete') {
+        const formData = new FormData()
+        formData.set('ids', selectedIds.join(','))
+        await bulkDeleteProjectsAction(formData)
+        setSelectedIds([])
+        addToast('Selected projects deleted', 'success')
       }
 
       setConfirmOpen(false)
@@ -313,8 +415,8 @@ export default function AdminOngoingProjectsTemplateView({
           type="button"
           onClick={() => {
             setAddForm(defaultForm())
-            setAddAgreementFile(null)
-            setAddScopeFile(null)
+            setAddAgreementFiles([])
+            setAddScopeFiles([])
             setAddOpen(true)
           }}
           className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-all duration-150 hover:-translate-y-0.5"
@@ -323,6 +425,21 @@ export default function AdminOngoingProjectsTemplateView({
           <Plus className="h-4 w-4" />
           Add Ongoing Project
         </button>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <ApexStatusTabs
+          tabs={[
+            { key: 'all', label: 'All', count: counts.all },
+            { key: 'active', label: 'Active', count: counts.active, indicatorColor: '#16a34a' },
+            { key: 'inactive', label: 'Inactive', count: counts.inactive, indicatorColor: '#f97316' },
+          ]}
+          active={status}
+          onChange={(value) => {
+            setStatus(value as StatusFilter)
+            setPage(1)
+          }}
+        />
       </div>
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -338,14 +455,54 @@ export default function AdminOngoingProjectsTemplateView({
         </div>
 
         <div className="flex items-center justify-end gap-2">
+          {selectedIds.length > 0 ? (
+            <>
+              <ApexButton
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setConfirmConfig({
+                    title: 'Set Selected Projects Inactive',
+                    description: `Set ${selectedIds.length} selected project(s) inactive?`,
+                    confirmLabel: 'Set Inactive',
+                    tone: 'primary',
+                    kind: 'bulkSetInactive',
+                  })
+                  setConfirmOpen(true)
+                }}
+              >
+                <Power className="h-4 w-4" />
+                Set Inactive
+              </ApexButton>
+              <ApexButton
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setConfirmConfig({
+                    title: 'Delete Selected Projects',
+                    description: `Delete ${selectedIds.length} selected project(s)? This cannot be undone.`,
+                    confirmLabel: 'Delete',
+                    tone: 'danger',
+                    kind: 'bulkDelete',
+                  })
+                  setConfirmOpen(true)
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Selected
+              </ApexButton>
+            </>
+          ) : null}
           <ApexColumnsToggle
             columns={[
-              { key: 'project', label: 'Project', visible: columns.project },
-              { key: 'dates', label: 'Dates', visible: columns.dates },
+              { key: 'project', label: 'Project Name', visible: columns.project },
               { key: 'client', label: 'Client', visible: columns.client },
-              { key: 'category', label: 'Category', visible: columns.category },
-              { key: 'team', label: 'Team', visible: columns.team },
-              { key: 'payment', label: 'Payment', visible: columns.payment },
+              { key: 'team', label: 'Team List', visible: columns.team },
+              { key: 'startDate', label: 'Start Date', visible: columns.startDate },
+              { key: 'targetDate', label: 'Target Date', visible: columns.targetDate },
+              { key: 'price', label: 'Price', visible: columns.price },
+              { key: 'balance', label: 'Balance', visible: columns.balance },
+              { key: 'status', label: 'Status', visible: columns.status },
               { key: 'actions', label: 'Actions', visible: columns.actions },
             ]}
             onToggle={toggleColumn}
@@ -358,19 +515,14 @@ export default function AdminOngoingProjectsTemplateView({
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b" style={{ borderColor: 'var(--apx-border)' }}>
+              <th className="px-2 py-3">
+                <ApexCheckbox checked={allCurrentPageSelected} onChange={toggleSelectAllCurrentPage} ariaLabel="Select all projects on page" />
+              </th>
               {columns.project ? (
                 <th className="px-4 py-3 font-semibold apx-text">
                   <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('project')}>
-                    Project
+                    Project Name
                     {renderSortIcon('project')}
-                  </button>
-                </th>
-              ) : null}
-              {columns.dates ? (
-                <th className="px-4 py-3 font-semibold apx-text">
-                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('dates')}>
-                    Dates
-                    {renderSortIcon('dates')}
                   </button>
                 </th>
               ) : null}
@@ -382,27 +534,51 @@ export default function AdminOngoingProjectsTemplateView({
                   </button>
                 </th>
               ) : null}
-              {columns.category ? (
-                <th className="px-4 py-3 font-semibold apx-text">
-                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('category')}>
-                    Category
-                    {renderSortIcon('category')}
-                  </button>
-                </th>
-              ) : null}
               {columns.team ? (
                 <th className="px-4 py-3 font-semibold apx-text">
                   <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('team')}>
-                    Team
+                    Team List
                     {renderSortIcon('team')}
                   </button>
                 </th>
               ) : null}
-              {columns.payment ? (
+              {columns.startDate ? (
                 <th className="px-4 py-3 font-semibold apx-text">
-                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('payment')}>
-                    Payment
-                    {renderSortIcon('payment')}
+                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('startDate')}>
+                    Start Date
+                    {renderSortIcon('startDate')}
+                  </button>
+                </th>
+              ) : null}
+              {columns.targetDate ? (
+                <th className="px-4 py-3 font-semibold apx-text">
+                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('targetDate')}>
+                    Target Date
+                    {renderSortIcon('targetDate')}
+                  </button>
+                </th>
+              ) : null}
+              {columns.price ? (
+                <th className="px-4 py-3 font-semibold apx-text">
+                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('price')}>
+                    Price
+                    {renderSortIcon('price')}
+                  </button>
+                </th>
+              ) : null}
+              {columns.balance ? (
+                <th className="px-4 py-3 font-semibold apx-text">
+                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('balance')}>
+                    Balance
+                    {renderSortIcon('balance')}
+                  </button>
+                </th>
+              ) : null}
+              {columns.status ? (
+                <th className="px-4 py-3 font-semibold apx-text">
+                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('status')}>
+                    Status
+                    {renderSortIcon('status')}
                   </button>
                 </th>
               ) : null}
@@ -420,15 +596,16 @@ export default function AdminOngoingProjectsTemplateView({
                   setViewOpen(true)
                 }}
               >
+                <td className="px-2 py-3" onClick={(event) => event.stopPropagation()}>
+                  <ApexCheckbox checked={selectedIds.includes(project.id)} onChange={() => toggleSelectOne(project.id)} ariaLabel={`Select ${project.projectName}`} />
+                </td>
                 {columns.project ? (
                   <td className="px-4 py-3">
                     <p className="font-semibold apx-text">{project.projectName}</p>
-                    <p className="line-clamp-2 text-xs apx-muted">{project.projectDescription || '-'}</p>
+                    <p className="text-xs apx-muted">{project.category || '-'}</p>
                   </td>
                 ) : null}
-                {columns.dates ? <td className="px-4 py-3 apx-text">{project.startDate || '-'} • {project.targetDate || '-'}</td> : null}
                 {columns.client ? <td className="px-4 py-3 apx-text">{project.clientName || '-'}</td> : null}
-                {columns.category ? <td className="px-4 py-3 apx-text">{project.category || '-'}</td> : null}
                 {columns.team ? (
                   <td className="px-4 py-3 apx-text">
                     {(project.assignedTeamIds ?? []).length
@@ -436,10 +613,27 @@ export default function AdminOngoingProjectsTemplateView({
                       : '-'}
                   </td>
                 ) : null}
-                {columns.payment ? (
+                {columns.startDate ? <td className="px-4 py-3 apx-text">{project.startDate || '-'}</td> : null}
+                {columns.targetDate ? <td className="px-4 py-3 apx-text">{project.targetDate || '-'}</td> : null}
+                {columns.price ? (
                   <td className="px-4 py-3">
-                    <p className="apx-text">{project.paymentTerm || '-'}</p>
-                    <p className="text-xs apx-muted">Total: {project.totalPrice || '0'} • Balance: {project.balance || '0'}</p>
+                    <p className="apx-text">{project.totalPrice || '0'}</p>
+                    <p className="text-xs apx-muted">{project.paymentTerm || '-'}</p>
+                  </td>
+                ) : null}
+                {columns.balance ? <td className="px-4 py-3 apx-text">{project.balance || '0'}</td> : null}
+                {columns.status ? (
+                  <td className="px-4 py-3">
+                    <span
+                      className="inline-flex rounded-full px-2 py-1 text-xs font-semibold"
+                      style={
+                        project.isActive
+                          ? { backgroundColor: 'rgba(22,163,74,0.15)', color: '#15803d' }
+                          : { backgroundColor: 'rgba(249,115,22,0.15)', color: '#c2410c' }
+                      }
+                    >
+                      {project.isActive ? 'Active' : 'Inactive'}
+                    </span>
                   </td>
                 ) : null}
                 {columns.actions ? (
@@ -450,14 +644,33 @@ export default function AdminOngoingProjectsTemplateView({
                         className="apx-icon-action"
                         onClick={() => {
                           setEditForm(formFromProject(project))
-                          setEditAgreementFile(null)
-                          setEditScopeFile(null)
+                          setEditAgreementFiles([])
+                          setEditScopeFiles([])
                           setSelectedProject(project)
                           setEditOpen(true)
                         }}
                         aria-label="Edit project"
                       >
                         <Edit2 className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        className="apx-icon-action"
+                        onClick={() => {
+                          setSelectedProject(project)
+                          setConfirmConfig({
+                            title: project.isActive ? 'Set Ongoing Project Inactive' : 'Set Ongoing Project Active',
+                            description: `Update status for ${project.projectName}?`,
+                            confirmLabel: project.isActive ? 'Set Inactive' : 'Set Active',
+                            tone: 'primary',
+                            kind: 'toggle',
+                          })
+                          setConfirmOpen(true)
+                        }}
+                        style={project.isActive ? { borderColor: 'rgba(234, 88, 12, 0.45)', color: '#c2410c', backgroundColor: 'rgba(249, 115, 22, 0.08)' } : { borderColor: 'rgba(22, 163, 74, 0.5)', color: '#15803d', backgroundColor: 'rgba(22, 163, 74, 0.12)' }}
+                        aria-label="Toggle project status"
+                      >
+                        <Power className="h-4 w-4" />
                       </button>
                       <button
                         type="button"
@@ -498,7 +711,7 @@ export default function AdminOngoingProjectsTemplateView({
         }}
       />
 
-      <ApexModal open={addOpen} title="Add Ongoing Project" subtitle="Create a project record" onClose={() => setAddOpen(false)}>
+      <ApexModal size="md" open={addOpen} title="Add Ongoing Project" subtitle="Create a project record" onClose={() => setAddOpen(false)}>
         <form
           className="space-y-3"
           onSubmit={(event) => {
@@ -518,8 +731,11 @@ export default function AdminOngoingProjectsTemplateView({
             onChange={setAddForm}
             clients={clients}
             teamMembers={teamMembers}
-            onAgreementFileChange={setAddAgreementFile}
-            onScopeFileChange={setAddScopeFile}
+            categories={categories}
+            agreementFiles={addAgreementFiles}
+            scopeFiles={addScopeFiles}
+            onAgreementFilesChange={setAddAgreementFiles}
+            onScopeFilesChange={setAddScopeFiles}
           />
           <div className="flex justify-end gap-2 pt-1">
             <ApexButton type="button" variant="outline" onClick={() => setAddOpen(false)}>Cancel</ApexButton>
@@ -528,7 +744,7 @@ export default function AdminOngoingProjectsTemplateView({
         </form>
       </ApexModal>
 
-      <ApexModal open={editOpen} title="Edit Ongoing Project" subtitle="Update project details" onClose={() => setEditOpen(false)}>
+      <ApexModal size="md" open={editOpen} title="Edit Ongoing Project" subtitle="Update project details" onClose={() => setEditOpen(false)}>
         <form
           className="space-y-3"
           onSubmit={(event) => {
@@ -548,10 +764,17 @@ export default function AdminOngoingProjectsTemplateView({
             onChange={setEditForm}
             clients={clients}
             teamMembers={teamMembers}
-            onAgreementFileChange={setEditAgreementFile}
-            onScopeFileChange={setEditScopeFile}
+            categories={categories}
+            agreementFiles={editAgreementFiles}
+            scopeFiles={editScopeFiles}
+            onAgreementFilesChange={setEditAgreementFiles}
+            onScopeFilesChange={setEditScopeFiles}
           />
           <p className="text-xs apx-muted">Existing files are preserved when no new file is uploaded.</p>
+          <div className="grid gap-2 text-xs apx-muted md:grid-cols-2">
+            <p>Agreement: {editForm.existingAgreementFileUrl ? 'Existing file saved' : 'No existing file'}</p>
+            <p>Project Scope: {editForm.existingScopeFileUrl ? 'Existing file saved' : 'No existing file'}</p>
+          </div>
           <div className="flex justify-end gap-2 pt-1">
             <ApexButton type="button" variant="outline" onClick={() => setEditOpen(false)}>Cancel</ApexButton>
             <ApexButton type="submit">Save Changes</ApexButton>
@@ -560,78 +783,70 @@ export default function AdminOngoingProjectsTemplateView({
       </ApexModal>
 
       <ApexModal
+        size="md"
         open={viewOpen}
-        title={selectedProject?.projectName || 'Project Details'}
-        subtitle="View delivery details"
+        title="Ongoing Project Details"
+        subtitle="View complete project information."
         onClose={() => setViewOpen(false)}
       >
         {selectedProject ? (
-          <div className="space-y-3 text-sm">
-            <div className="grid gap-2 md:grid-cols-2">
-              <p className="apx-text"><span className="font-semibold">Client:</span> {selectedProject.clientName || '-'}</p>
-              <p className="apx-text"><span className="font-semibold">Category:</span> {selectedProject.category || '-'}</p>
-              <p className="apx-text"><span className="font-semibold">Start Date:</span> {selectedProject.startDate || '-'}</p>
-              <p className="apx-text"><span className="font-semibold">Target Date:</span> {selectedProject.targetDate || '-'}</p>
-              <p className="apx-text"><span className="font-semibold">Payment Term:</span> {selectedProject.paymentTerm || '-'}</p>
-              <p className="apx-text"><span className="font-semibold">Total / Balance:</span> {selectedProject.totalPrice || '0'} / {selectedProject.balance || '0'}</p>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs font-medium apx-muted">Project Name</p>
+                <p className="apx-text font-semibold">{selectedProject.projectName}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium apx-muted">Client</p>
+                <p className="apx-text">{selectedProject.clientName || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium apx-muted">Category</p>
+                <p className="apx-text">{selectedProject.category || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium apx-muted">Status</p>
+                <p className="apx-text">{selectedProject.isActive ? 'Active' : 'Inactive'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium apx-muted">Start Date</p>
+                <p className="apx-text">{selectedProject.startDate || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium apx-muted">Target Date</p>
+                <p className="apx-text">{selectedProject.targetDate || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium apx-muted">Payment Term</p>
+                <p className="apx-text">{selectedProject.paymentTerm || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium apx-muted">Total / Balance</p>
+                <p className="apx-text">{selectedProject.totalPrice || '0'} / {selectedProject.balance || '0'}</p>
+              </div>
             </div>
             <div>
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wide apx-muted">Description</p>
-              <p className="apx-text">{selectedProject.projectDescription || '-'}</p>
+              <p className="text-xs font-medium apx-muted">Description</p>
+              <p className="apx-text whitespace-pre-wrap">{selectedProject.projectDescription || '-'}</p>
             </div>
             <div>
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wide apx-muted">Assigned Team</p>
+              <p className="text-xs font-medium apx-muted">Assigned Team</p>
               <p className="apx-text">
                 {(selectedProject.assignedTeamIds ?? []).length
                   ? selectedProject.assignedTeamIds.map((id) => teamById.get(id) ?? id).join(', ')
                   : '-'}
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {selectedProject.agreementFileUrl ? (
-                <ApexButton type="button" variant="outline" onClick={() => window.open(selectedProject.agreementFileUrl || '', '_blank', 'noopener,noreferrer')}>
-                  <Download className="h-4 w-4" />
-                  Agreement
-                </ApexButton>
-              ) : null}
-              {selectedProject.projectScopeFileUrl ? (
-                <ApexButton type="button" variant="outline" onClick={() => window.open(selectedProject.projectScopeFileUrl || '', '_blank', 'noopener,noreferrer')}>
-                  <Download className="h-4 w-4" />
-                  Project Scope
-                </ApexButton>
-              ) : null}
+            <div>
+              <p className="text-xs font-medium apx-muted">Agreement File</p>
+              {selectedProject.agreementFileUrl ? <a href={selectedProject.agreementFileUrl} target="_blank" rel="noopener noreferrer" className="text-xs apx-text underline">Open agreement file</a> : <p className="text-xs apx-muted">No file uploaded</p>}
             </div>
-            <div className="flex flex-wrap justify-end gap-2 pt-1">
-              <ApexButton
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setEditForm(formFromProject(selectedProject))
-                  setEditAgreementFile(null)
-                  setEditScopeFile(null)
-                  setEditOpen(true)
-                }}
-              >
-                <Edit2 className="h-4 w-4" />
-                Edit
-              </ApexButton>
-              <ApexButton
-                type="button"
-                variant="danger"
-                onClick={() => {
-                  setConfirmConfig({
-                    title: 'Delete Ongoing Project',
-                    description: `Delete ${selectedProject.projectName}? This cannot be undone.`,
-                    confirmLabel: 'Delete',
-                    tone: 'danger',
-                    kind: 'delete',
-                  })
-                  setConfirmOpen(true)
-                }}
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete
-              </ApexButton>
+            <div>
+              <p className="text-xs font-medium apx-muted">Project Scope File</p>
+              {selectedProject.projectScopeFileUrl ? <a href={selectedProject.projectScopeFileUrl} target="_blank" rel="noopener noreferrer" className="text-xs apx-text underline">Open project scope file</a> : <p className="text-xs apx-muted">No file uploaded</p>}
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <ApexButton type="button" variant="outline" onClick={() => setViewOpen(false)}>Close</ApexButton>
             </div>
           </div>
         ) : null}
@@ -659,25 +874,70 @@ function ProjectFormFields({
   onChange,
   clients,
   teamMembers,
-  onAgreementFileChange,
-  onScopeFileChange,
+  categories,
+  agreementFiles,
+  scopeFiles,
+  onAgreementFilesChange,
+  onScopeFilesChange,
 }: {
   form: ProjectFormState
   onChange: (next: ProjectFormState) => void
   clients: ClientOption[]
   teamMembers: TeamMemberOption[]
-  onAgreementFileChange: (file: File | null) => void
-  onScopeFileChange: (file: File | null) => void
+  categories: string[]
+  agreementFiles: File[]
+  scopeFiles: File[]
+  onAgreementFilesChange: (files: File[]) => void
+  onScopeFilesChange: (files: File[]) => void
 }) {
+  const [categoryOpen, setCategoryOpen] = useState(false)
+  const [teamOpen, setTeamOpen] = useState(false)
+
+  const categorySummary = form.categories.length > 0 ? form.categories.join(', ') : 'Select categories'
+  const teamSummary = form.assignedTeamIds.length > 0 ? form.assignedTeamIds.map((id) => teamMembers.find((member) => member.id === id)?.name || id).join(', ') : 'Select team members'
+
+  function toggleCategory(category: string) {
+    const exists = form.categories.includes(category)
+    const next = exists ? form.categories.filter((item) => item !== category) : [...form.categories, category]
+    onChange({ ...form, categories: next })
+  }
+
+  function toggleTeam(id: string) {
+    const exists = form.assignedTeamIds.includes(id)
+    const next = exists ? form.assignedTeamIds.filter((item) => item !== id) : [...form.assignedTeamIds, id]
+    onChange({ ...form, assignedTeamIds: next })
+  }
+
   return (
     <div className="grid gap-3 md:grid-cols-2">
-      <div>
+      <div className="md:col-span-2">
         <label className="mb-1 block text-xs font-medium apx-muted">Project Name</label>
         <ApexInput value={form.projectName} onChange={(event) => onChange({ ...form, projectName: event.target.value })} required />
       </div>
-      <div>
+
+      <div className="md:col-span-2">
         <label className="mb-1 block text-xs font-medium apx-muted">Category</label>
-        <ApexInput value={form.category} onChange={(event) => onChange({ ...form, category: event.target.value })} />
+        <div className="relative">
+          <button
+            type="button"
+            className="flex h-10 w-full items-center justify-between rounded-xl border px-3 text-sm"
+            style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface-alt)', color: 'var(--apx-text)' }}
+            onClick={() => setCategoryOpen((prev) => !prev)}
+          >
+            <span className={form.categories.length > 0 ? 'apx-text' : 'apx-muted'}>{categorySummary}</span>
+            <ArrowDown className={['h-3.5 w-3.5 transition-transform', categoryOpen ? 'rotate-180' : 'rotate-0'].join(' ')} />
+          </button>
+          {categoryOpen ? (
+            <div className="absolute left-0 right-0 top-full z-60 mt-2 max-h-44 overflow-y-auto rounded-xl border p-2" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
+              {categories.map((category) => (
+                <label key={category} className="flex items-center gap-2 rounded-lg px-2 py-2 text-xs apx-text hover:bg-black/5">
+                  <ApexCheckbox checked={form.categories.includes(category)} onChange={() => toggleCategory(category)} ariaLabel={`Toggle ${category}`} />
+                  {category}
+                </label>
+              ))}
+            </div>
+          ) : null}
+        </div>
       </div>
 
       <div className="md:col-span-2">
@@ -687,67 +947,98 @@ function ProjectFormFields({
 
       <div>
         <label className="mb-1 block text-xs font-medium apx-muted">Start Date</label>
-        <ApexInput type="date" value={form.startDate} onChange={(event) => onChange({ ...form, startDate: event.target.value })} />
+        <ApexDateInput value={form.startDate} onChange={(event) => onChange({ ...form, startDate: event.target.value })} />
       </div>
       <div>
         <label className="mb-1 block text-xs font-medium apx-muted">Target Date</label>
-        <ApexInput type="date" value={form.targetDate} onChange={(event) => onChange({ ...form, targetDate: event.target.value })} />
+        <ApexDateInput value={form.targetDate} onChange={(event) => onChange({ ...form, targetDate: event.target.value })} />
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-medium apx-muted">Client Name</label>
-        <ApexSelect value={form.clientId} onChange={(event) => onChange({ ...form, clientId: event.target.value })}>
-          <option value="">Select client</option>
-          {clients.map((client) => (
-            <option key={client.id} value={client.id}>{client.fullName}</option>
-          ))}
-        </ApexSelect>
+        <label className="mb-1 block text-xs font-medium apx-muted">Client</label>
+        <ApexDropdown
+          value={form.clientId}
+          placeholder="Select client"
+          options={[{ value: '', label: 'Select client' }, ...clients.map((client) => ({ value: client.id, label: client.fullName }))]}
+          onChange={(value) => onChange({ ...form, clientId: value })}
+        />
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-medium apx-muted">Assigned Team Member (multi-select)</label>
-        <ApexSelect
-          multiple
-          className="h-28"
-          value={form.assignedTeamIds}
-          onChange={(event) => {
-            const values = Array.from(event.target.selectedOptions).map((option) => option.value)
-            onChange({ ...form, assignedTeamIds: values })
-          }}
-        >
-          {teamMembers.map((member) => (
-            <option key={member.id} value={member.id}>{member.name}</option>
-          ))}
-        </ApexSelect>
+        <label className="mb-1 block text-xs font-medium apx-muted">Assigned Team Member</label>
+        <div className="relative">
+          <button
+            type="button"
+            className="flex h-10 w-full items-center justify-between rounded-xl border px-3 text-sm"
+            style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface-alt)', color: 'var(--apx-text)' }}
+            onClick={() => setTeamOpen((prev) => !prev)}
+          >
+            <span className={form.assignedTeamIds.length > 0 ? 'apx-text' : 'apx-muted'}>{teamSummary}</span>
+            <ArrowDown className={['h-3.5 w-3.5 transition-transform', teamOpen ? 'rotate-180' : 'rotate-0'].join(' ')} />
+          </button>
+          {teamOpen ? (
+            <div className="absolute bottom-full left-0 right-0 z-60 mb-2 max-h-44 overflow-y-auto rounded-xl border p-2" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
+              {teamMembers.map((member) => (
+                <label key={member.id} className="flex items-center gap-2 rounded-lg px-2 py-2 text-xs apx-text hover:bg-black/5">
+                  <ApexCheckbox checked={form.assignedTeamIds.includes(member.id)} onChange={() => toggleTeam(member.id)} ariaLabel={`Toggle ${member.name}`} />
+                  {member.name}
+                </label>
+              ))}
+            </div>
+          ) : null}
+        </div>
       </div>
 
-      <div>
-        <label className="mb-1 block text-xs font-medium apx-muted">Agreement Upload (Optional)</label>
-        <ApexInput type="file" onChange={(event) => onAgreementFileChange(event.target.files?.[0] ?? null)} />
+      <div className="md:col-span-2">
+        <ApexFileDropzone
+          label="Agreement Upload"
+          hint="Click or drag agreement file"
+          files={agreementFiles}
+          onFilesChange={(files) => onAgreementFilesChange(files.slice(0, 1))}
+          maxFiles={1}
+          maxSizeMb={10}
+        />
       </div>
 
-      <div>
-        <label className="mb-1 block text-xs font-medium apx-muted">Project Scope Upload (Optional)</label>
-        <ApexInput type="file" onChange={(event) => onScopeFileChange(event.target.files?.[0] ?? null)} />
+      <div className="md:col-span-2">
+        <ApexFileDropzone
+          label="Project Scope Upload"
+          hint="Click or drag project scope file"
+          files={scopeFiles}
+          onFilesChange={(files) => onScopeFilesChange(files.slice(0, 1))}
+          maxFiles={1}
+          maxSizeMb={10}
+        />
       </div>
 
-      <div>
-        <label className="mb-1 block text-xs font-medium apx-muted">Payment Term</label>
-        <ApexSelect value={form.paymentTerm} onChange={(event) => onChange({ ...form, paymentTerm: event.target.value })}>
-          <option value="One-time Payment">One-time Payment</option>
-          <option value="Progress-based">Progress-based</option>
-          <option value="Monthly billing">Monthly billing</option>
-        </ApexSelect>
+      <div className="md:col-span-2 grid gap-3 md:grid-cols-2">
+        <div>
+          <label className="mb-1 block text-xs font-medium apx-muted">Payment Term</label>
+          <ApexDropdown
+            value={form.paymentTerm}
+            options={PAYMENT_TERMS.map((term) => ({ value: term, label: term }))}
+            onChange={(value) => onChange({ ...form, paymentTerm: value })}
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium apx-muted">Status</label>
+          <ApexDropdown
+            value={form.status}
+            options={[{ value: 'active', label: 'Active' }, { value: 'inactive', label: 'Inactive' }]}
+            onChange={(value) => onChange({ ...form, status: value as 'active' | 'inactive' })}
+          />
+        </div>
       </div>
 
-      <div>
-        <label className="mb-1 block text-xs font-medium apx-muted">Total Price</label>
-        <ApexInput type="number" step="0.01" value={form.totalPrice} onChange={(event) => onChange({ ...form, totalPrice: event.target.value })} />
-      </div>
-
-      <div>
-        <label className="mb-1 block text-xs font-medium apx-muted">Balance</label>
-        <ApexInput type="number" step="0.01" value={form.balance} onChange={(event) => onChange({ ...form, balance: event.target.value })} />
+      <div className="md:col-span-2 grid gap-3 md:grid-cols-2">
+        <div>
+          <label className="mb-1 block text-xs font-medium apx-muted">Total Price</label>
+          <ApexInput type="number" step="0.01" value={form.totalPrice} onChange={(event) => onChange({ ...form, totalPrice: event.target.value })} />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium apx-muted">Balance</label>
+          <ApexInput type="number" step="0.01" value={form.balance} onChange={(event) => onChange({ ...form, balance: event.target.value })} />
+        </div>
       </div>
     </div>
   )
