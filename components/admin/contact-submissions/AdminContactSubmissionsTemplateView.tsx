@@ -604,18 +604,6 @@ export default function AdminContactSubmissionsTemplateView({
                         type="button"
                         className="apx-icon-action"
                         onClick={() => {
-                          setFilesTargetSubmission(submission)
-                          setSelectedFileUrls([])
-                          setFilesOpen(true)
-                        }}
-                        aria-label={`Files for ${submission.name}`}
-                      >
-                        <Download className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        className="apx-icon-action"
-                        onClick={() => {
                           setSelectedSubmission(submission)
                           setEmailSubject('Your message has been received')
                           setEmailReply('')
@@ -624,6 +612,17 @@ export default function AdminContactSubmissionsTemplateView({
                         aria-label={`Email ${submission.name}`}
                       >
                         <Mail className="h-4 w-4" />
+                      </button><button
+                        type="button"
+                        className="apx-icon-action"
+                        onClick={() => {
+                          setFilesTargetSubmission(submission)
+                          setSelectedFileUrls([])
+                          setFilesOpen(true)
+                        }}
+                        aria-label={`Files for ${submission.name}`}
+                      >
+                        <Download className="h-4 w-4" />
                       </button>
                       <button
                         type="button"
