@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowDown, ArrowUp, ArrowUpDown, CreditCard, Download, Edit2, Eye, Files, Mail, Plus, Power, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, CreditCard, Download, Edit2, Eye, Files, Gauge, Mail, Plus, Power, Trash2 } from 'lucide-react'
 import { ApexButton, ApexDateInput, ApexInput, ApexTextarea } from '@/components/admin/apex/AdminPrimitives'
 import {
   ApexBlockingSpinner,
@@ -37,16 +37,27 @@ type ProjectRow = {
   otherFileUrls: string[]
   paymentTerm: string | null
   isActive: boolean
+  status: 'active' | 'finished' | 'maintenance'
+  progress: string | null
   totalPrice: string | null
   balance: string | null
+}
+
+type ProgressEntry = {
+  id: string
+  projectId: string
+  progress: number
+  notes: string | null
+  createdAt: string
+  updatedAt: string
 }
 
 type ClientOption = { id: string; fullName: string; profileImage: string | null }
 type TeamMemberOption = { id: string; name: string; avatar: string }
 
-type ColumnKey = 'project' | 'client' | 'team' | 'startDate' | 'targetDate' | 'price' | 'balance' | 'status' | 'actions'
+type ColumnKey = 'project' | 'client' | 'team' | 'startDate' | 'targetDate' | 'price' | 'progress' | 'status' | 'actions'
 type SortKey = Exclude<ColumnKey, 'actions'>
-type StatusFilter = 'all' | 'active' | 'inactive'
+type StatusFilter = 'all' | 'active' | 'finished' | 'maintenance'
 
 type ProjectFormState = {
   id?: string
@@ -58,7 +69,7 @@ type ProjectFormState = {
   categories: string[]
   assignedTeamIds: string[]
   paymentTerm: string
-  status: 'active' | 'inactive'
+  status: 'active' | 'finished' | 'maintenance'
   totalPrice: string
   balance: string
   existingAgreementFileUrl: string
@@ -114,6 +125,17 @@ function toSubmissionCurrency(value: string) {
   return parseCurrencyInput(value).toFixed(2)
 }
 
+function formatProgress(value: string | null) {
+  const numeric = Math.max(0, Math.min(100, Number(value ?? '0') || 0))
+  return `${Math.round(numeric)}%`
+}
+
+function statusStyles(status: ProjectRow['status']) {
+  if (status === 'finished') return { backgroundColor: 'rgba(249,115,22,0.15)', color: '#c2410c' }
+  if (status === 'maintenance') return { backgroundColor: 'rgba(14,165,233,0.16)', color: '#0369a1' }
+  return { backgroundColor: 'rgba(22,163,74,0.15)', color: '#15803d' }
+}
+
 function formFromProject(project: ProjectRow): ProjectFormState {
   return {
     id: project.id,
@@ -125,7 +147,7 @@ function formFromProject(project: ProjectRow): ProjectFormState {
     categories: project.category ? project.category.split(',').map((item) => item.trim()).filter(Boolean) : [],
     assignedTeamIds: project.assignedTeamIds ?? [],
     paymentTerm: project.paymentTerm ?? 'One-time Payment',
-    status: project.isActive ? 'active' : 'inactive',
+    status: project.status,
     totalPrice: formatCurrency(project.totalPrice),
     balance: formatCurrency(project.balance),
     existingAgreementFileUrl: project.agreementFileUrl ?? '',
@@ -173,8 +195,14 @@ export default function AdminOngoingProjectsTemplateView({
   updateProjectFilesAction,
   toggleProjectAction,
   bulkSetInactiveProjectsAction,
+  bulkSetMaintenanceProjectsAction,
   bulkDeleteProjectsAction,
   deleteProjectAction,
+  progressEntries,
+  createProjectProgressAction,
+  updateProjectProgressAction,
+  deleteProjectProgressAction,
+  bulkDeleteProjectProgressAction,
 }: {
   projects: ProjectRow[]
   clients: ClientOption[]
@@ -185,8 +213,14 @@ export default function AdminOngoingProjectsTemplateView({
   updateProjectFilesAction: (formData: FormData) => Promise<void>
   toggleProjectAction: (formData: FormData) => Promise<void>
   bulkSetInactiveProjectsAction: (formData: FormData) => Promise<void>
+  bulkSetMaintenanceProjectsAction: (formData: FormData) => Promise<void>
   bulkDeleteProjectsAction: (formData: FormData) => Promise<void>
   deleteProjectAction: (formData: FormData) => Promise<void>
+  progressEntries: ProgressEntry[]
+  createProjectProgressAction: (formData: FormData) => Promise<void>
+  updateProjectProgressAction: (formData: FormData) => Promise<void>
+  deleteProjectProgressAction: (formData: FormData) => Promise<void>
+  bulkDeleteProjectProgressAction: (formData: FormData) => Promise<void>
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -205,7 +239,7 @@ export default function AdminOngoingProjectsTemplateView({
     startDate: true,
     targetDate: true,
     price: true,
-    balance: true,
+    progress: true,
     status: true,
     actions: true,
   })
@@ -214,6 +248,8 @@ export default function AdminOngoingProjectsTemplateView({
   const [editOpen, setEditOpen] = useState(false)
   const [viewOpen, setViewOpen] = useState(false)
   const [filesOpen, setFilesOpen] = useState(false)
+  const [progressOpen, setProgressOpen] = useState(false)
+  const [progressFormOpen, setProgressFormOpen] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pending, setPending] = useState(false)
   const [toasts, setToasts] = useState<ApexToast[]>([])
@@ -230,13 +266,16 @@ export default function AdminOngoingProjectsTemplateView({
   const [fileScopeFiles, setFileScopeFiles] = useState<File[]>([])
   const [fileOtherFiles, setFileOtherFiles] = useState<File[]>([])
   const [fileKeptOtherUrls, setFileKeptOtherUrls] = useState<string[]>([])
+  const [progressSelectedIds, setProgressSelectedIds] = useState<string[]>([])
+  const [editingProgressId, setEditingProgressId] = useState<string | null>(null)
+  const [progressDraft, setProgressDraft] = useState<{ progress: string; notes: string }>({ progress: '', notes: '' })
 
   const [confirmConfig, setConfirmConfig] = useState<{
     title: string
     description: string
     confirmLabel: string
     tone: 'primary' | 'danger'
-    kind: 'add' | 'edit' | 'delete' | 'toggle' | 'bulkSetInactive' | 'bulkDelete'
+    kind: 'add' | 'edit' | 'delete' | 'toggle' | 'bulkSetInactive' | 'bulkSetMaintenance' | 'bulkDelete' | 'addProgress' | 'editProgress' | 'deleteProgress' | 'bulkDeleteProgress'
   } | null>(null)
 
   const queryHandledRef = useRef(false)
@@ -266,12 +305,7 @@ export default function AdminOngoingProjectsTemplateView({
   const filtered = useMemo(() => {
     const keyword = search.trim().toLowerCase()
     return projects.filter((project) => {
-      const statusMatch =
-        status === 'all'
-          ? true
-          : status === 'active'
-          ? project.isActive
-          : !project.isActive
+      const statusMatch = status === 'all' ? true : project.status === status
       if (!statusMatch) return false
 
       if (!keyword) return true
@@ -297,16 +331,17 @@ export default function AdminOngoingProjectsTemplateView({
       if (sortKey === 'startDate') return (a.startDate ?? '').localeCompare(b.startDate ?? '') * dir
       if (sortKey === 'targetDate') return (a.targetDate ?? '').localeCompare(b.targetDate ?? '') * dir
       if (sortKey === 'price') return parseCurrencyInput(a.totalPrice ?? '0') > parseCurrencyInput(b.totalPrice ?? '0') ? dir : -dir
-      if (sortKey === 'balance') return parseCurrencyInput(a.balance ?? '0') > parseCurrencyInput(b.balance ?? '0') ? dir : -dir
-      return Number(a.isActive) === Number(b.isActive) ? 0 : (a.isActive ? 1 : -1) * dir
+      if (sortKey === 'progress') return Number(a.progress ?? '0') > Number(b.progress ?? '0') ? dir : -dir
+      return (a.status || '').localeCompare(b.status || '') * dir
     })
     return list
   }, [filtered, sortDir, sortKey, teamById])
 
   const counts = useMemo(() => ({
     all: projects.length,
-    active: projects.filter((item) => item.isActive).length,
-    inactive: projects.filter((item) => !item.isActive).length,
+    active: projects.filter((item) => item.status === 'active').length,
+    finished: projects.filter((item) => item.status === 'finished').length,
+    maintenance: projects.filter((item) => item.status === 'maintenance').length,
   }), [projects])
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / perPage))
@@ -314,6 +349,11 @@ export default function AdminOngoingProjectsTemplateView({
   const paged = sorted.slice((safePage - 1) * perPage, safePage * perPage)
   const currentPageIds = paged.map((item) => item.id)
   const allCurrentPageSelected = currentPageIds.length > 0 && currentPageIds.every((id) => selectedIds.includes(id))
+  const selectedProjectProgress = useMemo(
+    () => (selectedProject ? progressEntries.filter((entry) => entry.projectId === selectedProject.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) : []),
+    [progressEntries, selectedProject]
+  )
+  const allSelectedProgressChecked = selectedProjectProgress.length > 0 && selectedProjectProgress.every((entry) => progressSelectedIds.includes(entry.id))
 
   function addToast(message: string, tone: ApexToast['tone'] = 'default') {
     const id = Date.now() + Math.floor(Math.random() * 1000)
@@ -353,13 +393,13 @@ export default function AdminOngoingProjectsTemplateView({
     formData.set('paymentTerm', form.paymentTerm)
     formData.set('status', form.status)
     formData.set('totalPrice', toSubmissionCurrency(form.totalPrice))
-    formData.set('balance', toSubmissionCurrency(form.balance))
+    formData.set('balance', toSubmissionCurrency(form.totalPrice))
     formData.set('existingAgreementFileUrl', form.existingAgreementFileUrl)
     formData.set('existingScopeFileUrl', form.existingScopeFileUrl)
     formData.set('keptOtherFileUrls', form.keptOtherFileUrls.join('||'))
     if (agreementFiles[0]) formData.set('agreementFile', agreementFiles[0])
     if (scopeFiles[0]) formData.set('scopeFile', scopeFiles[0])
-    for (const file of otherFiles.slice(0, 5)) formData.append('otherFiles', file)
+    for (const file of otherFiles.slice(0, 3)) formData.append('otherFiles', file)
     return formData
   }
 
@@ -375,6 +415,18 @@ export default function AdminOngoingProjectsTemplateView({
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
   }
 
+  function toggleSelectAllProgress() {
+    if (allSelectedProgressChecked) {
+      setProgressSelectedIds((prev) => prev.filter((id) => !selectedProjectProgress.some((entry) => entry.id === id)))
+      return
+    }
+    setProgressSelectedIds((prev) => Array.from(new Set([...prev, ...selectedProjectProgress.map((entry) => entry.id)])))
+  }
+
+  function toggleSelectProgress(id: string) {
+    setProgressSelectedIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
+  }
+
   function exportCsv() {
     const rows = sorted.map((project) => [
       project.projectName,
@@ -385,10 +437,10 @@ export default function AdminOngoingProjectsTemplateView({
       formatDateLabel(project.targetDate),
       formatCurrency(project.totalPrice),
       project.paymentTerm ?? '',
-      formatCurrency(project.balance),
-      project.isActive ? 'Active' : 'Inactive',
+      `${Number(project.progress ?? '0')}%`,
+      project.status,
     ])
-    downloadCsv('ongoing-projects-export.csv', [['Project Name', 'Category', 'Client', 'Team', 'Start Date', 'Target Date', 'Price', 'Payment Term', 'Balance', 'Status'], ...rows])
+    downloadCsv('ongoing-projects-export.csv', [['Project Name', 'Category', 'Client', 'Team', 'Start Date', 'Target Date', 'Price', 'Payment Term', 'Progress', 'Status'], ...rows])
     addToast('Ongoing projects CSV exported', 'success')
   }
 
@@ -404,7 +456,7 @@ export default function AdminOngoingProjectsTemplateView({
       formData.set('keptOtherFileUrls', fileKeptOtherUrls.join('||'))
       if (fileAgreementFiles[0]) formData.set('agreementFile', fileAgreementFiles[0])
       if (fileScopeFiles[0]) formData.set('scopeFile', fileScopeFiles[0])
-      for (const file of fileOtherFiles.slice(0, 5)) formData.append('otherFiles', file)
+      for (const file of fileOtherFiles.slice(0, 3)) formData.append('otherFiles', file)
       await updateProjectFilesAction(formData)
       setFilesOpen(false)
       setFileAgreementFiles([])
@@ -462,7 +514,51 @@ export default function AdminOngoingProjectsTemplateView({
         formData.set('ids', selectedIds.join(','))
         await bulkSetInactiveProjectsAction(formData)
         setSelectedIds([])
-        addToast('Selected projects set inactive', 'success')
+        addToast('Selected projects set finished', 'success')
+      }
+
+      if (confirmConfig.kind === 'bulkSetMaintenance') {
+        const formData = new FormData()
+        formData.set('ids', selectedIds.join(','))
+        await bulkSetMaintenanceProjectsAction(formData)
+        setSelectedIds([])
+        addToast('Selected projects set maintenance', 'success')
+      }
+
+      if (selectedProject && (confirmConfig.kind === 'addProgress' || confirmConfig.kind === 'editProgress')) {
+        const formData = new FormData()
+        formData.set('projectId', selectedProject.id)
+        formData.set('progress', String(Number(progressDraft.progress || '0') || 0))
+        formData.set('notes', progressDraft.notes)
+        if (confirmConfig.kind === 'editProgress' && editingProgressId) {
+          formData.set('id', editingProgressId)
+          await updateProjectProgressAction(formData)
+          addToast('Progress updated', 'success')
+        } else {
+          await createProjectProgressAction(formData)
+          addToast('Progress added', 'success')
+        }
+        setProgressFormOpen(false)
+        setEditingProgressId(null)
+        setProgressDraft({ progress: '', notes: '' })
+      }
+
+      if (selectedProject && confirmConfig.kind === 'deleteProgress' && editingProgressId) {
+        const formData = new FormData()
+        formData.set('id', editingProgressId)
+        formData.set('projectId', selectedProject.id)
+        await deleteProjectProgressAction(formData)
+        setEditingProgressId(null)
+        addToast('Progress entry deleted', 'success')
+      }
+
+      if (selectedProject && confirmConfig.kind === 'bulkDeleteProgress') {
+        const formData = new FormData()
+        formData.set('projectId', selectedProject.id)
+        formData.set('ids', progressSelectedIds.join(','))
+        await bulkDeleteProjectProgressAction(formData)
+        setProgressSelectedIds([])
+        addToast('Selected progress entries deleted', 'success')
       }
 
       if (confirmConfig.kind === 'bulkDelete') {
@@ -517,7 +613,8 @@ export default function AdminOngoingProjectsTemplateView({
           tabs={[
             { key: 'all', label: 'All', count: counts.all },
             { key: 'active', label: 'Active', count: counts.active, indicatorColor: '#16a34a' },
-            { key: 'inactive', label: 'Inactive', count: counts.inactive, indicatorColor: '#f97316' },
+            { key: 'finished', label: 'Finished', count: counts.finished, indicatorColor: '#f97316' },
+            { key: 'maintenance', label: 'Maintenance', count: counts.maintenance, indicatorColor: '#0ea5e9' },
           ]}
           active={status}
           onChange={(value) => {
@@ -547,9 +644,9 @@ export default function AdminOngoingProjectsTemplateView({
                 variant="outline"
                 onClick={() => {
                   setConfirmConfig({
-                    title: 'Set Selected Projects Inactive',
-                    description: `Set ${selectedIds.length} selected project(s) inactive?`,
-                    confirmLabel: 'Set Inactive',
+                    title: 'Set Selected Projects Finished',
+                    description: `Set ${selectedIds.length} selected project(s) finished?`,
+                    confirmLabel: 'Set Finished',
                     tone: 'primary',
                     kind: 'bulkSetInactive',
                   })
@@ -557,7 +654,24 @@ export default function AdminOngoingProjectsTemplateView({
                 }}
               >
                 <Power className="h-4 w-4" />
-                Set Inactive
+                Set Finished
+              </ApexButton>
+              <ApexButton
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setConfirmConfig({
+                    title: 'Set Selected Projects Maintenance',
+                    description: `Set ${selectedIds.length} selected project(s) maintenance?`,
+                    confirmLabel: 'Set Maintenance',
+                    tone: 'primary',
+                    kind: 'bulkSetMaintenance',
+                  })
+                  setConfirmOpen(true)
+                }}
+              >
+                <Gauge className="h-4 w-4" />
+                Set Maintenance
               </ApexButton>
               <ApexButton
                 type="button"
@@ -586,7 +700,7 @@ export default function AdminOngoingProjectsTemplateView({
               { key: 'startDate', label: 'Start Date', visible: columns.startDate },
               { key: 'targetDate', label: 'Target Date', visible: columns.targetDate },
               { key: 'price', label: 'Price', visible: columns.price },
-              { key: 'balance', label: 'Balance', visible: columns.balance },
+              { key: 'progress', label: 'Progress', visible: columns.progress },
               { key: 'status', label: 'Status', visible: columns.status },
               { key: 'actions', label: 'Actions', visible: columns.actions },
             ]}
@@ -651,11 +765,11 @@ export default function AdminOngoingProjectsTemplateView({
                   </button>
                 </th>
               ) : null}
-              {columns.balance ? (
+              {columns.progress ? (
                 <th className="px-4 py-3 font-semibold apx-text">
-                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('balance')}>
-                    Balance
-                    {renderSortIcon('balance')}
+                  <button type="button" className="inline-flex items-center gap-1.5" onClick={() => onSort('progress')}>
+                    Progress
+                    {renderSortIcon('progress')}
                   </button>
                 </th>
               ) : null}
@@ -735,18 +849,26 @@ export default function AdminOngoingProjectsTemplateView({
                       <p className="text-xs apx-muted">{project.paymentTerm || '-'}</p>
                     </td>
                   ) : null}
-                  {columns.balance ? <td className="px-4 py-3 apx-text">{formatCurrency(project.balance)}</td> : null}
+                  {columns.progress ? (
+                    <td className="px-4 py-3">
+                      <div className="w-full max-w-45">
+                        <div className="h-2 w-full overflow-hidden rounded-full" style={{ backgroundColor: 'rgba(148,163,184,0.28)' }}>
+                          <div
+                            className="h-full rounded-full"
+                            style={{ width: `${Math.max(0, Math.min(100, Number(project.progress ?? '0') || 0))}%`, backgroundColor: '#16a34a' }}
+                          />
+                        </div>
+                        <p className="mt-1 text-xs font-semibold apx-text">{formatProgress(project.progress)}</p>
+                      </div>
+                    </td>
+                  ) : null}
                   {columns.status ? (
                     <td className="px-4 py-3">
                       <span
                         className="inline-flex rounded-full px-2 py-1 text-xs font-semibold"
-                        style={
-                          project.isActive
-                            ? { backgroundColor: 'rgba(22,163,74,0.15)', color: '#15803d' }
-                            : { backgroundColor: 'rgba(249,115,22,0.15)', color: '#c2410c' }
-                        }
+                        style={statusStyles(project.status)}
                       >
-                        {project.isActive ? 'Active' : 'Inactive'}
+                        {project.status === 'finished' ? 'Finished' : project.status === 'maintenance' ? 'Maintenance' : 'Active'}
                       </span>
                     </td>
                   ) : null}
@@ -755,6 +877,20 @@ export default function AdminOngoingProjectsTemplateView({
                       <div className="flex items-center justify-end gap-2" onClick={(event) => event.stopPropagation()}>
                         <button type="button" className="apx-icon-action" onClick={() => addToast('Make payment is not connected yet.', 'default')} aria-label="Make payment"><CreditCard className="h-4 w-4" /></button>
                         <button type="button" className="apx-icon-action" onClick={() => addToast('Email action is not connected yet.', 'default')} aria-label="Email project"><Mail className="h-4 w-4" /></button>
+                        <button
+                          type="button"
+                          className="apx-icon-action"
+                          onClick={() => {
+                            setSelectedProject(project)
+                            setProgressSelectedIds([])
+                            setEditingProgressId(null)
+                            setProgressDraft({ progress: project.progress || '0', notes: '' })
+                            setProgressOpen(true)
+                          }}
+                          aria-label="Manage progress"
+                        >
+                          <Gauge className="h-4 w-4" />
+                        </button>
                         <button
                           type="button"
                           className="apx-icon-action"
@@ -791,15 +927,15 @@ export default function AdminOngoingProjectsTemplateView({
                           onClick={() => {
                             setSelectedProject(project)
                             setConfirmConfig({
-                              title: project.isActive ? 'Set Ongoing Project Inactive' : 'Set Ongoing Project Active',
+                              title: project.status === 'finished' ? 'Set Ongoing Project Active' : 'Set Ongoing Project Finished',
                               description: `Update status for ${project.projectName}?`,
-                              confirmLabel: project.isActive ? 'Set Inactive' : 'Set Active',
+                              confirmLabel: project.status === 'finished' ? 'Set Active' : 'Set Finished',
                               tone: 'primary',
                               kind: 'toggle',
                             })
                             setConfirmOpen(true)
                           }}
-                          style={project.isActive ? { borderColor: 'rgba(234, 88, 12, 0.45)', color: '#c2410c', backgroundColor: 'rgba(249, 115, 22, 0.08)' } : { borderColor: 'rgba(22, 163, 74, 0.5)', color: '#15803d', backgroundColor: 'rgba(22, 163, 74, 0.12)' }}
+                          style={project.status === 'finished' ? { borderColor: 'rgba(22, 163, 74, 0.5)', color: '#15803d', backgroundColor: 'rgba(22, 163, 74, 0.12)' } : { borderColor: 'rgba(234, 88, 12, 0.45)', color: '#c2410c', backgroundColor: 'rgba(249, 115, 22, 0.08)' }}
                           aria-label="Toggle project status"
                         >
                           <Power className="h-4 w-4" />
@@ -975,7 +1111,14 @@ export default function AdminOngoingProjectsTemplateView({
 
             <ApexFileDropzone label="Replace Agreement File" files={fileAgreementFiles} onFilesChange={(files) => setFileAgreementFiles(files.slice(0, 1))} maxFiles={1} maxSizeMb={10} />
             <ApexFileDropzone label="Replace Project Scope File" files={fileScopeFiles} onFilesChange={(files) => setFileScopeFiles(files.slice(0, 1))} maxFiles={1} maxSizeMb={10} />
-            <ApexFileDropzone label="Add Other Files" files={fileOtherFiles} onFilesChange={(files) => setFileOtherFiles(files.slice(0, 5))} maxFiles={5} maxSizeMb={10} />
+            <ApexFileDropzone
+              label="Add Other Files"
+              hint={`You can keep up to 3 files total. Remaining: ${Math.max(0, 3 - fileKeptOtherUrls.length)}`}
+              files={fileOtherFiles}
+              onFilesChange={(files) => setFileOtherFiles(files.slice(0, Math.max(0, 3 - fileKeptOtherUrls.length)))}
+              maxFiles={Math.max(0, 3 - fileKeptOtherUrls.length)}
+              maxSizeMb={10}
+            />
 
             <div className="flex justify-end gap-2 pt-1">
               <ApexButton type="button" variant="outline" onClick={() => setFilesOpen(false)}>Cancel</ApexButton>
@@ -1009,7 +1152,7 @@ export default function AdminOngoingProjectsTemplateView({
               </div>
               <div>
                 <p className="text-xs font-medium apx-muted">Status</p>
-                <p className="apx-text">{selectedProject.isActive ? 'Active' : 'Inactive'}</p>
+                <p className="apx-text">{selectedProject.status === 'finished' ? 'Finished' : selectedProject.status === 'maintenance' ? 'Maintenance' : 'Active'}</p>
               </div>
               <div>
                 <p className="text-xs font-medium apx-muted">Start Date</p>
@@ -1030,6 +1173,10 @@ export default function AdminOngoingProjectsTemplateView({
               <div>
                 <p className="text-xs font-medium apx-muted">Balance</p>
                 <p className="apx-text">{formatCurrency(selectedProject.balance)}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium apx-muted">Progress</p>
+                <p className="apx-text">{formatProgress(selectedProject.progress)}</p>
               </div>
             </div>
             <div>
@@ -1083,6 +1230,162 @@ export default function AdminOngoingProjectsTemplateView({
             </div>
           </div>
         ) : null}
+      </ApexModal>
+
+      <ApexModal size="lg" open={progressOpen} title="Project Progress" subtitle="Track and update progress entries." onClose={() => setProgressOpen(false)}>
+        {selectedProject ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold apx-text">{selectedProject.projectName}</p>
+                <p className="text-xs apx-muted">Current progress: {formatProgress(selectedProject.progress)}</p>
+              </div>
+              <ApexButton
+                type="button"
+                onClick={() => {
+                  setEditingProgressId(null)
+                  setProgressDraft({ progress: selectedProject.progress || '0', notes: '' })
+                  setProgressFormOpen(true)
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                Add Progress
+              </ApexButton>
+            </div>
+
+            {progressSelectedIds.length > 0 ? (
+              <div className="flex justify-end">
+                <ApexButton
+                  type="button"
+                  variant="danger"
+                  onClick={() => {
+                    setConfirmConfig({
+                      title: 'Delete Selected Progress Entries',
+                      description: `Delete ${progressSelectedIds.length} selected progress entr${progressSelectedIds.length === 1 ? 'y' : 'ies'}?`,
+                      confirmLabel: 'Delete',
+                      tone: 'danger',
+                      kind: 'bulkDeleteProgress',
+                    })
+                    setConfirmOpen(true)
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete Selected
+                </ApexButton>
+              </div>
+            ) : null}
+
+            <div className="overflow-x-auto rounded-2xl border" style={{ borderColor: 'var(--apx-border)' }}>
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b" style={{ borderColor: 'var(--apx-border)' }}>
+                    <th className="px-2 py-3">
+                      <ApexCheckbox checked={allSelectedProgressChecked} onChange={toggleSelectAllProgress} ariaLabel="Select all progress entries" />
+                    </th>
+                    <th className="px-4 py-3 font-semibold apx-text">Progress</th>
+                    <th className="px-4 py-3 font-semibold apx-text">Notes</th>
+                    <th className="px-4 py-3 font-semibold apx-text">Created</th>
+                    <th className="px-4 py-3 text-right font-semibold apx-text">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedProjectProgress.length ? (
+                    selectedProjectProgress.map((entry) => (
+                      <tr key={entry.id} className="border-b last:border-b-0" style={{ borderColor: 'var(--apx-border)' }}>
+                        <td className="px-2 py-3">
+                          <ApexCheckbox checked={progressSelectedIds.includes(entry.id)} onChange={() => toggleSelectProgress(entry.id)} ariaLabel="Select progress entry" />
+                        </td>
+                        <td className="px-4 py-3 apx-text">{Math.round(entry.progress)}%</td>
+                        <td className="px-4 py-3 apx-text">{entry.notes || '-'}</td>
+                        <td className="px-4 py-3 apx-text">{new Date(entry.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              className="apx-icon-action"
+                              onClick={() => {
+                                setEditingProgressId(entry.id)
+                                setProgressDraft({ progress: String(entry.progress), notes: entry.notes || '' })
+                                setProgressFormOpen(true)
+                              }}
+                              aria-label="Edit progress entry"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              className="apx-icon-action-danger"
+                              onClick={() => {
+                                setEditingProgressId(entry.id)
+                                setConfirmConfig({
+                                  title: 'Delete Progress Entry',
+                                  description: 'Delete this progress entry?',
+                                  confirmLabel: 'Delete',
+                                  tone: 'danger',
+                                  kind: 'deleteProgress',
+                                })
+                                setConfirmOpen(true)
+                              }}
+                              aria-label="Delete progress entry"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-4 text-center text-sm apx-muted">No progress history yet.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-1">
+              <ApexButton type="button" variant="outline" onClick={() => setProgressOpen(false)}>Close</ApexButton>
+            </div>
+          </div>
+        ) : null}
+      </ApexModal>
+
+      <ApexModal size="md" open={progressFormOpen} title={editingProgressId ? 'Edit Progress Entry' : 'Add Progress Entry'} subtitle="Keep project progress history updated." onClose={() => setProgressFormOpen(false)}>
+        <form
+          className="space-y-3"
+          onSubmit={(event) => {
+            event.preventDefault()
+            setConfirmConfig({
+              title: editingProgressId ? 'Update Progress Entry' : 'Add Progress Entry',
+              description: editingProgressId ? 'Save changes to this progress entry?' : 'Add this progress entry?',
+              confirmLabel: editingProgressId ? 'Update' : 'Add',
+              tone: 'primary',
+              kind: editingProgressId ? 'editProgress' : 'addProgress',
+            })
+            setConfirmOpen(true)
+          }}
+        >
+          <div>
+            <label className="mb-1 block text-xs font-medium apx-muted">Progress (%)</label>
+            <ApexInput
+              type="number"
+              min={0}
+              max={100}
+              step={1}
+              value={progressDraft.progress}
+              onChange={(event) => setProgressDraft((prev) => ({ ...prev, progress: event.target.value }))}
+              required
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium apx-muted">Notes</label>
+            <ApexTextarea rows={3} value={progressDraft.notes} onChange={(event) => setProgressDraft((prev) => ({ ...prev, notes: event.target.value }))} />
+          </div>
+          <div className="flex justify-end gap-2 pt-1">
+            <ApexButton type="button" variant="outline" onClick={() => setProgressFormOpen(false)}>Cancel</ApexButton>
+            <ApexButton type="submit">{editingProgressId ? 'Save Changes' : 'Add Entry'}</ApexButton>
+          </div>
+        </form>
       </ApexModal>
 
       <ApexConfirmationModal
@@ -1146,6 +1449,7 @@ function ProjectFormFields({
 }) {
   const [categoryOpen, setCategoryOpen] = useState(false)
   const [teamOpen, setTeamOpen] = useState(false)
+  const computedBalance = form.balance || formatCurrencyInput(form.totalPrice)
 
   const categorySummary = form.categories.length > 0 ? form.categories.join(', ') : 'Select categories'
   const teamSummary = form.assignedTeamIds.length > 0 ? form.assignedTeamIds.map((id) => teamMembers.find((member) => member.id === id)?.name || id).join(', ') : 'Select team members'
@@ -1170,6 +1474,14 @@ function ProjectFormFields({
       </div>
 
       <div className="md:col-span-2">
+        <label className="mb-1 block text-xs font-medium apx-muted">Client</label>
+        <ApexDropdown value={form.clientId} placeholder="Select client" options={[{ value: '', label: 'Select client' }, ...clients.map((client) => ({ value: client.id, label: client.fullName }))]} onChange={(value) => onChange({ ...form, clientId: value })} />
+      </div>
+      <div className="md:col-span-2">
+        <label className="mb-1 block text-xs font-medium apx-muted">Project Description</label>
+        <ApexTextarea value={form.projectDescription} onChange={(event) => onChange({ ...form, projectDescription: event.target.value })} rows={3} />
+      </div>
+<div>
         <label className="mb-1 block text-xs font-medium apx-muted">Category</label>
         <div className="relative">
           <button
@@ -1193,12 +1505,6 @@ function ProjectFormFields({
           ) : null}
         </div>
       </div>
-
-      <div className="md:col-span-2">
-        <label className="mb-1 block text-xs font-medium apx-muted">Project Description</label>
-        <ApexTextarea value={form.projectDescription} onChange={(event) => onChange({ ...form, projectDescription: event.target.value })} rows={3} />
-      </div>
-
       <div>
         <label className="mb-1 block text-xs font-medium apx-muted">Start Date</label>
         <ApexDateInput value={form.startDate} onChange={(event) => onChange({ ...form, startDate: event.target.value })} />
@@ -1206,11 +1512,6 @@ function ProjectFormFields({
       <div>
         <label className="mb-1 block text-xs font-medium apx-muted">Target Date</label>
         <ApexDateInput value={form.targetDate} onChange={(event) => onChange({ ...form, targetDate: event.target.value })} />
-      </div>
-
-      <div>
-        <label className="mb-1 block text-xs font-medium apx-muted">Client</label>
-        <ApexDropdown value={form.clientId} placeholder="Select client" options={[{ value: '', label: 'Select client' }, ...clients.map((client) => ({ value: client.id, label: client.fullName }))]} onChange={(value) => onChange({ ...form, clientId: value })} />
       </div>
 
       <div>
@@ -1237,19 +1538,6 @@ function ProjectFormFields({
           ) : null}
         </div>
       </div>
-
-      <div className="md:col-span-2">
-        <ApexFileDropzone label="Agreement Upload" hint="Click or drag agreement file" files={agreementFiles} onFilesChange={(files) => onAgreementFilesChange(files.slice(0, 1))} maxFiles={1} maxSizeMb={10} />
-      </div>
-
-      <div className="md:col-span-2">
-        <ApexFileDropzone label="Project Scope Upload" hint="Click or drag project scope file" files={scopeFiles} onFilesChange={(files) => onScopeFilesChange(files.slice(0, 1))} maxFiles={1} maxSizeMb={10} />
-      </div>
-
-      <div className="md:col-span-2">
-        <ApexFileDropzone label="Other Files" hint="Click or drag files" files={otherFiles} onFilesChange={(files) => onOtherFilesChange(files.slice(0, 5))} maxFiles={5} maxSizeMb={10} />
-      </div>
-
       <div className="md:col-span-2 grid gap-3 md:grid-cols-2">
         <div>
           <label className="mb-1 block text-xs font-medium apx-muted">Payment Term</label>
@@ -1257,7 +1545,11 @@ function ProjectFormFields({
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium apx-muted">Status</label>
-          <ApexDropdown value={form.status} options={[{ value: 'active', label: 'Active' }, { value: 'inactive', label: 'Inactive' }]} onChange={(value) => onChange({ ...form, status: value as 'active' | 'inactive' })} />
+          <ApexDropdown
+            value={form.status}
+            options={[{ value: 'active', label: 'Active' }, { value: 'finished', label: 'Finished' }, { value: 'maintenance', label: 'Maintenance' }]}
+            onChange={(value) => onChange({ ...form, status: value as 'active' | 'finished' | 'maintenance' })}
+          />
         </div>
       </div>
 
@@ -1276,13 +1568,33 @@ function ProjectFormFields({
           <label className="mb-1 block text-xs font-medium apx-muted">Balance</label>
           <ApexInput
             type="text"
-            value={form.balance}
-            onChange={(event) => onChange({ ...form, balance: event.target.value })}
-            onBlur={() => onChange({ ...form, balance: formatCurrencyInput(form.balance) })}
+            value={computedBalance}
+            readOnly
             placeholder="₱ 0.00"
           />
+          <p className="mt-1 text-[11px] apx-muted">Balance is auto-calculated from total price and recorded payments.</p>
         </div>
       </div>
+      <div className="md:col-span-2">
+        <ApexFileDropzone label="Agreement Upload" hint="Click or drag agreement file" files={agreementFiles} onFilesChange={(files) => onAgreementFilesChange(files.slice(0, 1))} maxFiles={1} maxSizeMb={10} />
+      </div>
+
+      <div className="md:col-span-2">
+        <ApexFileDropzone label="Project Scope Upload" hint="Click or drag project scope file" files={scopeFiles} onFilesChange={(files) => onScopeFilesChange(files.slice(0, 1))} maxFiles={1} maxSizeMb={10} />
+      </div>
+
+      <div className="md:col-span-2">
+        <ApexFileDropzone
+          label="Other Files"
+          hint={`Click or drag files (max 3). Remaining: ${Math.max(0, 3 - (form.keptOtherFileUrls?.length || 0))}`}
+          files={otherFiles}
+          onFilesChange={(files) => onOtherFilesChange(files.slice(0, Math.max(0, 3 - (form.keptOtherFileUrls?.length || 0))))}
+          maxFiles={Math.max(0, 3 - (form.keptOtherFileUrls?.length || 0))}
+          maxSizeMb={10}
+        />
+      </div>
+
+      
     </div>
   )
 }
