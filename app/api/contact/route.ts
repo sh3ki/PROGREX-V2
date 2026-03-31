@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import path from 'node:path'
 import { NextRequest, NextResponse } from 'next/server'
 import nodemailer from 'nodemailer'
+import { z } from 'zod'
 import { sql } from '@/lib/server/db'
 import { assertSameOrigin, getClientIp, hitRateLimit } from '@/lib/server/request-security'
 
@@ -18,6 +19,63 @@ const ALLOWED_DOC_TYPES = new Set([
   'application/zip',
   'application/x-rar-compressed',
 ])
+
+const emailSchema = z.string().trim().toLowerCase().email()
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function validateEmailWithZoho(email: string) {
+  const endpoint = process.env.ZOHO_EMAIL_VALIDATION_ENDPOINT
+  const token = process.env.ZOHO_EMAIL_VALIDATION_TOKEN
+  if (!endpoint || !token) return true
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ email }),
+      cache: 'no-store',
+    })
+
+    if (!response.ok) return true
+    const payload = (await response.json()) as { valid?: boolean; status?: string }
+    if (payload.valid === false) return false
+    if ((payload.status || '').toLowerCase().includes('undelivered')) return false
+    return true
+  } catch {
+    return true
+  }
+}
+
+async function checkZohoUndelivered(email: string) {
+  const endpoint = process.env.ZOHO_BOUNCE_CHECK_ENDPOINT
+  const token = process.env.ZOHO_BOUNCE_CHECK_TOKEN
+  if (!endpoint || !token) return false
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ email }),
+      cache: 'no-store',
+    })
+
+    if (!response.ok) return false
+    const payload = (await response.json()) as { undelivered?: boolean; status?: string }
+    if (payload.undelivered === true) return true
+    return (payload.status || '').toLowerCase().includes('undelivered')
+  } catch {
+    return false
+  }
+}
 
 async function uploadRawToCloudinary(file: File, opts: { folder: string; filename: string }) {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
@@ -114,6 +172,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 })
     }
 
+    if (!emailSchema.safeParse(email).success) {
+      return NextResponse.json({ error: 'Enter a valid email address' }, { status: 400 })
+    }
+
+    const isZohoValid = await validateEmailWithZoho(email)
+    if (!isZohoValid) {
+      return NextResponse.json({ error: 'Enter a valid email address' }, { status: 400 })
+    }
+
+    if (hitRateLimit(`contact-submit-email:${email.toLowerCase()}`, 10, 60_000)) {
+      return NextResponse.json({ error: 'Too many submissions for this email. Please wait a minute and try again.' }, { status: 429 })
+    }
+
     const attachments = body.getAll('attachments').filter((entry) => entry instanceof File) as File[]
 
     if (attachments.length > 3) {
@@ -132,6 +203,17 @@ export async function POST(req: NextRequest) {
     if (requestMeeting) {
       if (!meetingDate || !meetingStartTime || meetingDurationMinutes <= 0) {
         return NextResponse.json({ error: 'Complete meeting date, start time, and duration.' }, { status: 400 })
+      }
+
+      const now = new Date()
+      const todayKey = now.toISOString().slice(0, 10)
+      if (meetingDate === todayKey) {
+        const [hourRaw, minuteRaw] = meetingStartTime.split(':')
+        const requestedMinutes = Number(hourRaw) * 60 + Number(minuteRaw)
+        const minMinutes = now.getHours() * 60 + now.getMinutes() + 120
+        if (requestedMinutes < minMinutes) {
+          return NextResponse.json({ error: 'For same-day booking, time must be at least 2 hours from now.' }, { status: 400 })
+        }
       }
 
       const dayEvents = await sql<{ start_time: string | null; end_time: string | null }>(
@@ -197,32 +279,6 @@ export async function POST(req: NextRequest) {
       </div>
     `
 
-    if (requestMeeting) {
-      await sql(
-        `insert into bookings(name, email, phone, company, service, source, status, requested_date, requested_start_time, requested_duration_minutes, budget, project_details, attachment_urls, is_active, is_approved)
-         values ($1, $2, $3, $4, $5, 'contact-form', 'new', $6::date, $7, $8, $9, $10, $11::text[], true, false)`,
-        [
-          name,
-          email,
-          phone || null,
-          company || null,
-          service || null,
-          meetingDate,
-          meetingStartTime,
-          meetingDurationMinutes,
-          budget || null,
-          message,
-          uploadedAttachmentUrls,
-        ]
-      )
-    } else {
-      await sql(
-        `insert into contact_submissions(name, email, phone, company, service, budget, message, attachment_urls, status, request_meeting)
-         values ($1, $2, $3, $4, $5, $6, $7, $8::text[], 'new', false)`,
-        [name, email, phone || null, company || null, service || null, budget || null, message, uploadedAttachmentUrls]
-      )
-    }
-
     const logoPath = path.join(process.cwd(), 'public', 'ProgreX Logo Black.png')
 
     const acknowledgementHtml = `
@@ -250,14 +306,6 @@ export async function POST(req: NextRequest) {
       </div>
     `
 
-    await transporter.sendMail({
-      from: `"ProgreX Team" <${smtpUser}>`,
-      to: 'progrex.tech@gmail.com, shekaigarcia@gmail.com',
-      replyTo: email,
-      subject: `[PROGREX] New Inquiry from ${name}${service ? ` — ${service}` : ''}`,
-      html,
-    })
-
     try {
       await transporter.sendMail({
         from: `"ProgreX Team" <${smtpUser}>`,
@@ -273,7 +321,55 @@ export async function POST(req: NextRequest) {
         ],
       })
     } catch {
-      return NextResponse.json({ error: 'Enter a valid email' }, { status: 400 })
+      return NextResponse.json({ error: 'Enter a valid email address' }, { status: 400 })
+    }
+
+    const verifyStart = Date.now()
+    for (let i = 0; i < 16; i += 1) {
+      const undelivered = await checkZohoUndelivered(email)
+      if (undelivered) {
+        return NextResponse.json({ error: 'Enter a valid email address' }, { status: 400 })
+      }
+      await sleep(500)
+    }
+
+    await transporter.sendMail({
+      from: `"ProgreX Team" <${smtpUser}>`,
+      to: 'progrex.tech@gmail.com, shekaigarcia@gmail.com',
+      replyTo: email,
+      subject: `[PROGREX] New Inquiry from ${name}${service ? ` — ${service}` : ''}`,
+      html,
+    })
+
+    if (requestMeeting) {
+      await sql(
+        `insert into bookings(name, email, phone, company, service, source, status, requested_date, requested_start_time, requested_duration_minutes, budget, project_details, attachment_urls, is_active, is_approved)
+         values ($1, $2, $3, $4, $5, 'contact-form', 'new', $6::date, $7, $8, $9, $10, $11::text[], true, false)`,
+        [
+          name,
+          email,
+          phone || null,
+          company || null,
+          service || null,
+          meetingDate,
+          meetingStartTime,
+          meetingDurationMinutes,
+          budget || null,
+          message,
+          uploadedAttachmentUrls,
+        ]
+      )
+    } else {
+      await sql(
+        `insert into contact_submissions(name, email, phone, company, service, budget, message, attachment_urls, status, request_meeting)
+         values ($1, $2, $3, $4, $5, $6, $7, $8::text[], 'new', false)`,
+        [name, email, phone || null, company || null, service || null, budget || null, message, uploadedAttachmentUrls]
+      )
+    }
+
+    const elapsed = Date.now() - verifyStart
+    if (elapsed < 10_000) {
+      await sleep(10_000 - elapsed)
     }
 
     return NextResponse.json({ success: true })
@@ -297,7 +393,6 @@ export async function GET(req: NextRequest) {
     }>(
       `select to_char(event_date, 'YYYY-MM-DD') as event_date, start_time, end_time
        from calendar_events
-       where event_date >= current_date - interval '1 day'
        order by event_date asc, start_time asc`
     )
 
