@@ -99,7 +99,10 @@ function formatCreated(value: string | null) {
   if (!value) return '-'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return '-'
-  return date.toLocaleDateString()
+  const month = date.toLocaleDateString('en-US', { month: 'short' })
+  const day = date.getDate()
+  const year = date.getFullYear()
+  return `${month}. ${day}, ${year}`
 }
 
 function downloadCsv(filename: string, rows: string[][]) {
@@ -296,7 +299,7 @@ export default function AdminContactSubmissionsTemplateView({
     formData.set('message', form.message)
     formData.set('status', form.status)
     if (form.id) formData.set('keptAttachmentUrls', keptAttachmentUrls.join('||'))
-    for (const file of attachments.slice(0, 5)) formData.append('attachments', file)
+    for (const file of attachments.slice(0, 3)) formData.append('attachments', file)
     return formData
   }
 
@@ -803,8 +806,8 @@ export default function AdminContactSubmissionsTemplateView({
             <ApexTextarea rows={4} value={addForm.message} onChange={(event) => setAddForm((prev) => ({ ...prev, message: event.target.value }))} />
           </div>
           <div className="md:col-span-2">
-            <label className="mb-1 block text-xs font-medium apx-muted">Attachments (optional, up to 5)</label>
-            <ApexFileDropzone maxFiles={5} maxSizeMb={10} files={addAttachments} onFilesChange={setAddAttachments} />
+            <label className="mb-1 block text-xs font-medium apx-muted">Attachments (optional, up to 3)</label>
+            <ApexFileDropzone maxFiles={3} maxSizeMb={10} files={addAttachments} onFilesChange={setAddAttachments} />
           </div>
           <div className="md:col-span-2 flex justify-end gap-2 pt-2">
             <ApexButton type="button" variant="outline" onClick={() => setAddOpen(false)}>Cancel</ApexButton>
@@ -876,24 +879,28 @@ export default function AdminContactSubmissionsTemplateView({
           </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Existing Attachments</label>
-            <div className="space-y-1">
-              {(selectedSubmission?.attachmentUrls || []).map((url) => {
-                const keep = editKeptAttachmentUrls.includes(url)
+            <div className="space-y-2">
+              {(editKeptAttachmentUrls || []).map((url) => {
                 return (
-                  <div key={url} className="flex items-center justify-between rounded-lg border px-2 py-1" style={{ borderColor: 'var(--apx-border)' }}>
-                    <button type="button" className="truncate text-left text-xs apx-text hover:underline" onClick={() => openFileUrl(url)}>{url.split('/').pop() || 'file'}</button>
-                    <ApexButton type="button" variant={keep ? 'outline' : 'danger'} className="px-2 py-1 text-xs" onClick={() => {
-                      setEditKeptAttachmentUrls((prev) => (prev.includes(url) ? prev.filter((item) => item !== url) : [...prev, url]))
-                    }}>{keep ? 'Keep' : 'Removed'}</ApexButton>
+                  <div key={url} className="flex items-center justify-between rounded-lg border px-3 py-2 gap-6" style={{ borderColor: 'var(--apx-border)' }}>
+                    <span className="truncate text-xs apx-text">{url.split('/').pop() || 'file'}</span>
+                    <ApexButton
+                      type="button"
+                      variant="danger"
+                      onClick={() => setEditKeptAttachmentUrls((prev) => prev.filter((item) => item !== url))}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete
+                    </ApexButton>
                   </div>
                 )
               })}
             </div>
           </div>
           <div className="md:col-span-2">
-            <label className="mb-1 block text-xs font-medium apx-muted">Add Attachments (up to 5 total)</label>
+            <label className="mb-1 block text-xs font-medium apx-muted">Add Attachments (up to 3 total)</label>
             <ApexFileDropzone
-              maxFiles={Math.max(0, 5 - editKeptAttachmentUrls.length)}
+              maxFiles={Math.max(0, 3 - editKeptAttachmentUrls.length)}
               maxSizeMb={10}
               files={editAttachments}
               onFilesChange={setEditAttachments}
