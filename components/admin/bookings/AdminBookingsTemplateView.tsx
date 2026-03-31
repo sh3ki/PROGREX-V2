@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowDown, ArrowUp, ArrowUpDown, Archive, Check, ChevronDown, Download, Edit2, Mail, Plus, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, Archive, CalendarPlus, Check, ChevronDown, Download, Edit2, Mail, Plus, Trash2 } from 'lucide-react'
 import { ApexButton, ApexDateInput, ApexInput, ApexTextarea, ApexTimeInput } from '@/components/admin/apex/AdminPrimitives'
 import {
   ApexFileDropzone,
@@ -95,6 +95,17 @@ function formatTimeLabel(value: string | null) {
   return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
+function computeEndTime(startTime: string | null, durationMinutes: number | null) {
+  if (!startTime || !durationMinutes) return ''
+  const [hourRaw, minuteRaw] = startTime.split(':')
+  const hour = Number(hourRaw)
+  const minute = Number(minuteRaw)
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return ''
+  const date = new Date()
+  date.setHours(hour, minute + durationMinutes, 0, 0)
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
 function defaultForm(): BookingFormState {
   return {
     name: '',
@@ -164,8 +175,8 @@ export default function AdminBookingsTemplateView({
 }) {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('all')
-  const [sortKey, setSortKey] = useState<SortKey>('requester')
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const [sortKey, setSortKey] = useState<SortKey>('created')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -299,8 +310,22 @@ export default function AdminBookingsTemplateView({
     formData.set('budget', form.budget)
     formData.set('projectDetails', form.projectDetails)
     if (form.id) formData.set('keptAttachmentUrls', keptAttachmentUrls.join('||'))
-    for (const file of attachments.slice(0, 5)) formData.append('attachments', file)
+    for (const file of attachments.slice(0, 3)) formData.append('attachments', file)
     return formData
+  }
+
+  function goToCalendarPrefill(booking: BookingRow) {
+    const title = `${booking.name}${booking.service ? ` - ${booking.service}` : ''}`
+    const endTime = computeEndTime(booking.requestedStartTime, booking.requestedDurationMinutes)
+    const query = new URLSearchParams({
+      openAdd: '1',
+      title,
+      eventDate: booking.requestedDate || '',
+      startTime: booking.requestedStartTime || '',
+      endTime,
+      description: booking.projectDetails || '',
+    })
+    window.location.href = `/admin/calendar?${query.toString()}`
   }
 
   function openFileUrl(url: string) {
@@ -665,6 +690,14 @@ export default function AdminBookingsTemplateView({
                       <button
                         type="button"
                         className="apx-icon-action"
+                        onClick={() => goToCalendarPrefill(booking)}
+                        aria-label={`Add ${booking.name} to calendar`}
+                      >
+                        <CalendarPlus className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        className="apx-icon-action"
                         onClick={() => {
                           setSelectedBooking(booking)
                           setEmailSubject('Your PROGREX booking update')
@@ -882,8 +915,8 @@ export default function AdminBookingsTemplateView({
             <ApexTextarea rows={4} value={addForm.projectDetails} onChange={(event) => setAddForm((prev) => ({ ...prev, projectDetails: event.target.value }))} />
           </div>
           <div className="md:col-span-2">
-            <label className="mb-1 block text-xs font-medium apx-muted">Attachments (optional, up to 5)</label>
-            <ApexFileDropzone maxFiles={5} maxSizeMb={10} files={addAttachments} onFilesChange={setAddAttachments} />
+            <label className="mb-1 block text-xs font-medium apx-muted">Attachments (optional, up to 3)</label>
+            <ApexFileDropzone maxFiles={3} maxSizeMb={10} files={addAttachments} onFilesChange={setAddAttachments} />
             {addAttachments.length ? <p className="mt-1 text-xs apx-muted">{addAttachments.length} file(s) selected</p> : null}
           </div>
           <div className="md:col-span-2 flex justify-end gap-2 pt-2">
@@ -972,24 +1005,28 @@ export default function AdminBookingsTemplateView({
           </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium apx-muted">Existing Attachments</label>
-            <div className="space-y-1">
-              {(selectedBooking?.attachmentUrls || []).map((url) => {
-                const keep = editKeptAttachmentUrls.includes(url)
+            <div className="space-y-2">
+              {(editKeptAttachmentUrls || []).map((url) => {
                 return (
-                  <div key={url} className="flex items-center justify-between rounded-lg border px-2 py-1" style={{ borderColor: 'var(--apx-border)' }}>
-                    <button type="button" className="truncate text-left text-xs apx-text hover:underline" onClick={() => openFileUrl(url)}>{url.split('/').pop() || 'file'}</button>
-                    <ApexButton type="button" variant={keep ? 'outline' : 'danger'} className="px-2 py-1 text-xs" onClick={() => {
-                      setEditKeptAttachmentUrls((prev) => (prev.includes(url) ? prev.filter((item) => item !== url) : [...prev, url]))
-                    }}>{keep ? 'Keep' : 'Removed'}</ApexButton>
+                  <div key={url} className="flex items-center justify-between rounded-lg border px-3 py-2 gap-6" style={{ borderColor: 'var(--apx-border)' }}>
+                    <span className="truncate text-xs apx-text">{url.split('/').pop() || 'file'}</span>
+                    <ApexButton
+                      type="button"
+                      variant="danger"
+                      onClick={() => setEditKeptAttachmentUrls((prev) => prev.filter((item) => item !== url))}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete
+                    </ApexButton>
                   </div>
                 )
               })}
             </div>
           </div>
           <div className="md:col-span-2">
-            <label className="mb-1 block text-xs font-medium apx-muted">Add Attachments (up to 5 total)</label>
+            <label className="mb-1 block text-xs font-medium apx-muted">Add Attachments (up to 3 total)</label>
             <ApexFileDropzone
-              maxFiles={Math.max(0, 5 - editKeptAttachmentUrls.length)}
+              maxFiles={Math.max(0, 3 - editKeptAttachmentUrls.length)}
               maxSizeMb={10}
               files={editAttachments}
               onFilesChange={setEditAttachments}
