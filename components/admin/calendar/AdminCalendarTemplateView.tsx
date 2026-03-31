@@ -1,6 +1,8 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { CalendarClock, ChevronLeft, ChevronRight, Edit2, Plus, Trash2 } from 'lucide-react'
 import { ApexButton, ApexInput, ApexTextarea } from '@/components/admin/apex/AdminPrimitives'
 import { ApexBlockingSpinner, ApexBreadcrumbs, ApexConfirmationModal, ApexDropdown, ApexModal } from '@/components/admin/apex/ApexDataUi'
@@ -131,6 +133,8 @@ export default function AdminCalendarTemplateView({
   updateEventAction: (formData: FormData) => Promise<void>
   deleteEventAction: (formData: FormData) => Promise<void>
 }) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [monthCursor, setMonthCursor] = useState(() => startOfMonth(new Date()))
   const [selectedDate, setSelectedDate] = useState(() => toDateKey(new Date()))
   const [addOpen, setAddOpen] = useState(false)
@@ -142,6 +146,26 @@ export default function AdminCalendarTemplateView({
   const [activeEvent, setActiveEvent] = useState<CalendarEvent | null>(null)
   const [addForm, setAddForm] = useState<EventFormState>(defaultForm(''))
   const [editForm, setEditForm] = useState<EventFormState>(defaultForm(''))
+
+  useEffect(() => {
+    if (searchParams.get('openAdd') !== '1') return
+
+    const eventDate = searchParams.get('eventDate') || selectedDate
+    const nextForm = {
+      ...defaultForm(eventDate),
+      title: searchParams.get('title') || '',
+      eventDate,
+      startTime: searchParams.get('startTime') || '',
+      endTime: searchParams.get('endTime') || '',
+      description: searchParams.get('description') || '',
+    }
+
+    setAddForm(nextForm)
+    setSelectedDate(eventDate)
+    if (eventDate) setMonthCursor(startOfMonth(new Date(`${eventDate}T00:00:00`)))
+    setAddOpen(true)
+    router.replace('/admin/calendar')
+  }, [router, searchParams, selectedDate])
 
   const monthStart = startOfMonth(monthCursor)
   const monthEnd = endOfMonth(monthCursor)

@@ -81,7 +81,7 @@ async function createBooking(formData: FormData) {
   const uploadedUrls: string[] = []
   const files = formData.getAll('attachments').filter((entry) => entry instanceof File) as File[]
   
-  for (const file of files.slice(0, 5)) {
+  for (const file of files.slice(0, 3)) {
     if (file.size > 10 * 1024 * 1024) continue
     const baseName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60) || 'booking-file'
     const filename = `${baseName}-${randomBytes(3).toString('hex')}`
@@ -128,11 +128,13 @@ async function updateBooking(formData: FormData) {
     'select attachment_urls from bookings where id = $1::uuid',
     [id]
   )
-  let uploadedUrls = existing[0]?.attachment_urls || []
+  const existingUrls = existing[0]?.attachment_urls || []
+  const keptUrls = String(formData.get('keptAttachmentUrls') ?? '').split('||').filter(Boolean)
+  let uploadedUrls = existingUrls.filter((url) => keptUrls.includes(url))
 
   // Handle new file uploads
   const files = formData.getAll('attachments').filter((entry) => entry instanceof File) as File[]
-  for (const file of files.slice(0, 5 - uploadedUrls.length)) {
+  for (const file of files.slice(0, Math.max(0, 3 - uploadedUrls.length))) {
     if (file.size > 10 * 1024 * 1024) continue
     const baseName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60) || 'booking-file'
     const filename = `${baseName}-${randomBytes(3).toString('hex')}`
@@ -144,9 +146,7 @@ async function updateBooking(formData: FormData) {
     }
   }
 
-  // Handle removed files
-  const keptUrls = String(formData.get('keptAttachmentUrls') ?? '').split('||').filter(Boolean)
-  uploadedUrls = uploadedUrls.filter(url => keptUrls.includes(url))
+  if (uploadedUrls.length > 3) uploadedUrls = uploadedUrls.slice(0, 3)
 
   await sql(
     `update bookings

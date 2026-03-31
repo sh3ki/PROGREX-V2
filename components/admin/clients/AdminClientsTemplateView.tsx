@@ -84,6 +84,13 @@ function downloadCsv(filename: string, rows: string[][]) {
   URL.revokeObjectURL(url)
 }
 
+function normalizeExternalUrl(url: string) {
+  const trimmed = url.trim()
+  if (!trimmed) return ''
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  return `https://${trimmed}`
+}
+
 export default function AdminClientsTemplateView({
   clients,
   createClientAction,
@@ -520,7 +527,22 @@ export default function AdminClientsTemplateView({
                 ) : null}
                 {columns.company ? <td className="px-4 py-3 apx-text">{client.role || '-'}</td> : null}
                 {columns.email ? <td className="px-4 py-3 apx-text">{client.email || '-'}</td> : null}
-                {columns.fbLink ? <td className="px-4 py-3 apx-text break-all">{client.fbLink || '-'}</td> : null}
+                {columns.fbLink ? (
+                  <td className="px-4 py-3 apx-text break-all">
+                    {client.fbLink ? (
+                      <a
+                        href={normalizeExternalUrl(client.fbLink)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline-offset-2 hover:underline"
+                        style={{ color: 'var(--apx-primary)' }}
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        {client.fbLink}
+                      </a>
+                    ) : '-'}
+                  </td>
+                ) : null}
                 {columns.phone ? <td className="px-4 py-3 apx-text">{client.phone || '-'}</td> : null}
                 {columns.status ? (
                   <td className="px-4 py-3">
@@ -751,7 +773,19 @@ export default function AdminClientsTemplateView({
               </div>
               <div>
                 <p className="text-xs font-medium apx-muted">Facebook</p>
-                <p className="apx-text">{selectedClient.fbLink || '-'}</p>
+                {selectedClient.fbLink ? (
+                  <a
+                    href={normalizeExternalUrl(selectedClient.fbLink)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="apx-text underline-offset-2 hover:underline"
+                    style={{ color: 'var(--apx-primary)' }}
+                  >
+                    {selectedClient.fbLink}
+                  </a>
+                ) : (
+                  <p className="apx-text">-</p>
+                )}
               </div>
               <div>
                 <p className="text-xs font-medium apx-muted">Phone</p>

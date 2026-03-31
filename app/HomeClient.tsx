@@ -25,7 +25,6 @@ type HomeClientProps = {
 
 export default function HomeClient({ servicesData, systemsData, testimonialsData, faqsData, featuredProjectsData }: HomeClientProps) {
   const { t, translations } = useTranslation()
-  const [contactModalOpen, setContactModalOpen] = useState(false)
   const [activeTestimonial, setActiveTestimonial] = useState(0)
   const [direction, setDirection] = useState(1)
   const [openFaq, setOpenFaq] = useState<string | null>(null)
@@ -564,29 +563,11 @@ export default function HomeClient({ servicesData, systemsData, testimonialsData
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.15 }}
-            className="rounded-2xl p-6 text-center"
+            className="rounded-2xl p-4 sm:p-6"
             style={{ background: 'rgba(6,6,22,0.97)', border: '1px solid rgba(103,232,249,0.12)', boxShadow: '0 8px 40px rgba(0,0,0,0.4)' }}
           >
-            <p className="mb-3 text-sm text-slate-400">Use the same contact and booking form from the Contact page.</p>
-            <button type="button" className="btn-primary px-7! py-3!" onClick={() => setContactModalOpen(true)}>
-              {t('home.ctaPrimaryBtn')}
-            </button>
+            <ContactFormCard />
           </motion.div>
-
-          {contactModalOpen ? (
-            <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/70 p-4">
-              <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-nebula-700/30 bg-[#050511] p-4 sm:p-6">
-                <button
-                  type="button"
-                  onClick={() => setContactModalOpen(false)}
-                  className="absolute top-3 right-3 rounded-lg border border-nebula-700/40 px-2 py-1 text-xs text-slate-300 hover:bg-nebula-700/20"
-                >
-                  Close
-                </button>
-                <ContactFormCard onSuccess={() => setContactModalOpen(false)} />
-              </div>
-            </div>
-          ) : null}
         </div>
       </section>
     </>
