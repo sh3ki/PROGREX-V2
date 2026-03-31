@@ -325,7 +325,7 @@ export async function POST(req: NextRequest) {
     }
 
     const verifyStart = Date.now()
-    for (let i = 0; i < 16; i += 1) {
+    for (let i = 0; i < 26; i += 1) {
       const undelivered = await checkZohoUndelivered(email)
       if (undelivered) {
         return NextResponse.json({ error: 'Enter a valid email address' }, { status: 400 })
@@ -368,8 +368,8 @@ export async function POST(req: NextRequest) {
     }
 
     const elapsed = Date.now() - verifyStart
-    if (elapsed < 10_000) {
-      await sleep(10_000 - elapsed)
+    if (elapsed < 13_000) {
+      await sleep(13_000 - elapsed)
     }
 
     return NextResponse.json({ success: true })
