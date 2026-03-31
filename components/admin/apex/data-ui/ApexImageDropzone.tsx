@@ -7,10 +7,12 @@ export function ApexImageDropzone({
   previewUrl,
   onFileSelect,
   label = 'Profile Image',
+  previewVariant = 'circle',
 }: {
   previewUrl?: string
   onFileSelect: (file: File) => void
   label?: string
+  previewVariant?: 'circle' | 'portrait'
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null)
   const [dragOver, setDragOver] = useState(false)
@@ -27,7 +29,10 @@ export function ApexImageDropzone({
       <div
         role="button"
         tabIndex={0}
-        className="group flex cursor-pointer items-center gap-3 rounded-xl border p-3 outline-none"
+        className={[
+          'group cursor-pointer rounded-xl border p-3 outline-none',
+          previewVariant === 'portrait' ? 'flex flex-col items-start gap-3' : 'flex items-center gap-3',
+        ].join(' ')}
         style={{
           borderColor: dragOver ? 'var(--apx-primary)' : 'var(--apx-border)',
           backgroundColor: 'var(--apx-surface-alt)',
@@ -53,7 +58,13 @@ export function ApexImageDropzone({
           acceptFile(event.dataTransfer.files?.[0])
         }}
       >
-        <div className="h-18 w-18 overflow-hidden rounded-full border" style={{ borderColor: 'var(--apx-border)' }}>
+        <div
+          className={[
+            'overflow-hidden border',
+            previewVariant === 'portrait' ? 'h-56 w-full rounded-xl' : 'h-18 w-18 rounded-full',
+          ].join(' ')}
+          style={{ borderColor: 'var(--apx-border)' }}
+        >
           {previewUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={previewUrl} alt="Profile preview" className="h-full w-full object-cover" />
@@ -65,7 +76,7 @@ export function ApexImageDropzone({
           <p className="text-sm font-medium apx-text">Drag and drop image</p>
           <p className="text-xs apx-muted">or click to select</p>
         </div>
-        <div className="ms-auto rounded-lg border p-2" style={{ borderColor: 'var(--apx-border)' }}>
+        <div className={previewVariant === 'portrait' ? 'rounded-lg border p-2' : 'ms-auto rounded-lg border p-2'} style={{ borderColor: 'var(--apx-border)' }}>
           <Upload className="h-4 w-4 apx-muted" />
         </div>
       </div>
