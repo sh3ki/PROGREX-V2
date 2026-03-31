@@ -54,6 +54,7 @@ async function ensureOngoingProjectsTable() {
       other_files_urls text[] default array[]::text[],
       payment_term text,
       is_active boolean not null default true,
+      progress_color text not null default '#16a34a',
       total_price numeric(12,2),
       balance numeric(12,2),
       created_at timestamptz not null default now(),
@@ -63,6 +64,7 @@ async function ensureOngoingProjectsTable() {
 
   await sql('alter table ongoing_projects add column if not exists is_active boolean not null default true')
   await sql('alter table ongoing_projects add column if not exists other_files_urls text[] default array[]::text[]')
+  await sql("alter table ongoing_projects add column if not exists progress_color text not null default '#16a34a'")
   await sql("alter table ongoing_projects add column if not exists status text not null default 'active'")
   await sql('alter table ongoing_projects add column if not exists progress numeric(5,2) not null default 0')
   await sql(`
@@ -412,13 +414,15 @@ async function createProjectProgress(formData: FormData) {
   const projectId = String(formData.get('projectId') ?? '').trim()
   const progress = Math.max(0, Math.min(100, Number(formData.get('progress') ?? 0) || 0))
   const notes = String(formData.get('notes') ?? '').trim()
+  const colorRaw = String(formData.get('color') ?? '').trim()
+  const color = /^#[0-9a-fA-F]{6}$/.test(colorRaw) ? colorRaw : '#16a34a'
   if (!projectId) return
 
   await sql(
     'insert into ongoing_project_progress(project_id, progress, notes) values ($1::uuid, $2, $3)',
     [projectId, progress, notes || null]
   )
-  await sql('update ongoing_projects set progress = $2, updated_at = now() where id = $1::uuid', [projectId, progress])
+  await sql('update ongoing_projects set progress = $2, progress_color = $3, updated_at = now() where id = $1::uuid', [projectId, progress, color])
   revalidatePath('/admin/ongoing-projects')
 }
 
@@ -430,6 +434,8 @@ async function updateProjectProgress(formData: FormData) {
   const projectId = String(formData.get('projectId') ?? '').trim()
   const progress = Math.max(0, Math.min(100, Number(formData.get('progress') ?? 0) || 0))
   const notes = String(formData.get('notes') ?? '').trim()
+  const colorRaw = String(formData.get('color') ?? '').trim()
+  const color = /^#[0-9a-fA-F]{6}$/.test(colorRaw) ? colorRaw : '#16a34a'
   if (!id || !projectId) return
 
   await sql(
@@ -440,7 +446,7 @@ async function updateProjectProgress(formData: FormData) {
       where id = $1::uuid`,
     [id, progress, notes || null]
   )
-  await sql('update ongoing_projects set progress = $2, updated_at = now() where id = $1::uuid', [projectId, progress])
+  await sql('update ongoing_projects set progress = $2, progress_color = $3, updated_at = now() where id = $1::uuid', [projectId, progress, color])
   revalidatePath('/admin/ongoing-projects')
 }
 
@@ -520,6 +526,7 @@ export default async function AdminOngoingProjectsPage() {
       payment_term: string | null
       is_active: boolean
       status: string | null
+      progress_color: string | null
       progress: string | null
       total_price: string | null
       balance: string | null
@@ -540,6 +547,7 @@ export default async function AdminOngoingProjectsPage() {
               op.payment_term,
               op.is_active,
               op.status,
+              op.progress_color,
               op.progress::text,
               op.total_price::text,
               op.balance::text
@@ -588,6 +596,7 @@ export default async function AdminOngoingProjectsPage() {
         paymentTerm: project.payment_term,
         isActive: project.is_active,
         status: normalizeProjectStatus(project.status || (project.is_active ? 'active' : 'finished')),
+        progressColor: project.progress_color || '#16a34a',
         progress: project.progress,
         totalPrice: project.total_price,
         balance: project.balance,
