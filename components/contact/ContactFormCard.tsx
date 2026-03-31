@@ -79,6 +79,23 @@ function toMinutes(time: string) {
   return Number(hourRaw) * 60 + Number(minuteRaw)
 }
 
+function yesterdayDateKey() {
+  const date = new Date()
+  date.setDate(date.getDate() - 1)
+  return toDateKey(date)
+}
+
+function isSameDay(a: string, b: string) {
+  return a === b
+}
+
+function bookedLabel(startTime: string | null, endTime: string | null) {
+  if (!startTime) return ''
+  const from = formatTime12(startTime)
+  const to = endTime ? ` - ${formatTime12(endTime)}` : ''
+  return `Booked ${from}${to}`
+}
+
 export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void }) {
   const { t, translations } = useTranslation()
   const budgets = translations.form.budgetOptions as unknown as string[]
@@ -96,6 +113,7 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
   const [errors, setErrors] = useState<Partial<FormData>>({})
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [loadingPhase, setLoadingPhase] = useState<'verify' | 'sending'>('verify')
   const [serverError, setServerError] = useState('')
   const [attachedFiles, setAttachedFiles] = useState<File[]>([])
   const [fileError, setFileError] = useState('')
@@ -114,6 +132,11 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
   const MAX_FILE_SIZE = 10 * 1024 * 1024
 
   const dayEvents = useMemo(() => availability.filter((event) => event.event_date === selectedDate), [availability, selectedDate])
+  const clickableMinDateKey = useMemo(() => {
+    const date = new Date()
+    date.setHours(0, 0, 0, 0)
+    return toDateKey(date)
+  }, [])
 
   const calendarCells = useMemo(() => {
     const monthStart = startOfMonth(monthCursor)
@@ -138,6 +161,21 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
       .then((data: { events?: AvailabilityEvent[] }) => setAvailability(data.events || []))
       .catch(() => setAvailability([]))
   }, [bookingModalOpen, bookMeeting])
+
+  useEffect(() => {
+    if (!loading) {
+      setLoadingPhase('verify')
+      return
+    }
+
+    const startedAt = Date.now()
+    const timer = setInterval(() => {
+      const elapsed = Date.now() - startedAt
+      setLoadingPhase(elapsed >= 8000 ? 'sending' : 'verify')
+    }, 500)
+
+    return () => clearInterval(timer)
+  }, [loading])
 
   function hasOverlap(date: string, startTime: string, durationMinutes: number) {
     const start = toMinutes(startTime)
@@ -189,7 +227,7 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
     const nextErrors: Partial<FormData> = {}
     if (!form.name.trim()) nextErrors.name = t('form.nameRequired')
     if (!form.email.trim()) nextErrors.email = t('form.emailRequired')
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) nextErrors.email = 'Enter a valid email'
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) nextErrors.email = 'Enter a valid email address'
     if (!form.message.trim()) nextErrors.message = t('form.messageRequired')
     if (!form.service.trim()) nextErrors.service = 'Please select a service.'
     if (form.service === 'Others' && !form.otherService.trim()) nextErrors.otherService = 'Please enter your custom service.'
@@ -201,6 +239,22 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
     if (!selectedDate || !bookingStartTime || !bookingDuration) {
       setServerError('Please complete date, start time, and duration.')
       return
+    }
+
+    if (selectedDate < clickableMinDateKey) {
+      setServerError('Past dates cannot be selected.')
+      return
+    }
+
+    const now = new Date()
+    const todayKey = toDateKey(now)
+    if (isSameDay(selectedDate, todayKey)) {
+      const minMinutes = now.getHours() * 60 + now.getMinutes() + 120
+      const selectedMinutes = toMinutes(bookingStartTime)
+      if (selectedMinutes < minMinutes) {
+        setServerError('For same-day booking, select a time at least 2 hours from now.')
+        return
+      }
     }
 
     if (hasOverlap(selectedDate, bookingStartTime, bookingDuration)) {
@@ -250,7 +304,7 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
       if (!response.ok) {
         const message = String(data.error || t('form.failedToSend'))
         if (message.toLowerCase().includes('valid email')) {
-          setErrors((prev) => ({ ...prev, email: 'Enter a valid email' }))
+          setErrors((prev) => ({ ...prev, email: 'Enter a valid email address' }))
         }
         throw new Error(message)
       }
@@ -267,7 +321,23 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
   }
 
   return (
-    <AnimatePresence mode="wait">
+    <>
+      {loading ? (
+        <div className="fixed inset-0 z-120 flex items-center justify-center bg-black/75 backdrop-blur-[2px]">
+          <div className="inline-flex flex-col items-center gap-2 rounded-xl border border-cyan-300/30 bg-[#050b18] px-5 py-3 text-sm text-cyan-100">
+            <motion.span
+              animate={{ rotate: 360 }}
+              transition={{ duration: 0.9, repeat: Infinity, ease: 'linear' }}
+              className="inline-flex h-5 w-5 items-center justify-center"
+            >
+              <span className="h-4 w-4 rounded-full border border-cyan-100/35 border-t-cyan-100" />
+            </motion.span>
+            <span>{loadingPhase === 'verify' ? 'Please wait while we verify your email.' : 'Sending Message'}</span>
+          </div>
+        </div>
+      ) : null}
+
+      <AnimatePresence mode="wait">
       {submitted ? (
         <motion.div
           key="success"
@@ -439,11 +509,22 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
           {serverError ? <p className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-sm text-red-400">{serverError}</p> : null}
 
           <motion.button type="submit" disabled={loading} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="btn-primary w-full justify-center py-3.5 disabled:cursor-not-allowed disabled:opacity-50">
-            <span>{loading ? t('form.sending') : t('form.send')}</span>
             {loading ? (
-              <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white" />
+              <span className="inline-flex items-center gap-2">
+                <motion.span
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 0.9, repeat: Infinity, ease: 'linear' }}
+                  className="inline-flex h-4 w-4 items-center justify-center"
+                >
+                  <span className="h-3.5 w-3.5 rounded-full border border-cyan-100/35 border-t-cyan-100" />
+                </motion.span>
+                <span>{t('form.sending')}</span>
+              </span>
             ) : (
-              <Send size={16} />
+              <>
+                <span>{t('form.send')}</span>
+                <Send size={16} />
+              </>
             )}
           </motion.button>
 
@@ -485,21 +566,41 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
                         if (!cell.date) return <div key={cell.key} className="h-18 rounded-xl border border-transparent" />
                         const key = toDateKey(cell.date)
                         const isSelected = key === selectedDate
-                        const count = availability.filter((event) => event.event_date === key && event.start_time).length
+                        const dayEventItems = availability.filter((event) => event.event_date === key && event.start_time && event.end_time)
+                        const count = dayEventItems.length
+                        const isDisabled = key <= yesterdayDateKey()
                         return (
                           <button
                             key={cell.key}
                             type="button"
-                            onClick={() => setSelectedDate(key)}
+                            onClick={() => {
+                              if (isDisabled) return
+                              setSelectedDate(key)
+                            }}
+                            disabled={isDisabled}
                             className="flex h-18 flex-col items-start justify-start rounded-xl border p-2 text-left transition"
                             style={{
-                              borderColor: isSelected ? 'var(--apx-primary)' : 'rgba(103,232,249,0.18)',
-                              backgroundColor: isSelected ? 'color-mix(in oklab, var(--apx-primary) 18%, transparent)' : 'rgba(103,232,249,0.03)',
+                              borderColor: isDisabled ? 'rgba(100,116,139,0.14)' : isSelected ? 'var(--apx-primary)' : 'rgba(103,232,249,0.18)',
+                              backgroundColor: isDisabled ? 'rgba(100,116,139,0.05)' : isSelected ? 'color-mix(in oklab, var(--apx-primary) 18%, transparent)' : 'rgba(103,232,249,0.03)',
+                              opacity: isDisabled ? 0.45 : 1,
+                              cursor: isDisabled ? 'not-allowed' : 'pointer',
                             }}
                           >
                             <div className="mb-1 flex w-full items-start justify-between">
                               <span className="text-sm font-semibold text-white">{cell.date.getDate()}</span>
                               {count > 0 ? <span className="text-[10px] text-slate-400">{count}</span> : null}
+                            </div>
+                            <div className="w-full space-y-0.5 overflow-hidden">
+                              {dayEventItems.slice(0, 2).map((event, index) => (
+                                <p
+                                  key={`${event.event_date}-${event.start_time}-${index}-cell`}
+                                  title={bookedLabel(event.start_time, event.end_time)}
+                                  className="flex items-center gap-1 truncate text-[9px] text-cyan-200/85"
+                                >
+                                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-300" />
+                                  <span className="truncate">{bookedLabel(event.start_time, event.end_time)}</span>
+                                </p>
+                              ))}
                             </div>
                           </button>
                         )
@@ -543,10 +644,10 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
                           <p className="text-xs text-emerald-300">No occupied slots for this date.</p>
                         ) : (
                           dayEvents
-                            .filter((event) => event.start_time)
+                            .filter((event) => event.start_time && event.end_time)
                             .map((event, index) => (
                               <p key={`${event.event_date}-${event.start_time}-${index}`} className="text-xs text-slate-300">
-                                Booked {formatTime12(event.start_time || '')}{event.end_time ? ` - ${formatTime12(event.end_time)}` : ''}
+                                {bookedLabel(event.start_time, event.end_time)}
                               </p>
                             ))
                         )}
@@ -568,7 +669,8 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
           ) : null}
         </motion.form>
       )}
-    </AnimatePresence>
+      </AnimatePresence>
+    </>
   )
 }
 
