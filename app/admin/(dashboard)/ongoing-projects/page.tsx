@@ -63,6 +63,32 @@ async function ensureOngoingProjectsTable() {
 
   await sql('alter table ongoing_projects add column if not exists is_active boolean not null default true')
   await sql('alter table ongoing_projects add column if not exists other_files_urls text[] default array[]::text[]')
+  await sql("alter table ongoing_projects add column if not exists status text not null default 'active'")
+  await sql('alter table ongoing_projects add column if not exists progress numeric(5,2) not null default 0')
+  await sql(`
+    update ongoing_projects
+       set status = case
+         when is_active then coalesce(nullif(status, ''), 'active')
+         else 'finished'
+       end
+     where status is null or trim(status) = ''
+  `)
+  await sql(`
+    create table if not exists ongoing_project_progress (
+      id uuid primary key default gen_random_uuid(),
+      project_id uuid not null references ongoing_projects(id) on delete cascade,
+      progress numeric(5,2) not null,
+      notes text,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    )
+  `)
+}
+
+function normalizeProjectStatus(value: string) {
+  const normalized = value.trim().toLowerCase()
+  if (normalized === 'finished' || normalized === 'maintenance') return normalized
+  return 'active'
 }
 
 function parseCurrency(value: FormDataEntryValue | null) {
@@ -84,10 +110,10 @@ async function createOngoingProject(formData: FormData) {
   const category = String(formData.get('category') ?? '').trim()
   const assignedTeamIds = formData.getAll('assignedTeamIds').map((value) => String(value).trim()).filter(Boolean)
   const paymentTerm = String(formData.get('paymentTerm') ?? '').trim()
-  const status = String(formData.get('status') ?? 'active').trim().toLowerCase()
-  const isActive = status !== 'inactive'
+  const status = normalizeProjectStatus(String(formData.get('status') ?? 'active'))
+  const isActive = status !== 'finished'
   const totalPrice = parseCurrency(formData.get('totalPrice'))
-  const balance = parseCurrency(formData.get('balance'))
+  const balance = totalPrice
 
   if (!projectName) return
 
@@ -129,9 +155,11 @@ async function createOngoingProject(formData: FormData) {
       other_files_urls,
       payment_term,
       is_active,
+      status,
+      progress,
       total_price,
       balance
-    ) values ($1, $2, $3::date, $4::date, nullif($5, '')::uuid, $6, $7::uuid[], $8, $9, $10::text[], $11, $12, $13, $14)`,
+    ) values ($1, $2, $3::date, $4::date, nullif($5, '')::uuid, $6, $7::uuid[], $8, $9, $10::text[], $11, $12, $13, 0, $14, $15)`,
     [
       projectName,
       projectDescription || null,
@@ -145,6 +173,7 @@ async function createOngoingProject(formData: FormData) {
       otherFileUrls,
       paymentTerm || null,
       isActive,
+      status,
       totalPrice,
       balance,
     ]
@@ -169,10 +198,23 @@ async function updateOngoingProject(formData: FormData) {
   const category = String(formData.get('category') ?? '').trim()
   const assignedTeamIds = formData.getAll('assignedTeamIds').map((value) => String(value).trim()).filter(Boolean)
   const paymentTerm = String(formData.get('paymentTerm') ?? '').trim()
-  const status = String(formData.get('status') ?? 'active').trim().toLowerCase()
-  const isActive = status !== 'inactive'
+  const status = normalizeProjectStatus(String(formData.get('status') ?? 'active'))
+  const isActive = status !== 'finished'
   const totalPrice = parseCurrency(formData.get('totalPrice'))
-  const balance = parseCurrency(formData.get('balance'))
+  const existingProgressRow = await sql<{ progress: string | null }>('select progress::text from ongoing_projects where id = $1::uuid limit 1', [id])
+  const progressValue = Number(existingProgressRow[0]?.progress ?? '0') || 0
+  const paymentsTable = await sql<{ exists: string | null }>("select to_regclass('public.payments')::text as exists")
+  let paidAmount = 0
+  if (paymentsTable[0]?.exists) {
+    const paidRows = await sql<{ total_paid: string | null }>(
+      `select coalesce(sum(amount), 0)::text as total_paid
+         from payments
+        where project_name = (select project_name from ongoing_projects where id = $1::uuid)`,
+      [id]
+    )
+    paidAmount = Number(paidRows[0]?.total_paid ?? '0') || 0
+  }
+  const balance = Math.max(totalPrice - paidAmount, 0)
   const existingAgreementFileUrl = String(formData.get('existingAgreementFileUrl') ?? '').trim()
   const existingScopeFileUrl = String(formData.get('existingScopeFileUrl') ?? '').trim()
   const keptOtherFileUrls = String(formData.get('keptOtherFileUrls') ?? '')
@@ -222,8 +264,10 @@ async function updateOngoingProject(formData: FormData) {
          other_files_urls = $11::text[],
          payment_term = nullif($12, ''),
          is_active = $13,
-         total_price = $14,
-         balance = $15,
+         status = $14,
+         progress = $15,
+         total_price = $16,
+         balance = $17,
          updated_at = now()
      where id = $1::uuid`,
     [
@@ -240,6 +284,8 @@ async function updateOngoingProject(formData: FormData) {
       otherFileUrls,
       paymentTerm,
       isActive,
+      status,
+      progressValue,
       totalPrice,
       balance,
     ]
@@ -262,7 +308,14 @@ async function toggleOngoingProjectActive(formData: FormData) {
   await requirePermission('projects', 'write')
   const id = String(formData.get('id') ?? '').trim()
   if (!id) return
-  await sql('update ongoing_projects set is_active = not is_active, updated_at = now() where id = $1::uuid', [id])
+  await sql(
+    `update ongoing_projects
+        set is_active = not is_active,
+            status = case when is_active then 'finished' else 'active' end,
+            updated_at = now()
+      where id = $1::uuid`,
+    [id]
+  )
   revalidatePath('/admin/ongoing-projects')
 }
 
@@ -333,7 +386,100 @@ async function bulkSetInactiveOngoingProjects(formData: FormData) {
 
   if (ids.length === 0) return
 
-  await sql('update ongoing_projects set is_active = false, updated_at = now() where id = any($1::uuid[])', [ids])
+  await sql("update ongoing_projects set is_active = false, status = 'finished', updated_at = now() where id = any($1::uuid[])", [ids])
+  revalidatePath('/admin/ongoing-projects')
+}
+
+async function bulkSetMaintenanceOngoingProjects(formData: FormData) {
+  'use server'
+  await requirePermission('projects', 'write')
+
+  const ids = String(formData.get('ids') ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+
+  if (ids.length === 0) return
+
+  await sql("update ongoing_projects set is_active = true, status = 'maintenance', updated_at = now() where id = any($1::uuid[])", [ids])
+  revalidatePath('/admin/ongoing-projects')
+}
+
+async function createProjectProgress(formData: FormData) {
+  'use server'
+  await requirePermission('projects', 'write')
+
+  const projectId = String(formData.get('projectId') ?? '').trim()
+  const progress = Math.max(0, Math.min(100, Number(formData.get('progress') ?? 0) || 0))
+  const notes = String(formData.get('notes') ?? '').trim()
+  if (!projectId) return
+
+  await sql(
+    'insert into ongoing_project_progress(project_id, progress, notes) values ($1::uuid, $2, $3)',
+    [projectId, progress, notes || null]
+  )
+  await sql('update ongoing_projects set progress = $2, updated_at = now() where id = $1::uuid', [projectId, progress])
+  revalidatePath('/admin/ongoing-projects')
+}
+
+async function updateProjectProgress(formData: FormData) {
+  'use server'
+  await requirePermission('projects', 'write')
+
+  const id = String(formData.get('id') ?? '').trim()
+  const projectId = String(formData.get('projectId') ?? '').trim()
+  const progress = Math.max(0, Math.min(100, Number(formData.get('progress') ?? 0) || 0))
+  const notes = String(formData.get('notes') ?? '').trim()
+  if (!id || !projectId) return
+
+  await sql(
+    `update ongoing_project_progress
+        set progress = $2,
+            notes = $3,
+            updated_at = now()
+      where id = $1::uuid`,
+    [id, progress, notes || null]
+  )
+  await sql('update ongoing_projects set progress = $2, updated_at = now() where id = $1::uuid', [projectId, progress])
+  revalidatePath('/admin/ongoing-projects')
+}
+
+async function deleteProjectProgress(formData: FormData) {
+  'use server'
+  await requirePermission('projects', 'delete')
+
+  const id = String(formData.get('id') ?? '').trim()
+  const projectId = String(formData.get('projectId') ?? '').trim()
+  if (!id || !projectId) return
+
+  await sql('delete from ongoing_project_progress where id = $1::uuid', [id])
+  const latest = await sql<{ progress: string | null }>(
+    'select progress::text from ongoing_project_progress where project_id = $1::uuid order by created_at desc limit 1',
+    [projectId]
+  )
+  const latestProgress = Number(latest[0]?.progress ?? '0') || 0
+  await sql('update ongoing_projects set progress = $2, updated_at = now() where id = $1::uuid', [projectId, latestProgress])
+  revalidatePath('/admin/ongoing-projects')
+}
+
+async function bulkDeleteProjectProgress(formData: FormData) {
+  'use server'
+  await requirePermission('projects', 'delete')
+
+  const projectId = String(formData.get('projectId') ?? '').trim()
+  const ids = String(formData.get('ids') ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+
+  if (!projectId || ids.length === 0) return
+  await sql('delete from ongoing_project_progress where id = any($1::uuid[])', [ids])
+  const latest = await sql<{ progress: string | null }>(
+    'select progress::text from ongoing_project_progress where project_id = $1::uuid order by created_at desc limit 1',
+    [projectId]
+  )
+  const latestProgress = Number(latest[0]?.progress ?? '0') || 0
+  await sql('update ongoing_projects set progress = $2, updated_at = now() where id = $1::uuid', [projectId, latestProgress])
   revalidatePath('/admin/ongoing-projects')
 }
 
@@ -356,7 +502,7 @@ export default async function AdminOngoingProjectsPage() {
   await requirePermission('projects', 'read')
   await ensureOngoingProjectsTable()
 
-  const [projects, clients, teamMembers, categories] = await Promise.all([
+  const [projects, clients, teamMembers, categories, progressRows] = await Promise.all([
     sql<{
       id: string
       project_name: string
@@ -373,6 +519,8 @@ export default async function AdminOngoingProjectsPage() {
       other_files_urls: string[]
       payment_term: string | null
       is_active: boolean
+      status: string | null
+      progress: string | null
       total_price: string | null
       balance: string | null
     }>(
@@ -391,6 +539,8 @@ export default async function AdminOngoingProjectsPage() {
                     op.other_files_urls,
               op.payment_term,
               op.is_active,
+              op.status,
+              op.progress::text,
               op.total_price::text,
               op.balance::text
        from ongoing_projects op
@@ -404,6 +554,18 @@ export default async function AdminOngoingProjectsPage() {
        from projects
        where categories is not null
        order by category asc`
+    ),
+    sql<{
+      id: string
+      project_id: string
+      progress: string
+      notes: string | null
+      created_at: string
+      updated_at: string
+    }>(
+      `select id, project_id::text, progress::text, notes, created_at::text, updated_at::text
+         from ongoing_project_progress
+        order by created_at desc`
     ),
   ])
 
@@ -425,6 +587,8 @@ export default async function AdminOngoingProjectsPage() {
         otherFileUrls: project.other_files_urls || [],
         paymentTerm: project.payment_term,
         isActive: project.is_active,
+        status: normalizeProjectStatus(project.status || (project.is_active ? 'active' : 'finished')),
+        progress: project.progress,
         totalPrice: project.total_price,
         balance: project.balance,
       }))}
@@ -436,8 +600,21 @@ export default async function AdminOngoingProjectsPage() {
       updateProjectFilesAction={updateOngoingProjectFiles}
       toggleProjectAction={toggleOngoingProjectActive}
       bulkSetInactiveProjectsAction={bulkSetInactiveOngoingProjects}
+      bulkSetMaintenanceProjectsAction={bulkSetMaintenanceOngoingProjects}
       bulkDeleteProjectsAction={bulkDeleteOngoingProjects}
       deleteProjectAction={deleteOngoingProject}
+      progressEntries={progressRows.map((row) => ({
+        id: row.id,
+        projectId: row.project_id,
+        progress: Number(row.progress || '0'),
+        notes: row.notes,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      }))}
+      createProjectProgressAction={createProjectProgress}
+      updateProjectProgressAction={updateProjectProgress}
+      deleteProjectProgressAction={deleteProjectProgress}
+      bulkDeleteProjectProgressAction={bulkDeleteProjectProgress}
     />
   )
 }
