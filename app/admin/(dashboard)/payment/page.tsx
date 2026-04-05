@@ -50,6 +50,8 @@ function resolveCurrency(value: string): CurrencyOption {
 }
 
 async function ensurePaymentsTable() {
+  await sql('alter table ongoing_projects add column if not exists invoice_no text')
+
   await sql(`
     create table if not exists payments (
       id text primary key,
@@ -70,6 +72,8 @@ async function ensurePaymentsTable() {
       invoice_status text not null default 'draft',
       invoice_due_date date,
       invoice_sent_at timestamptz,
+      invoice_pdf_url text,
+      invoice_pdf_public_id text,
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now()
     )
@@ -83,6 +87,68 @@ async function ensurePaymentsTable() {
   await sql("alter table payments add column if not exists invoice_status text not null default 'draft'")
   await sql('alter table payments add column if not exists invoice_due_date date')
   await sql('alter table payments add column if not exists invoice_sent_at timestamptz')
+  await sql('alter table payments add column if not exists invoice_pdf_url text')
+  await sql('alter table payments add column if not exists invoice_pdf_public_id text')
+}
+
+async function uploadInvoicePdfToCloudinary(bytes: Uint8Array, opts: { folder: string; filename: string }) {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+  const apiKey = process.env.CLOUDINARY_API_KEY
+  const apiSecret = process.env.CLOUDINARY_API_SECRET
+
+  if (!cloudName || !apiKey || !apiSecret) {
+    throw new Error('Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.')
+  }
+
+  const timestamp = Math.floor(Date.now() / 1000)
+  const signatureBase = `folder=${opts.folder}&public_id=${opts.filename}&timestamp=${timestamp}${apiSecret}`
+  const signature = createHash('sha1').update(signatureBase).digest('hex')
+
+  const body = new FormData()
+  body.append('file', new Blob([Buffer.from(bytes)], { type: 'application/pdf' }), `${opts.filename}.pdf`)
+  body.append('api_key', apiKey)
+  body.append('timestamp', String(timestamp))
+  body.append('folder', opts.folder)
+  body.append('public_id', opts.filename)
+  body.append('signature', signature)
+
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`, {
+    method: 'POST',
+    body,
+  })
+
+  const payload = (await response.json()) as { secure_url?: string; public_id?: string; error?: { message?: string } }
+  if (!response.ok || !payload.secure_url || !payload.public_id) {
+    throw new Error(payload.error?.message || 'Cloudinary invoice upload failed.')
+  }
+
+  return { secureUrl: payload.secure_url, publicId: payload.public_id }
+}
+
+async function deleteRawFromCloudinary(publicId: string | null) {
+  if (!publicId) return
+
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+  const apiKey = process.env.CLOUDINARY_API_KEY
+  const apiSecret = process.env.CLOUDINARY_API_SECRET
+
+  if (!cloudName || !apiKey || !apiSecret) return
+
+  const timestamp = Math.floor(Date.now() / 1000)
+  const signatureBase = `public_id=${publicId}&timestamp=${timestamp}${apiSecret}`
+  const signature = createHash('sha1').update(signatureBase).digest('hex')
+
+  const body = new FormData()
+  body.append('public_id', publicId)
+  body.append('timestamp', String(timestamp))
+  body.append('api_key', apiKey)
+  body.append('signature', signature)
+  body.append('resource_type', 'raw')
+
+  await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/raw/destroy`, {
+    method: 'POST',
+    body,
+  })
 }
 
 async function uploadProofToCloudinary(file: File, opts: { folder: string; filename: string }) {
@@ -296,98 +362,258 @@ async function deletePayment(formData: FormData) {
   revalidatePath('/admin')
 }
 
+function slugifyInvoicePart(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 70) || 'project'
+}
+
+function normalizeInvoiceFilename(value: string) {
+  return value.replace(/[^a-zA-Z0-9\- ]+/g, '').replace(/\s+/g, ' ').trim().slice(0, 120) || 'Invoice'
+}
+
+function buildTransactionInvoiceNumber(projectInvoiceNo: string, paymentId: string) {
+  return `${projectInvoiceNo}-TXN-${paymentId.replace(/[^a-z0-9]/gi, '').slice(0, 6).toUpperCase()}`
+}
+
+async function getProjectInvoiceNumber(projectId: string) {
+  const rows = await sql<{ invoice_no: string | null; start_date: string | null }>(
+    `select invoice_no,
+            to_char(coalesce(start_date, now()::date), 'YYYY-MM-DD') as start_date
+       from ongoing_projects
+      where id = $1::uuid
+      limit 1`,
+    [projectId]
+  )
+  const invoiceNo = String(rows[0]?.invoice_no || '').trim()
+  if (invoiceNo) return invoiceNo
+  const fallbackDate = String(rows[0]?.start_date || '').trim()
+  const match = fallbackDate.match(/^(\d{4})-(\d{2})-\d{2}$/)
+  const yearMonth = match ? `${match[1]}-${match[2]}` : `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
+  const fallback = `INV-${yearMonth}-001`
+  await sql('update ongoing_projects set invoice_no = $2, updated_at = now() where id = $1::uuid', [projectId, fallback])
+  return fallback
+}
+
+async function createOrReplaceTransactionInvoice(paymentId: string) {
+  const paymentRows = await sql<{ project_id: string | null; invoice_pdf_public_id: string | null; project_name: string | null }>(
+    'select project_id::text, invoice_pdf_public_id, project_name from payments where id = $1 limit 1',
+    [paymentId]
+  )
+  if (!paymentRows.length) throw new Error('Payment not found.')
+
+  const projectId = String(paymentRows[0].project_id || '').trim()
+  if (!projectId) throw new Error('Payment has no project.')
+
+  const payload = await getSinglePaymentInvoicePayload(paymentId)
+  if (!payload) throw new Error('Payment invoice data not found.')
+
+  const projectInvoiceNo = await getProjectInvoiceNumber(projectId)
+  const invoiceNumber = buildTransactionInvoiceNumber(projectInvoiceNo, paymentId)
+  const existingRows = await sql<{ invoice_pdf_url: string | null; invoice_pdf_public_id: string | null }>(
+    'select invoice_pdf_url, invoice_pdf_public_id from payments where id = $1 limit 1',
+    [paymentId]
+  )
+  const existingInvoiceUrl = String(existingRows[0]?.invoice_pdf_url || '').trim()
+  const existingInvoicePublicId = String(existingRows[0]?.invoice_pdf_public_id || '').trim()
+
+  if (existingInvoiceUrl && existingInvoicePublicId) {
+    const pdfBytes = await generateInvoicePdf({ ...payload, invoiceNumber })
+    return { invoiceNumber, invoicePdfUrl: existingInvoiceUrl, payload: { ...payload, invoiceNumber }, pdfBytes }
+  }
+
+  const pdfBytes = await generateInvoicePdf({ ...payload, invoiceNumber })
+  const folderName = `ProgreX Invoices/${slugifyInvoicePart(payload.projectName)}`
+  const uploaded = await uploadInvoicePdfToCloudinary(pdfBytes, {
+    folder: folderName,
+    filename: invoiceNumber,
+  })
+
+  await sql(
+    `update payments
+        set invoice_number = $2,
+            invoice_status = 'generated',
+            invoice_pdf_url = $3,
+            invoice_pdf_public_id = $4,
+            updated_at = now()
+      where id = $1`,
+    [paymentId, invoiceNumber, uploaded.secureUrl, uploaded.publicId]
+  )
+
+  return { invoiceNumber, invoicePdfUrl: uploaded.secureUrl, payload: { ...payload, invoiceNumber }, pdfBytes }
+}
+
+async function createOrReplaceProjectInvoice(projectId: string) {
+  const payload = await getProjectInvoicePayload(projectId)
+  if (!payload) throw new Error('Project invoice data not found.')
+
+  const projectInvoiceNo = await getProjectInvoiceNumber(projectId)
+  const pdfBytes = await generateInvoicePdf({ ...payload, invoiceNumber: projectInvoiceNo })
+
+  const existing = await sql<{ invoice_pdf_public_id: string | null }>(
+    `select invoice_pdf_public_id
+       from payments
+      where project_id = $1::uuid
+        and invoice_pdf_public_id is not null
+      order by updated_at desc nulls last, created_at desc nulls last
+      limit 1`,
+    [projectId]
+  )
+  await deleteRawFromCloudinary(existing[0]?.invoice_pdf_public_id ?? null)
+
+  const folderName = `ProgreX Invoices/${slugifyInvoicePart(payload.projectName)}`
+  const projectFilename = normalizeInvoiceFilename(`${payload.projectName} - Invoice`)
+  const uploaded = await uploadInvoicePdfToCloudinary(pdfBytes, {
+    folder: folderName,
+    filename: projectFilename,
+  })
+
+  await sql(
+    `update payments
+        set invoice_number = $2,
+            invoice_status = 'generated',
+            invoice_pdf_url = $3,
+            invoice_pdf_public_id = $4,
+            updated_at = now()
+      where project_id = $1::uuid`,
+    [projectId, projectInvoiceNo, uploaded.secureUrl, uploaded.publicId]
+  )
+
+  return { invoiceNumber: projectInvoiceNo, invoicePdfUrl: uploaded.secureUrl, payload: { ...payload, invoiceNumber: projectInvoiceNo }, pdfBytes }
+}
+
 async function sendTransactionInvoiceEmail(formData: FormData) {
   'use server'
-  await requirePermission('dashboard', 'write')
-  await ensurePaymentsTable()
+  try {
+    await requirePermission('dashboard', 'write')
+    await ensurePaymentsTable()
 
-  const id = String(formData.get('id') ?? '').trim()
-  if (!id) return
+    const id = String(formData.get('id') ?? '').trim()
+    if (!id) return { ok: false as const, message: 'Payment ID is missing.' }
 
-  const payload = await getSinglePaymentInvoicePayload(id)
-  if (!payload) throw new Error('Payment invoice data not found.')
-  if (!payload.clientEmail) throw new Error('Client email is not set for this payment.')
+    const generated = await createOrReplaceTransactionInvoice(id)
+    if (!generated.payload.clientEmail) return { ok: false as const, message: 'Client email is not set for this payment.' }
 
-  const pdfBytes = await generateInvoicePdf(payload)
+    const smtpHost = process.env.SMTP_HOST || 'smtp.zoho.com'
+    const smtpPort = Number(process.env.SMTP_PORT || 587)
+    const smtpUser = process.env.SMTP_USER
+    const smtpPass = process.env.SMTP_PASS
+    const smtpSecure = String(process.env.SMTP_SECURE || '').toLowerCase() === 'true'
 
-  const smtpHost = process.env.SMTP_HOST || 'smtp.zoho.com'
-  const smtpPort = Number(process.env.SMTP_PORT || 587)
-  const smtpUser = process.env.SMTP_USER
-  const smtpPass = process.env.SMTP_PASS
-  const smtpSecure = String(process.env.SMTP_SECURE || '').toLowerCase() === 'true'
+    if (!smtpUser || !smtpPass) return { ok: false as const, message: 'Email transport is not configured.' }
 
-  if (!smtpUser || !smtpPass) throw new Error('Email transport is not configured.')
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpSecure,
+      auth: { user: smtpUser, pass: smtpPass },
+    })
 
-  const transporter = nodemailer.createTransport({
-    host: smtpHost,
-    port: smtpPort,
-    secure: smtpSecure,
-    auth: { user: smtpUser, pass: smtpPass },
-  })
+    await transporter.sendMail({
+      from: `"ProgreX Team" <${smtpUser}>`,
+      to: generated.payload.clientEmail,
+      subject: `Invoice ${generated.invoiceNumber} - ${generated.payload.projectName}`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;background:#050511;border:1px solid #1c2d4d;border-radius:14px;overflow:hidden;"><div style="padding:20px 24px;background:linear-gradient(135deg,#0EA5E9 0%,#2563eb 100%);"><h1 style="margin:0;color:#fff;font-size:20px;">Your ProgreX Invoice</h1><p style="margin:6px 0 0;color:#e6f4ff;font-size:13px;">Please find your invoice attached.</p></div><div style="padding:22px 24px;color:#dbeafe;"><p style="margin:0 0 12px;font-size:14px;">Hello ${generated.payload.clientName},</p><p style="margin:0 0 12px;font-size:14px;line-height:1.7;">Attached is your invoice <strong>${generated.invoiceNumber}</strong> for project <strong>${generated.payload.projectName}</strong>.</p><p style="margin:0;font-size:14px;line-height:1.7;">If you have any questions, please reply to this email.</p><p style="margin:20px 0 8px;font-size:14px;">Best regards,</p><p style="margin:0;font-size:14px;font-weight:700;">ProgreX Team</p></div></div>`,
+      attachments: [
+        {
+          filename: `${generated.invoiceNumber}.pdf`,
+          content: Buffer.from(generated.pdfBytes),
+          contentType: 'application/pdf',
+        },
+      ],
+    })
 
-  await transporter.sendMail({
-    from: `"ProgreX Team" <${smtpUser}>`,
-    to: payload.clientEmail,
-    subject: `Invoice ${payload.invoiceNumber} - ${payload.projectName}`,
-    html: `<div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;background:#050511;border:1px solid #1c2d4d;border-radius:14px;overflow:hidden;"><div style="padding:20px 24px;background:linear-gradient(135deg,#0EA5E9 0%,#2563eb 100%);"><h1 style="margin:0;color:#fff;font-size:20px;">Your ProgreX Invoice</h1><p style="margin:6px 0 0;color:#e6f4ff;font-size:13px;">Please find your invoice attached.</p></div><div style="padding:22px 24px;color:#dbeafe;"><p style="margin:0 0 12px;font-size:14px;">Hello ${payload.clientName},</p><p style="margin:0 0 12px;font-size:14px;line-height:1.7;">Attached is your invoice <strong>${payload.invoiceNumber}</strong> for project <strong>${payload.projectName}</strong>.</p><p style="margin:0;font-size:14px;line-height:1.7;">If you have any questions, please reply to this email.</p><p style="margin:20px 0 8px;font-size:14px;">Best regards,</p><p style="margin:0;font-size:14px;font-weight:700;">ProgreX Team</p></div></div>`,
-    attachments: [
-      {
-        filename: `${payload.invoiceNumber}.pdf`,
-        content: Buffer.from(pdfBytes),
-        contentType: 'application/pdf',
-      },
-    ],
-  })
+    await sql("update payments set invoice_status = 'sent', invoice_sent_at = now(), updated_at = now() where id = $1", [id])
+    revalidatePath('/admin/payment')
+    return { ok: true as const, message: 'Invoice email sent.', invoicePdfUrl: generated.invoicePdfUrl }
+  } catch (error) {
+    console.error('sendTransactionInvoiceEmail error', error)
+    return { ok: false as const, message: error instanceof Error ? error.message : 'Failed to send invoice email.' }
+  }
+}
 
-  await sql("update payments set invoice_status = 'sent', invoice_sent_at = now(), updated_at = now() where id = $1", [id])
-  revalidatePath('/admin/payment')
+async function generateTransactionInvoice(formData: FormData) {
+  'use server'
+  try {
+    await requirePermission('dashboard', 'write')
+    await ensurePaymentsTable()
+
+    const id = String(formData.get('id') ?? '').trim()
+    if (!id) return { ok: false as const, message: 'Payment ID is missing.' }
+
+    const generated = await createOrReplaceTransactionInvoice(id)
+    revalidatePath('/admin/payment')
+    return { ok: true as const, message: 'Invoice generated.', invoicePdfUrl: generated.invoicePdfUrl }
+  } catch (error) {
+    console.error('generateTransactionInvoice error', error)
+    return { ok: false as const, message: error instanceof Error ? error.message : 'Failed to generate invoice.' }
+  }
 }
 
 async function sendProjectInvoiceEmail(formData: FormData) {
   'use server'
-  await requirePermission('dashboard', 'write')
-  await ensurePaymentsTable()
+  try {
+    await requirePermission('dashboard', 'write')
+    await ensurePaymentsTable()
 
-  const projectId = String(formData.get('projectId') ?? '').trim()
-  if (!projectId) return
+    const projectId = String(formData.get('projectId') ?? '').trim()
+    if (!projectId) return { ok: false as const, message: 'Project is required.' }
 
-  const payload = await getProjectInvoicePayload(projectId)
-  if (!payload) throw new Error('Project invoice data not found.')
-  if (!payload.clientEmail) throw new Error('Client email is not set for this project.')
+    const generated = await createOrReplaceProjectInvoice(projectId)
+    if (!generated.payload.clientEmail) return { ok: false as const, message: 'Client email is not set for this project.' }
 
-  const pdfBytes = await generateInvoicePdf(payload)
+    const smtpHost = process.env.SMTP_HOST || 'smtp.zoho.com'
+    const smtpPort = Number(process.env.SMTP_PORT || 587)
+    const smtpUser = process.env.SMTP_USER
+    const smtpPass = process.env.SMTP_PASS
+    const smtpSecure = String(process.env.SMTP_SECURE || '').toLowerCase() === 'true'
 
-  const smtpHost = process.env.SMTP_HOST || 'smtp.zoho.com'
-  const smtpPort = Number(process.env.SMTP_PORT || 587)
-  const smtpUser = process.env.SMTP_USER
-  const smtpPass = process.env.SMTP_PASS
-  const smtpSecure = String(process.env.SMTP_SECURE || '').toLowerCase() === 'true'
+    if (!smtpUser || !smtpPass) return { ok: false as const, message: 'Email transport is not configured.' }
 
-  if (!smtpUser || !smtpPass) throw new Error('Email transport is not configured.')
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpSecure,
+      auth: { user: smtpUser, pass: smtpPass },
+    })
 
-  const transporter = nodemailer.createTransport({
-    host: smtpHost,
-    port: smtpPort,
-    secure: smtpSecure,
-    auth: { user: smtpUser, pass: smtpPass },
-  })
+    await transporter.sendMail({
+      from: `"ProgreX Team" <${smtpUser}>`,
+      to: generated.payload.clientEmail,
+      subject: `Project Invoice ${generated.invoiceNumber} - ${generated.payload.projectName}`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;background:#050511;border:1px solid #1c2d4d;border-radius:14px;overflow:hidden;"><div style="padding:20px 24px;background:linear-gradient(135deg,#0EA5E9 0%,#2563eb 100%);"><h1 style="margin:0;color:#fff;font-size:20px;">Project Invoice Summary</h1><p style="margin:6px 0 0;color:#e6f4ff;font-size:13px;">All recorded payments from oldest to latest.</p></div><div style="padding:22px 24px;color:#dbeafe;"><p style="margin:0 0 12px;font-size:14px;">Hello ${generated.payload.clientName},</p><p style="margin:0 0 12px;font-size:14px;line-height:1.7;">Attached is the complete payment invoice for <strong>${generated.payload.projectName}</strong>.</p><p style="margin:0;font-size:14px;line-height:1.7;">If you have any questions, please reply to this email.</p><p style="margin:20px 0 8px;font-size:14px;">Best regards,</p><p style="margin:0;font-size:14px;font-weight:700;">ProgreX Team</p></div></div>`,
+      attachments: [
+        {
+          filename: `${generated.invoiceNumber}.pdf`,
+          content: Buffer.from(generated.pdfBytes),
+          contentType: 'application/pdf',
+        },
+      ],
+    })
 
-  await transporter.sendMail({
-    from: `"ProgreX Team" <${smtpUser}>`,
-    to: payload.clientEmail,
-    subject: `Project Invoice ${payload.invoiceNumber} - ${payload.projectName}`,
-    html: `<div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;background:#050511;border:1px solid #1c2d4d;border-radius:14px;overflow:hidden;"><div style="padding:20px 24px;background:linear-gradient(135deg,#0EA5E9 0%,#2563eb 100%);"><h1 style="margin:0;color:#fff;font-size:20px;">Project Invoice Summary</h1><p style="margin:6px 0 0;color:#e6f4ff;font-size:13px;">All recorded payments from oldest to latest.</p></div><div style="padding:22px 24px;color:#dbeafe;"><p style="margin:0 0 12px;font-size:14px;">Hello ${payload.clientName},</p><p style="margin:0 0 12px;font-size:14px;line-height:1.7;">Attached is the complete payment invoice for <strong>${payload.projectName}</strong>.</p><p style="margin:0;font-size:14px;line-height:1.7;">If you have any questions, please reply to this email.</p><p style="margin:20px 0 8px;font-size:14px;">Best regards,</p><p style="margin:0;font-size:14px;font-weight:700;">ProgreX Team</p></div></div>`,
-    attachments: [
-      {
-        filename: `${payload.invoiceNumber}.pdf`,
-        content: Buffer.from(pdfBytes),
-        contentType: 'application/pdf',
-      },
-    ],
-  })
+    await sql("update payments set invoice_status = 'sent', invoice_sent_at = now(), updated_at = now() where project_id = $1::uuid", [projectId])
+    revalidatePath('/admin/payment')
+    return { ok: true as const, message: 'Project invoice email sent.', invoicePdfUrl: generated.invoicePdfUrl }
+  } catch (error) {
+    console.error('sendProjectInvoiceEmail error', error)
+    return { ok: false as const, message: error instanceof Error ? error.message : 'Failed to send project invoice email.' }
+  }
+}
 
-  await sql("update payments set invoice_status = 'sent', invoice_sent_at = now(), updated_at = now() where project_id = $1::uuid", [projectId])
-  revalidatePath('/admin/payment')
+async function generateProjectInvoice(formData: FormData) {
+  'use server'
+  try {
+    await requirePermission('dashboard', 'write')
+    await ensurePaymentsTable()
+
+    const projectId = String(formData.get('projectId') ?? '').trim()
+    if (!projectId) return { ok: false as const, message: 'Project is required.' }
+
+    const generated = await createOrReplaceProjectInvoice(projectId)
+    revalidatePath('/admin/payment')
+    return { ok: true as const, message: 'Project invoice generated.', invoicePdfUrl: generated.invoicePdfUrl }
+  } catch (error) {
+    console.error('generateProjectInvoice error', error)
+    return { ok: false as const, message: error instanceof Error ? error.message : 'Failed to generate project invoice.' }
+  }
 }
 
 export default async function AdminPaymentPage() {
@@ -416,6 +642,7 @@ export default async function AdminPaymentPage() {
       invoice_status: string | null
       invoice_due_date: string | null
       invoice_sent_at: string | null
+      invoice_pdf_url: string | null
       created_at: string | null
       total_price: string | null
       project_paid: string | null
@@ -441,6 +668,7 @@ export default async function AdminPaymentPage() {
               p.invoice_status,
               p.invoice_due_date::text,
               p.invoice_sent_at::text,
+              p.invoice_pdf_url,
               p.created_at::text,
               op.total_price::text,
               (
@@ -462,13 +690,14 @@ export default async function AdminPaymentPage() {
          left join clients c on c.full_name = p.client_name
         order by p.payment_date desc nulls last, p.created_at desc`
     ),
-    sql<{ id: string; project_name: string; category: string | null; client_name: string | null; client_email: string | null; total_price: string | null }>(
+    sql<{ id: string; project_name: string; category: string | null; client_name: string | null; client_email: string | null; total_price: string | null; invoice_no: string | null }>(
       `select op.id,
               op.project_name,
               op.category,
               c.full_name as client_name,
               c.email as client_email,
-              op.total_price::text
+              op.total_price::text,
+              op.invoice_no
          from ongoing_projects op
          left join clients c on c.id = op.client_id
         order by op.project_name asc`
@@ -508,6 +737,7 @@ export default async function AdminPaymentPage() {
         invoiceStatus: row.invoice_status || 'draft',
         invoiceDueDate: row.invoice_due_date,
         invoiceSentAt: row.invoice_sent_at,
+        invoicePdfUrl: row.invoice_pdf_url,
         projectPaid: Number(row.project_paid || '0'),
         projectBalance: Number(row.project_balance || '0'),
         createdAt: row.created_at,
@@ -519,13 +749,16 @@ export default async function AdminPaymentPage() {
         clientName: project.client_name || 'Unknown Client',
         clientEmail: project.client_email,
         totalPrice: Number(project.total_price || '0'),
+        invoiceNo: project.invoice_no,
       }))}
       currencies={CURRENCIES}
       stats={{ totalProjected, totalCollected, totalBalance }}
       createPaymentAction={createPayment}
       updatePaymentAction={updatePayment}
       deletePaymentAction={deletePayment}
+      generateTransactionInvoiceAction={generateTransactionInvoice}
       sendTransactionInvoiceEmailAction={sendTransactionInvoiceEmail}
+      generateProjectInvoiceAction={generateProjectInvoice}
       sendProjectInvoiceEmailAction={sendProjectInvoiceEmail}
     />
   )
