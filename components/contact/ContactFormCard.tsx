@@ -113,7 +113,7 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
   const [errors, setErrors] = useState<Partial<FormData>>({})
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [loadingPhase, setLoadingPhase] = useState<'verify' | 'sending'>('verify')
+  const [pendingEmailConfirmation, setPendingEmailConfirmation] = useState(false)
   const [serverError, setServerError] = useState('')
   const [attachedFiles, setAttachedFiles] = useState<File[]>([])
   const [fileError, setFileError] = useState('')
@@ -161,21 +161,6 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
       .then((data: { events?: AvailabilityEvent[] }) => setAvailability(data.events || []))
       .catch(() => setAvailability([]))
   }, [bookingModalOpen, bookMeeting])
-
-  useEffect(() => {
-    if (!loading) {
-      setLoadingPhase('verify')
-      return
-    }
-
-    const startedAt = Date.now()
-    const timer = setInterval(() => {
-      const elapsed = Date.now() - startedAt
-      setLoadingPhase(elapsed >= 8000 ? 'sending' : 'verify')
-    }, 500)
-
-    return () => clearInterval(timer)
-  }, [loading])
 
   function hasOverlap(date: string, startTime: string, durationMinutes: number) {
     const start = toMinutes(startTime)
@@ -311,6 +296,7 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
 
       setAttachedFiles([])
       setSelectedBooking(null)
+      setPendingEmailConfirmation(Boolean(data.pendingConfirmation))
       setSubmitted(true)
       onSuccess?.()
     } catch (err: unknown) {
@@ -332,7 +318,7 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
             >
               <span className="h-4 w-4 rounded-full border border-cyan-100/35 border-t-cyan-100" />
             </motion.span>
-            <span>{loadingPhase === 'verify' ? 'Please wait while we verify your email.' : 'Sending Message'}</span>
+            <span>Sending confirmation email...</span>
           </div>
         </div>
       ) : null}
@@ -356,7 +342,9 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
           </motion.div>
           <h2 className="mb-3 text-2xl font-extrabold text-white">{t('form.successTitle')}</h2>
           <p className="mb-6 text-slate-400">
-            Thank you, <strong className="text-white">{form.name}</strong>! {t('form.successMsg')}
+            {pendingEmailConfirmation
+              ? <>Thank you, <strong className="text-white">{form.name}</strong>! Please check your email and click the confirmation link so we can finalize your inquiry.</>
+              : <>Thank you, <strong className="text-white">{form.name}</strong>! {t('form.successMsg')}</>}
           </p>
           <button
             onClick={() => {
