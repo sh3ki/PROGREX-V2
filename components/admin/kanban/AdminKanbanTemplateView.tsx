@@ -1,7 +1,8 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Edit2, Eye, GripVertical, Plus, Power, Trash2 } from 'lucide-react'
+import Image from 'next/image'
+import { CalendarDays, Edit2, Plus, Power, Trash2, User } from 'lucide-react'
 import { ApexButton, ApexInput, ApexTextarea } from '@/components/admin/apex/AdminPrimitives'
 import {
   ApexBlockingSpinner,
@@ -17,12 +18,18 @@ import {
 } from '@/components/admin/apex/ApexDataUi'
 
 type TaskStatus = 'todo' | 'inprogress' | 'review' | 'done'
-type TaskPriority = 'low' | 'medium' | 'high' | 'critical'
+type TaskPriority = 'low' | 'medium' | 'high'
 
 type ProjectOption = {
   id: string
   name: string
   clientName: string
+}
+
+type TeamMember = {
+  id: string
+  name: string
+  avatar: string | null
 }
 
 type TaskHistoryItem = {
@@ -38,6 +45,8 @@ type TaskRow = {
   description: string | null
   priority: TaskPriority
   status: TaskStatus
+  dueDate: string | null
+  assigneeIds: string[]
   isActive: boolean
   history: TaskHistoryItem[]
   createdAt: string
@@ -51,23 +60,26 @@ type TaskForm = {
   description: string
   priority: TaskPriority
   status: TaskStatus
+  dueDate: string
+  assigneeIds: string[]
 }
 
 type ConfirmKind = 'delete' | 'bulkDelete' | 'bulkSetInactive' | 'toggleActive'
 
-const LANES: Array<{ key: TaskStatus; label: string; color: string }> = [
-  { key: 'todo', label: 'To Do', color: '#475569' },
-  { key: 'inprogress', label: 'In Progress', color: '#0284c7' },
-  { key: 'review', label: 'For Review', color: '#d97706' },
-  { key: 'done', label: 'Done', color: '#16a34a' },
+const LANES: Array<{ key: TaskStatus; label: string; color: string; soft: string }> = [
+  { key: 'todo', label: 'To Do', color: '#475569', soft: 'rgba(71,85,105,0.12)' },
+  { key: 'inprogress', label: 'In Progress', color: '#0284c7', soft: 'rgba(2,132,199,0.12)' },
+  { key: 'review', label: 'For Review', color: '#d97706', soft: 'rgba(217,119,6,0.12)' },
+  { key: 'done', label: 'Done', color: '#16a34a', soft: 'rgba(22,163,74,0.12)' },
 ]
 
 const PRIORITIES: Array<{ key: TaskPriority; label: string; color: string }> = [
   { key: 'low', label: 'Low', color: '#64748b' },
   { key: 'medium', label: 'Medium', color: '#0284c7' },
   { key: 'high', label: 'High', color: '#ea580c' },
-  { key: 'critical', label: 'Critical', color: '#dc2626' },
 ]
+
+const PRIORITY_SCORE: Record<TaskPriority, number> = { high: 3, medium: 2, low: 1 }
 
 function defaultForm(projectId = ''): TaskForm {
   return {
@@ -76,6 +88,8 @@ function defaultForm(projectId = ''): TaskForm {
     description: '',
     priority: 'medium',
     status: 'todo',
+    dueDate: '',
+    assigneeIds: [],
   }
 }
 
@@ -87,6 +101,8 @@ function fromTask(task: TaskRow): TaskForm {
     description: task.description || '',
     priority: task.priority,
     status: task.status,
+    dueDate: task.dueDate || '',
+    assigneeIds: task.assigneeIds,
   }
 }
 
@@ -99,8 +115,16 @@ function priorityStyle(priority: TaskPriority) {
   return { backgroundColor: `${item?.color || '#64748b'}22`, color: item?.color || '#334155' }
 }
 
+function formatDueDate(value: string | null) {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
 export default function AdminKanbanTemplateView({
   projects,
+  teamMembers,
   tasks,
   createTaskAction,
   updateTaskAction,
@@ -111,6 +135,7 @@ export default function AdminKanbanTemplateView({
   bulkDeleteAction,
 }: {
   projects: ProjectOption[]
+  teamMembers: TeamMember[]
   tasks: TaskRow[]
   createTaskAction: (formData: FormData) => Promise<void>
   updateTaskAction: (formData: FormData) => Promise<void>
@@ -152,8 +177,17 @@ export default function AdminKanbanTemplateView({
   const laneTasks = useMemo(() => {
     const map: Record<TaskStatus, TaskRow[]> = { todo: [], inprogress: [], review: [], done: [] }
     for (const task of filteredTasks) map[task.status].push(task)
+    for (const lane of LANES) {
+      map[lane.key].sort((a, b) => {
+        const priorityDelta = PRIORITY_SCORE[b.priority] - PRIORITY_SCORE[a.priority]
+        if (priorityDelta !== 0) return priorityDelta
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      })
+    }
     return map
   }, [filteredTasks])
+
+  const teamMap = useMemo(() => new Map(teamMembers.map((member) => [member.id, member])), [teamMembers])
 
   const counts = useMemo(
     () => ({
@@ -177,7 +211,8 @@ export default function AdminKanbanTemplateView({
     formData.set('description', form.description)
     formData.set('priority', form.priority)
     formData.set('status', form.status)
-    formData.set('actor', 'Admin')
+    formData.set('dueDate', form.dueDate)
+    formData.set('assigneeIds', form.assigneeIds.join(','))
     return formData
   }
 
@@ -214,7 +249,6 @@ export default function AdminKanbanTemplateView({
       const formData = new FormData()
       formData.set('id', id)
       formData.set('status', status)
-      formData.set('actor', 'Admin')
       await moveTaskAction(formData)
       addToast(`Task moved to ${laneLabel(status)}`, 'success')
     } catch (error) {
@@ -239,14 +273,12 @@ export default function AdminKanbanTemplateView({
         const formData = new FormData()
         formData.set('id', selectedTask.id)
         formData.set('isActive', selectedTask.isActive ? '0' : '1')
-        formData.set('actor', 'Admin')
         await setTaskActiveAction(formData)
       }
 
       if (confirmConfig.kind === 'bulkSetInactive') {
         const formData = new FormData()
         formData.set('ids', selectedIds.join(','))
-        formData.set('actor', 'Admin')
         await bulkSetInactiveAction(formData)
         setSelectedIds([])
       }
@@ -311,20 +343,23 @@ export default function AdminKanbanTemplateView({
       ) : (
         <>
           <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
-            <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
-              <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide apx-muted">Project Name</label>
-                <ApexDropdown
-                  value={projectFilter}
-                  options={[{ value: '', label: 'Select project' }, ...projects.map((project) => ({ value: project.id, label: `${project.name} - ${project.clientName}` }))]}
-                  onChange={(value) => {
-                    setProjectFilter(value)
-                    setSelectedIds([])
-                  }}
-                />
-              </div>
-              <div className="w-full md:w-70">
-                <ApexSearchField value={search} onChange={setSearch} placeholder="Search tasks..." />
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="flex w-full flex-col gap-3 md:flex-row md:items-center">
+                <div className="w-full md:max-w-sm">
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide apx-muted">Project Name</label>
+                  <ApexDropdown
+                    value={projectFilter}
+                    options={[{ value: '', label: 'Select a project first' }, ...projects.map((project) => ({ value: project.id, label: `${project.name} - ${project.clientName}` }))]}
+                    onChange={(value) => {
+                      setProjectFilter(value)
+                      setSelectedIds([])
+                    }}
+                  />
+                </div>
+                <div className="w-full md:max-w-sm">
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide apx-muted">Search</label>
+                  <ApexSearchField value={search} onChange={setSearch} placeholder="Search tasks..." />
+                </div>
               </div>
             </div>
           </div>
@@ -387,7 +422,7 @@ export default function AdminKanbanTemplateView({
                   <section
                     key={lane.key}
                     className="rounded-2xl border p-3"
-                    style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}
+                    style={{ borderColor: lane.color, backgroundColor: lane.soft }}
                     onDragOver={(event) => event.preventDefault()}
                     onDrop={(event) => {
                       event.preventDefault()
@@ -401,13 +436,17 @@ export default function AdminKanbanTemplateView({
                       {laneTasks[lane.key].map((task) => (
                         <div
                           key={task.id}
-                          className="rounded-xl border p-3"
-                          style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface-alt)' }}
+                          className="rounded-xl border p-3 transition-shadow hover:shadow-md"
+                          style={{ borderColor: PRIORITIES.find((item) => item.key === task.priority)?.color || 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}
                           draggable={activeTab === 'active'}
                           onDragStart={() => setDragTaskId(task.id)}
+                          onClick={() => {
+                            setSelectedTask(task)
+                            setViewOpen(true)
+                          }}
                         >
                           <div className="mb-2 flex items-start justify-between gap-2">
-                            <label className="inline-flex items-center gap-2 text-xs apx-muted">
+                            <label className="inline-flex items-center gap-2 text-xs apx-muted" onClick={(event) => event.stopPropagation()}>
                               <ApexCheckbox checked={selectedIds.includes(task.id)} onChange={() => toggleSelectOne(task.id)} ariaLabel="Select task" />
                               Select
                             </label>
@@ -415,25 +454,25 @@ export default function AdminKanbanTemplateView({
                               {task.priority}
                             </span>
                           </div>
-                          <div className="flex items-start gap-2">
-                            <GripVertical className="mt-0.5 h-4 w-4 apx-muted" />
-                            <div className="flex-1">
-                              <p className="text-sm font-semibold apx-text">{task.title}</p>
-                              {task.description ? <p className="mt-1 line-clamp-2 text-xs apx-muted">{task.description}</p> : null}
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold apx-text">{task.title}</p>
+                            {task.description ? <p className="mt-1 line-clamp-2 text-xs apx-muted">{task.description}</p> : null}
+                            <p className="mt-2 inline-flex items-center gap-1 text-xs apx-muted">
+                              <CalendarDays className="h-3.5 w-3.5" />
+                              {formatDueDate(task.dueDate)}
+                            </p>
+                            <div className="mt-2 flex items-center gap-1">
+                              {task.assigneeIds.slice(0, 3).map((memberId) => {
+                                const member = teamMap.get(memberId)
+                                return (
+                                  <span key={`${task.id}-${memberId}`} className="inline-flex h-6 w-6 items-center justify-center overflow-hidden rounded-full border text-[10px] font-semibold" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface-alt)' }}>
+                                    {member?.avatar ? <Image src={member.avatar} alt={member.name} width={24} height={24} className="h-full w-full object-cover" /> : (member?.name || 'U').slice(0, 1).toUpperCase()}
+                                  </span>
+                                )
+                              })}
                             </div>
                           </div>
-                          <div className="mt-3 flex items-center justify-end gap-2">
-                            <button
-                              type="button"
-                              className="apx-icon-action"
-                              onClick={() => {
-                                setSelectedTask(task)
-                                setViewOpen(true)
-                              }}
-                              aria-label="View task"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </button>
+                          <div className="mt-3 flex items-center justify-end gap-1" onClick={(event) => event.stopPropagation()}>
                             <button
                               type="button"
                               className="apx-icon-action"
@@ -444,7 +483,7 @@ export default function AdminKanbanTemplateView({
                               }}
                               aria-label="Edit task"
                             >
-                              <Edit2 className="h-4 w-4" />
+                              <Edit2 className="h-3.5 w-3.5" />
                             </button>
                             <button
                               type="button"
@@ -462,7 +501,7 @@ export default function AdminKanbanTemplateView({
                               }}
                               aria-label="Toggle active"
                             >
-                              <Power className="h-4 w-4" />
+                              <Power className="h-3.5 w-3.5" />
                             </button>
                             <button
                               type="button"
@@ -480,7 +519,7 @@ export default function AdminKanbanTemplateView({
                               }}
                               aria-label="Delete task"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         </div>
@@ -493,7 +532,7 @@ export default function AdminKanbanTemplateView({
             </>
           ) : (
             <div className="rounded-2xl border p-8 text-center" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
-              <p className="text-sm apx-muted">Select a project to load the Kanban board.</p>
+              <p className="text-sm apx-muted">Select a project first.</p>
             </div>
           )}
         </>
@@ -504,6 +543,8 @@ export default function AdminKanbanTemplateView({
           form={taskForm}
           onChange={setTaskForm}
           projects={projects}
+          teamMembers={teamMembers}
+          projectLocked={Boolean(projectFilter)}
           onCancel={() => setAddOpen(false)}
           onSubmit={() => {
             void handleCreate()
@@ -517,6 +558,8 @@ export default function AdminKanbanTemplateView({
           form={taskForm}
           onChange={setTaskForm}
           projects={projects}
+          teamMembers={teamMembers}
+          projectLocked={Boolean(projectFilter)}
           onCancel={() => setEditOpen(false)}
           onSubmit={() => {
             void handleEdit()
@@ -542,8 +585,29 @@ export default function AdminKanbanTemplateView({
                 <p className="apx-text">{selectedTask.priority}</p>
               </div>
               <div>
+                <p className="text-xs apx-muted">Due Date</p>
+                <p className="apx-text">{formatDueDate(selectedTask.dueDate)}</p>
+              </div>
+              <div>
                 <p className="text-xs apx-muted">Updated</p>
                 <p className="apx-text">{new Date(selectedTask.updatedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}</p>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs apx-muted">Assigned Team Members</p>
+              <div className="mt-1 flex flex-wrap gap-2">
+                {selectedTask.assigneeIds.length ? selectedTask.assigneeIds.map((memberId) => {
+                  const member = teamMap.get(memberId)
+                  return (
+                    <span key={`${selectedTask.id}-view-${memberId}`} className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs" style={{ borderColor: 'var(--apx-border)' }}>
+                      <span className="inline-flex h-5 w-5 items-center justify-center overflow-hidden rounded-full" style={{ backgroundColor: 'var(--apx-surface-alt)' }}>
+                        {member?.avatar ? <Image src={member.avatar} alt={member.name} width={20} height={20} className="h-full w-full object-cover" /> : (member?.name || 'U').slice(0, 1).toUpperCase()}
+                      </span>
+                      {member?.name || 'Unknown Member'}
+                    </span>
+                  )
+                }) : <span className="text-xs apx-muted">No assigned team member.</span>}
               </div>
             </div>
 
@@ -593,6 +657,8 @@ function TaskFormCard({
   form,
   onChange,
   projects,
+  teamMembers,
+  projectLocked,
   onCancel,
   onSubmit,
   submitLabel,
@@ -600,10 +666,18 @@ function TaskFormCard({
   form: TaskForm
   onChange: (next: TaskForm) => void
   projects: ProjectOption[]
+  teamMembers: TeamMember[]
+  projectLocked: boolean
   onCancel: () => void
   onSubmit: () => void
   submitLabel: string
 }) {
+  const [membersOpen, setMembersOpen] = useState(false)
+  const selectedProject = projects.find((project) => project.id === form.projectId)
+  const membersLabel = form.assigneeIds.length
+    ? `${form.assigneeIds.length} member${form.assigneeIds.length > 1 ? 's' : ''} selected`
+    : 'Select team members (optional)'
+
   return (
     <form
       className="grid gap-3 md:grid-cols-2"
@@ -614,23 +688,32 @@ function TaskFormCard({
     >
       <div className="md:col-span-2">
         <label className="mb-1 block text-xs font-medium apx-muted">Project Name</label>
-        <ApexDropdown
-          value={form.projectId}
-          options={[{ value: '', label: 'Select project' }, ...projects.map((project) => ({ value: project.id, label: `${project.name} - ${project.clientName}` }))]}
-          onChange={(value) => onChange({ ...form, projectId: value })}
-        />
+        {projectLocked ? (
+          <ApexInput value={selectedProject ? `${selectedProject.name} - ${selectedProject.clientName}` : 'Select a project first'} readOnly />
+        ) : (
+          <ApexDropdown
+            value={form.projectId}
+            options={[{ value: '', label: 'Select project' }, ...projects.map((project) => ({ value: project.id, label: `${project.name} - ${project.clientName}` }))]}
+            onChange={(value) => onChange({ ...form, projectId: value })}
+          />
+        )}
       </div>
 
       <div className="md:col-span-2">
-        <label className="mb-1 block text-xs font-medium apx-muted">Task Name</label>
+        <label className="mb-1 block text-xs font-medium apx-muted">Title</label>
         <ApexInput value={form.title} onChange={(event) => onChange({ ...form, title: event.target.value })} required />
+      </div>
+
+      <div className="md:col-span-2">
+        <label className="mb-1 block text-xs font-medium apx-muted">Description</label>
+        <ApexTextarea rows={4} value={form.description} onChange={(event) => onChange({ ...form, description: event.target.value })} />
       </div>
 
       <div>
         <label className="mb-1 block text-xs font-medium apx-muted">Priority</label>
         <ApexDropdown
           value={form.priority}
-          options={PRIORITIES.map((priority) => ({ value: priority.key, label: priority.label }))}
+          options={PRIORITIES.map((priority) => ({ value: priority.key, label: priority.label, color: priority.color }))}
           onChange={(value) => onChange({ ...form, priority: value as TaskPriority })}
         />
       </div>
@@ -639,14 +722,48 @@ function TaskFormCard({
         <label className="mb-1 block text-xs font-medium apx-muted">Column</label>
         <ApexDropdown
           value={form.status}
-          options={LANES.map((lane) => ({ value: lane.key, label: lane.label }))}
+          options={LANES.map((lane) => ({ value: lane.key, label: lane.label, color: lane.color }))}
           onChange={(value) => onChange({ ...form, status: value as TaskStatus })}
         />
       </div>
 
       <div className="md:col-span-2">
-        <label className="mb-1 block text-xs font-medium apx-muted">Task Description</label>
-        <ApexTextarea rows={4} value={form.description} onChange={(event) => onChange({ ...form, description: event.target.value })} />
+        <label className="mb-1 block text-xs font-medium apx-muted">Team Member</label>
+        <div className="relative">
+          <button
+            type="button"
+            className="flex h-10 w-full items-center justify-between rounded-xl border px-3 text-sm"
+            style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface-alt)' }}
+            onClick={() => setMembersOpen((prev) => !prev)}
+          >
+            <span className="apx-text">{membersLabel}</span>
+            <User className="h-4 w-4 apx-muted" />
+          </button>
+          {membersOpen ? (
+            <div className="absolute z-20 mt-2 max-h-48 w-full overflow-y-auto rounded-xl border p-2" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
+              {teamMembers.length ? teamMembers.map((member) => (
+                <label key={member.id} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-(--apx-surface-alt)">
+                  <input
+                    type="checkbox"
+                    checked={form.assigneeIds.includes(member.id)}
+                    onChange={() => {
+                      const next = form.assigneeIds.includes(member.id)
+                        ? form.assigneeIds.filter((id) => id !== member.id)
+                        : [...form.assigneeIds, member.id]
+                      onChange({ ...form, assigneeIds: next })
+                    }}
+                  />
+                  <span className="apx-text text-sm">{member.name}</span>
+                </label>
+              )) : <p className="px-2 py-1 text-xs apx-muted">No active team members found.</p>}
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="md:col-span-2">
+        <label className="mb-1 block text-xs font-medium apx-muted">Due Date</label>
+        <ApexInput type="date" value={form.dueDate} onChange={(event) => onChange({ ...form, dueDate: event.target.value })} />
       </div>
 
       <div className="md:col-span-2 flex justify-end gap-2 pt-1">
