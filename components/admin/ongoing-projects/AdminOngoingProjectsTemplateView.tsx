@@ -23,6 +23,7 @@ import {
 
 type ProjectRow = {
   id: string
+  invoiceNo: string | null
   projectName: string
   projectDescription: string | null
   startDate: string | null
@@ -609,7 +610,6 @@ export default function AdminOngoingProjectsTemplateView({
           Add Ongoing Project
         </button>
       </div>
-
       <div className="flex flex-wrap items-center gap-2">
         <ApexStatusTabs
           tabs={[
@@ -805,6 +805,7 @@ export default function AdminOngoingProjectsTemplateView({
                   {columns.project ? (
                     <td className="px-4 py-3">
                       <p className="font-semibold apx-text">{project.projectName}</p>
+                      <p className="text-[11px] apx-muted">{project.invoiceNo || '-'}</p>
                       <p className="text-xs apx-muted">{project.category || '-'}</p>
                     </td>
                   ) : null}
