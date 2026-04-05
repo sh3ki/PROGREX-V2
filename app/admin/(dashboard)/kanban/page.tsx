@@ -4,7 +4,7 @@ import { sql } from '@/lib/server/db'
 import AdminKanbanTemplateView from '../../../../components/admin/kanban/AdminKanbanTemplateView'
 
 type TaskStatus = 'todo' | 'inprogress' | 'review' | 'done'
-type TaskPriority = 'low' | 'medium' | 'high' | 'critical'
+type TaskPriority = 'low' | 'medium' | 'high'
 
 function normalizeStatus(value: string): TaskStatus {
   const normalized = value.trim().toLowerCase()
@@ -14,8 +14,15 @@ function normalizeStatus(value: string): TaskStatus {
 
 function normalizePriority(value: string): TaskPriority {
   const normalized = value.trim().toLowerCase()
-  if (normalized === 'low' || normalized === 'high' || normalized === 'critical') return normalized
+  if (normalized === 'low' || normalized === 'high') return normalized
   return 'medium'
+}
+
+function statusLabel(value: TaskStatus) {
+  if (value === 'inprogress') return 'In Progress'
+  if (value === 'review') return 'For Review'
+  if (value === 'done') return 'Done'
+  return 'To Do'
 }
 
 function historyEvent(label: string, by: string) {
@@ -31,6 +38,8 @@ async function ensureKanbanTable() {
       description text,
       priority text not null default 'medium',
       status text not null default 'todo',
+      due_date date,
+      assignee_ids uuid[] not null default array[]::uuid[],
       is_active boolean not null default true,
       history jsonb not null default '[]'::jsonb,
       created_at timestamptz not null default now(),
@@ -40,13 +49,15 @@ async function ensureKanbanTable() {
 
   await sql("alter table admin_kanban_tasks add column if not exists priority text not null default 'medium'")
   await sql("alter table admin_kanban_tasks add column if not exists status text not null default 'todo'")
+  await sql('alter table admin_kanban_tasks add column if not exists due_date date')
+  await sql('alter table admin_kanban_tasks add column if not exists assignee_ids uuid[] not null default array[]::uuid[]')
   await sql("alter table admin_kanban_tasks add column if not exists is_active boolean not null default true")
   await sql("alter table admin_kanban_tasks add column if not exists history jsonb not null default '[]'::jsonb")
 }
 
 async function createTask(formData: FormData) {
   'use server'
-  await requirePermission('dashboard', 'write')
+  const admin = await requirePermission('dashboard', 'write')
   await ensureKanbanTable()
 
   const projectId = String(formData.get('projectId') ?? '').trim()
@@ -54,14 +65,19 @@ async function createTask(formData: FormData) {
   const description = String(formData.get('description') ?? '').trim()
   const status = normalizeStatus(String(formData.get('status') ?? 'todo'))
   const priority = normalizePriority(String(formData.get('priority') ?? 'medium'))
-  const actor = String(formData.get('actor') ?? 'Admin').trim() || 'Admin'
+  const dueDate = String(formData.get('dueDate') ?? '').trim()
+  const assigneeIds = String(formData.get('assigneeIds') ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+  const actor = admin.fullName || 'Admin'
 
   if (!projectId || !title) throw new Error('Project and title are required.')
 
   await sql(
-    `insert into admin_kanban_tasks(project_id, title, description, priority, status, history)
-     values ($1::uuid, $2, nullif($3, ''), $4, $5, $6::jsonb)`,
-    [projectId, title, description, priority, status, historyEvent('Task created', actor)]
+    `insert into admin_kanban_tasks(project_id, title, description, priority, status, due_date, assignee_ids, history)
+     values ($1::uuid, $2, nullif($3, ''), $4, $5, nullif($6, '')::date, $7::uuid[], $8::jsonb)`,
+    [projectId, title, description, priority, status, dueDate, assigneeIds, historyEvent('Task created', actor)]
   )
 
   revalidatePath('/admin/kanban')
@@ -69,7 +85,7 @@ async function createTask(formData: FormData) {
 
 async function updateTask(formData: FormData) {
   'use server'
-  await requirePermission('dashboard', 'write')
+  const admin = await requirePermission('dashboard', 'write')
   await ensureKanbanTable()
 
   const id = String(formData.get('id') ?? '').trim()
@@ -78,7 +94,12 @@ async function updateTask(formData: FormData) {
   const description = String(formData.get('description') ?? '').trim()
   const status = normalizeStatus(String(formData.get('status') ?? 'todo'))
   const priority = normalizePriority(String(formData.get('priority') ?? 'medium'))
-  const actor = String(formData.get('actor') ?? 'Admin').trim() || 'Admin'
+  const dueDate = String(formData.get('dueDate') ?? '').trim()
+  const assigneeIds = String(formData.get('assigneeIds') ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+  const actor = admin.fullName || 'Admin'
 
   if (!id || !projectId || !title) throw new Error('Task information is incomplete.')
 
@@ -89,10 +110,12 @@ async function updateTask(formData: FormData) {
             description = nullif($4, ''),
             priority = $5,
             status = $6,
-            history = coalesce(history, '[]'::jsonb) || $7::jsonb,
+            due_date = nullif($7, '')::date,
+            assignee_ids = $8::uuid[],
+            history = coalesce(history, '[]'::jsonb) || $9::jsonb,
             updated_at = now()
       where id = $1::uuid`,
-    [id, projectId, title, description, priority, status, historyEvent('Task updated', actor)]
+    [id, projectId, title, description, priority, status, dueDate, assigneeIds, historyEvent('Task updated', actor)]
   )
 
   revalidatePath('/admin/kanban')
@@ -100,12 +123,12 @@ async function updateTask(formData: FormData) {
 
 async function moveTask(formData: FormData) {
   'use server'
-  await requirePermission('dashboard', 'write')
+  const admin = await requirePermission('dashboard', 'write')
   await ensureKanbanTable()
 
   const id = String(formData.get('id') ?? '').trim()
   const status = normalizeStatus(String(formData.get('status') ?? 'todo'))
-  const actor = String(formData.get('actor') ?? 'Admin').trim() || 'Admin'
+  const actor = admin.fullName || 'Admin'
 
   if (!id) return
 
@@ -115,7 +138,7 @@ async function moveTask(formData: FormData) {
             history = coalesce(history, '[]'::jsonb) || $3::jsonb,
             updated_at = now()
       where id = $1::uuid`,
-    [id, status, historyEvent(`Moved to ${status}`, actor)]
+    [id, status, historyEvent(`Moved to ${statusLabel(status)}`, actor)]
   )
 
   revalidatePath('/admin/kanban')
@@ -123,12 +146,12 @@ async function moveTask(formData: FormData) {
 
 async function setTaskActive(formData: FormData) {
   'use server'
-  await requirePermission('dashboard', 'write')
+  const admin = await requirePermission('dashboard', 'write')
   await ensureKanbanTable()
 
   const id = String(formData.get('id') ?? '').trim()
   const isActive = String(formData.get('isActive') ?? '1') === '1'
-  const actor = String(formData.get('actor') ?? 'Admin').trim() || 'Admin'
+  const actor = admin.fullName || 'Admin'
 
   if (!id) return
 
@@ -158,14 +181,14 @@ async function deleteTask(formData: FormData) {
 
 async function bulkSetInactive(formData: FormData) {
   'use server'
-  await requirePermission('dashboard', 'write')
+  const admin = await requirePermission('dashboard', 'write')
   await ensureKanbanTable()
 
   const ids = String(formData.get('ids') ?? '')
     .split(',')
     .map((value) => value.trim())
     .filter(Boolean)
-  const actor = String(formData.get('actor') ?? 'Admin').trim() || 'Admin'
+  const actor = admin.fullName || 'Admin'
 
   if (!ids.length) return
 
@@ -201,7 +224,7 @@ export default async function AdminKanbanPage() {
   await requirePermission('dashboard', 'read')
   await ensureKanbanTable()
 
-  const [projects, tasks] = await Promise.all([
+  const [projects, teamMembers, tasks] = await Promise.all([
     sql<{ id: string; project_name: string; client_name: string | null }>(
       `select op.id,
               op.project_name,
@@ -210,6 +233,12 @@ export default async function AdminKanbanPage() {
          left join clients c on c.id = op.client_id
         order by op.project_name asc`
     ),
+    sql<{ id: string; name: string; avatar: string | null }>(
+      `select id, name, avatar
+         from team_members
+        where coalesce(is_active, true) = true
+        order by sort_order asc, created_at asc`
+    ),
     sql<{
       id: string
       project_id: string
@@ -217,6 +246,8 @@ export default async function AdminKanbanPage() {
       description: string | null
       priority: string
       status: string
+      due_date: string | null
+      assignee_ids: string[] | null
       is_active: boolean
       history: unknown
       created_at: string
@@ -228,12 +259,14 @@ export default async function AdminKanbanPage() {
               description,
               priority,
               status,
+              due_date::text,
+              assignee_ids,
               is_active,
               history,
               created_at::text,
               updated_at::text
          from admin_kanban_tasks
-        order by created_at desc`
+        order by created_at asc`
     ),
   ])
 
@@ -244,6 +277,11 @@ export default async function AdminKanbanPage() {
         name: project.project_name,
         clientName: project.client_name || 'Unknown Client',
       }))}
+      teamMembers={teamMembers.map((member) => ({
+        id: member.id,
+        name: member.name,
+        avatar: member.avatar,
+      }))}
       tasks={tasks.map((task) => ({
         id: task.id,
         projectId: task.project_id,
@@ -251,6 +289,8 @@ export default async function AdminKanbanPage() {
         description: task.description,
         priority: normalizePriority(task.priority),
         status: normalizeStatus(task.status),
+        dueDate: task.due_date,
+        assigneeIds: Array.isArray(task.assignee_ids) ? task.assignee_ids : [],
         isActive: task.is_active,
         history: Array.isArray(task.history) ? task.history : [],
         createdAt: task.created_at,
