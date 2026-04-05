@@ -22,10 +22,6 @@ const ALLOWED_DOC_TYPES = new Set([
 
 const emailSchema = z.string().trim().toLowerCase().email()
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
 async function validateEmailWithZoho(email: string) {
   const endpoint = process.env.ZOHO_EMAIL_VALIDATION_ENDPOINT
   const token = process.env.ZOHO_EMAIL_VALIDATION_TOKEN
@@ -49,31 +45,6 @@ async function validateEmailWithZoho(email: string) {
     return true
   } catch {
     return true
-  }
-}
-
-async function checkZohoUndelivered(email: string) {
-  const endpoint = process.env.ZOHO_BOUNCE_CHECK_ENDPOINT
-  const token = process.env.ZOHO_BOUNCE_CHECK_TOKEN
-  if (!endpoint || !token) return false
-
-  try {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ email }),
-      cache: 'no-store',
-    })
-
-    if (!response.ok) return false
-    const payload = (await response.json()) as { undelivered?: boolean; status?: string }
-    if (payload.undelivered === true) return true
-    return (payload.status || '').toLowerCase().includes('undelivered')
-  } catch {
-    return false
   }
 }
 
@@ -257,48 +228,56 @@ export async function POST(req: NextRequest) {
       auth: { user: smtpUser, pass: smtpPass },
     })
 
-    const html = `
-      <div style="font-family:sans-serif;max-width:600px;margin:auto;background:#0a0a1e;color:#e2e8f0;padding:32px;border-radius:12px;border:1px solid #1e1b4b;">
-        <h2 style="color:#a78bfa;margin-bottom:4px;">New Contact Form Submission</h2>
-        <p style="color:#64748b;font-size:13px;margin-top:0;">via PROGREX website contact form</p>
-        <hr style="border:none;border-top:1px solid #1e1b4b;margin:20px 0;" />
-        <table style="width:100%;border-collapse:collapse;">
-          <tr><td style="padding:8px 0;color:#94a3b8;font-size:13px;width:140px;">Full Name</td><td style="padding:8px 0;color:#f1f5f9;font-size:14px;font-weight:600;">${name}</td></tr>
-          <tr><td style="padding:8px 0;color:#94a3b8;font-size:13px;">Email</td><td style="padding:8px 0;color:#f1f5f9;font-size:14px;">${email}</td></tr>
-          ${phone ? `<tr><td style="padding:8px 0;color:#94a3b8;font-size:13px;">Phone</td><td style="padding:8px 0;color:#f1f5f9;font-size:14px;">${phone}</td></tr>` : ''}
-          ${company ? `<tr><td style="padding:8px 0;color:#94a3b8;font-size:13px;">Company</td><td style="padding:8px 0;color:#f1f5f9;font-size:14px;">${company}</td></tr>` : ''}
-          ${service ? `<tr><td style="padding:8px 0;color:#94a3b8;font-size:13px;">Service</td><td style="padding:8px 0;color:#a78bfa;font-size:14px;font-weight:600;">${service}</td></tr>` : ''}
-          ${requestMeeting ? `<tr><td style="padding:8px 0;color:#94a3b8;font-size:13px;">Meeting Request</td><td style="padding:8px 0;color:#f1f5f9;font-size:14px;">${meetingDate} ${meetingStartTime} (${meetingDurationMinutes} mins)</td></tr>` : ''}
-          ${budget ? `<tr><td style="padding:8px 0;color:#94a3b8;font-size:13px;">Budget</td><td style="padding:8px 0;color:#f1f5f9;font-size:14px;">${budget}</td></tr>` : ''}
-        </table>
-        <hr style="border:none;border-top:1px solid #1e1b4b;margin:20px 0;" />
-        <p style="color:#94a3b8;font-size:13px;margin-bottom:8px;">Message</p>
-        <p style="color:#f1f5f9;font-size:14px;line-height:1.7;white-space:pre-line;background:#050510;padding:16px;border-radius:8px;border:1px solid #1e1b4b;">${message}</p>
-        <p style="color:#94a3b8;font-size:12px;margin-top:16px;">Uploaded files: ${uploadedAttachmentUrls.length}</p>
-        <p style="color:#475569;font-size:11px;margin-top:24px;">Sent from PROGREX Contact Form — ${new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' })} PHT</p>
-      </div>
-    `
+    await sql(`
+      create table if not exists contact_submission_confirmations (
+        id text primary key,
+        token_hash text unique not null,
+        payload jsonb not null,
+        created_at timestamptz not null default now(),
+        expires_at timestamptz not null,
+        consumed_at timestamptz
+      )
+    `)
+
+    const token = randomBytes(24).toString('hex')
+    const tokenHash = createHash('sha256').update(token).digest('hex')
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || req.nextUrl.origin
+    const confirmUrl = `${baseUrl.replace(/\/$/, '')}/api/contact/confirm?token=${encodeURIComponent(token)}`
+
+    const payload = {
+      name,
+      email,
+      phone,
+      company,
+      service,
+      budget,
+      message,
+      requestMeeting,
+      meetingDate,
+      meetingStartTime,
+      meetingDurationMinutes,
+      attachmentUrls: uploadedAttachmentUrls,
+    }
+
+    await sql(
+      `insert into contact_submission_confirmations(id, token_hash, payload, expires_at)
+       values ($1, $2, $3::jsonb, now() + interval '24 hours')`,
+      [randomBytes(16).toString('hex'), tokenHash, JSON.stringify(payload)]
+    )
 
     const logoPath = path.join(process.cwd(), 'public', 'ProgreX Logo Black.png')
-
-    const acknowledgementHtml = `
+    const confirmationHtml = `
       <div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;background:#050511;border:1px solid #1c2d4d;border-radius:14px;overflow:hidden;">
-        <div style="padding:20px 24px;background:linear-gradient(135deg,#0EA5E9 0%,#7C3AED 100%);">
-          <h1 style="margin:0;color:#fff;font-size:20px;">Message Received</h1>
-          <p style="margin:6px 0 0;color:#e6f4ff;font-size:13px;">ProgreX Team has received your inquiry.</p>
+        <div style="padding:20px 24px;background:linear-gradient(135deg,#0EA5E9 0%,#2563eb 100%);">
+          <h1 style="margin:0;color:#fff;font-size:20px;">Confirm Your Inquiry</h1>
+          <p style="margin:6px 0 0;color:#e6f4ff;font-size:13px;">One click confirmation is required before we process your message.</p>
         </div>
         <div style="padding:22px 24px;color:#dbeafe;">
           <p style="margin:0 0 12px;font-size:14px;">Hi ${name},</p>
-          <p style="margin:0 0 12px;font-size:14px;line-height:1.7;">Thank you for contacting ProgreX. Our team has received your message and will get back to you as soon as possible.</p>
-          ${requestMeeting ? `<p style="margin:0 0 12px;font-size:14px;line-height:1.7;">Your meeting request has been noted for <strong>${meetingDate}</strong> at <strong>${meetingStartTime}</strong> (${meetingDurationMinutes} minutes).</p>` : ''}
-          <div style="margin-top:16px;padding:14px;border-radius:10px;background:#070f1e;border:1px solid #213557;">
-            <p style="margin:0 0 8px;font-size:12px;color:#93c5fd;text-transform:uppercase;letter-spacing:0.08em;">Summary</p>
-            <p style="margin:0;font-size:13px;color:#e2e8f0;">Service: ${service || 'Not specified'}</p>
-            <p style="margin:6px 0 0;font-size:13px;color:#e2e8f0;">Budget: ${budget || 'Not specified'}</p>
-          </div>
-          <p style="margin:20px 0 8px;font-size:14px;">Best regards,</p>
-          <p style="margin:0;font-size:14px;font-weight:700;">ProgreX Team</p>
-          <p style="margin:2px 0 0;font-size:12px;color:#93c5fd;">Software & Systems Development</p>
+          <p style="margin:0 0 12px;font-size:14px;line-height:1.7;">Please confirm your inquiry by clicking the button below. This link expires in 24 hours.</p>
+          <a href="${confirmUrl}" style="display:inline-block;background:#0EA5E9;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:700;">Confirm and Send Message</a>
+          <p style="margin:16px 0 0;font-size:12px;color:#93c5fd;word-break:break-all;">${confirmUrl}</p>
+          <p style="margin:16px 0 0;font-size:12px;color:#93c5fd;">If this was not you, ignore this email.</p>
           <div style="margin-top:16px;display:flex;align-items:center;gap:10px;">
             <img src="cid:progrex-logo" alt="ProgreX" style="height:34px;width:auto;background:#fff;border-radius:6px;padding:4px;" />
           </div>
@@ -306,73 +285,42 @@ export async function POST(req: NextRequest) {
       </div>
     `
 
-    try {
-      await transporter.sendMail({
-        from: `"ProgreX Team" <${smtpUser}>`,
-        to: email,
-        subject: `We received your message — ProgreX`,
-        html: acknowledgementHtml,
-        attachments: [
-          {
-            filename: 'ProgreX Logo Black.png',
-            path: logoPath,
-            cid: 'progrex-logo',
-          },
-        ],
-      })
-    } catch {
-      return NextResponse.json({ error: 'Enter a valid email address' }, { status: 400 })
-    }
-
-    const verifyStart = Date.now()
-    for (let i = 0; i < 26; i += 1) {
-      const undelivered = await checkZohoUndelivered(email)
-      if (undelivered) {
-        return NextResponse.json({ error: 'Enter a valid email address' }, { status: 400 })
-      }
-      await sleep(500)
-    }
+    await transporter.sendMail({
+      from: `"ProgreX Team" <${smtpUser}>`,
+      to: email,
+      subject: 'Confirm your inquiry — ProgreX',
+      html: confirmationHtml,
+      attachments: [
+        {
+          filename: 'ProgreX Logo Black.png',
+          path: logoPath,
+          cid: 'progrex-logo',
+        },
+      ],
+    })
 
     await transporter.sendMail({
       from: `"ProgreX Team" <${smtpUser}>`,
-      to: 'progrex.tech@gmail.com, shekaigarcia@gmail.com',
-      replyTo: email,
-      subject: `[PROGREX] New Inquiry from ${name}${service ? ` — ${service}` : ''}`,
-      html,
+      to: smtpUser,
+      subject: `New inquiry (NOT CONFIRMED): ${name}${company ? ` - ${company}` : ''}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;background:#050511;border:1px solid #1c2d4d;border-radius:14px;overflow:hidden;">
+          <div style="padding:20px 24px;background:linear-gradient(135deg,#f59e0b 0%,#d97706 100%);">
+            <h1 style="margin:0;color:#fff;font-size:20px;">Inquiry Pending Email Confirmation</h1>
+            <p style="margin:6px 0 0;color:#ffedd5;font-size:13px;">User submitted the form but has not confirmed email yet.</p>
+          </div>
+          <div style="padding:22px 24px;color:#fde68a;">
+            <p style="margin:0 0 8px;font-size:14px;line-height:1.7;"><strong>Name:</strong> ${name}</p>
+            <p style="margin:0 0 8px;font-size:14px;line-height:1.7;"><strong>Email:</strong> ${email}</p>
+            <p style="margin:0 0 8px;font-size:14px;line-height:1.7;"><strong>Service:</strong> ${service || '-'}</p>
+            <p style="margin:0 0 8px;font-size:14px;line-height:1.7;"><strong>Budget:</strong> ${budget || '-'}</p>
+            <p style="margin:0;font-size:14px;line-height:1.7;"><strong>Status:</strong> Waiting for confirmation link click.</p>
+          </div>
+        </div>
+      `,
     })
 
-    if (requestMeeting) {
-      await sql(
-        `insert into bookings(name, email, phone, company, service, source, status, requested_date, requested_start_time, requested_duration_minutes, budget, project_details, attachment_urls, is_active, is_approved)
-         values ($1, $2, $3, $4, $5, 'contact-form', 'new', $6::date, $7, $8, $9, $10, $11::text[], true, false)`,
-        [
-          name,
-          email,
-          phone || null,
-          company || null,
-          service || null,
-          meetingDate,
-          meetingStartTime,
-          meetingDurationMinutes,
-          budget || null,
-          message,
-          uploadedAttachmentUrls,
-        ]
-      )
-    } else {
-      await sql(
-        `insert into contact_submissions(name, email, phone, company, service, budget, message, attachment_urls, status, request_meeting)
-         values ($1, $2, $3, $4, $5, $6, $7, $8::text[], 'new', false)`,
-        [name, email, phone || null, company || null, service || null, budget || null, message, uploadedAttachmentUrls]
-      )
-    }
-
-    const elapsed = Date.now() - verifyStart
-    if (elapsed < 13_000) {
-      await sleep(13_000 - elapsed)
-    }
-
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, pendingConfirmation: true })
   } catch (err) {
     console.error('Contact form error:', err)
     return NextResponse.json({ error: 'Failed to send message. Please try again.' }, { status: 500 })
