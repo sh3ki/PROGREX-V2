@@ -46,6 +46,7 @@ type PaymentRow = {
   invoiceStatus: string
   invoiceDueDate: string | null
   invoiceSentAt: string | null
+  invoicePdfUrl: string | null
   projectPaid: number
   projectBalance: number
   createdAt: string | null
@@ -58,6 +59,7 @@ type ProjectOption = {
   clientName: string
   clientEmail: string | null
   totalPrice: number
+  invoiceNo: string | null
 }
 
 type ColumnKey = 'project' | 'client' | 'totalPrice' | 'amountPaid' | 'date' | 'or' | 'method' | 'balance' | 'status' | 'actions'
@@ -74,7 +76,7 @@ type PaymentFormState = {
   notes: string
 }
 
-type ConfirmKind = 'delete'
+type ConfirmKind = 'delete' | 'generateTransactionInvoice' | 'generateProjectInvoice'
 
 function dateToday() {
   const now = new Date()
@@ -141,6 +143,15 @@ function normalizeExternalUrl(url: string) {
   return `https://${trimmed}`
 }
 
+function downloadExternalFile(url: string) {
+  const link = document.createElement('a')
+  link.href = normalizeExternalUrl(url)
+  link.target = '_blank'
+  link.rel = 'noopener noreferrer'
+  link.download = ''
+  link.click()
+}
+
 function methodBadgeStyle(method: string | null) {
   const normalized = (method || '').toLowerCase()
   if (normalized === 'gcash') return { bg: 'rgba(14,165,233,0.14)', fg: '#0369a1' }
@@ -179,7 +190,9 @@ export default function AdminPaymentsTemplateView({
   createPaymentAction,
   updatePaymentAction,
   deletePaymentAction,
+  generateTransactionInvoiceAction,
   sendTransactionInvoiceEmailAction,
+  generateProjectInvoiceAction,
   sendProjectInvoiceEmailAction,
 }: {
   payments: PaymentRow[]
@@ -189,8 +202,10 @@ export default function AdminPaymentsTemplateView({
   createPaymentAction: (formData: FormData) => Promise<void>
   updatePaymentAction: (formData: FormData) => Promise<void>
   deletePaymentAction: (formData: FormData) => Promise<void>
-  sendTransactionInvoiceEmailAction: (formData: FormData) => Promise<void>
-  sendProjectInvoiceEmailAction: (formData: FormData) => Promise<void>
+  generateTransactionInvoiceAction: (formData: FormData) => Promise<{ ok: boolean; message: string; invoicePdfUrl?: string }>
+  sendTransactionInvoiceEmailAction: (formData: FormData) => Promise<{ ok: boolean; message: string }>
+  generateProjectInvoiceAction: (formData: FormData) => Promise<{ ok: boolean; message: string; invoicePdfUrl?: string }>
+  sendProjectInvoiceEmailAction: (formData: FormData) => Promise<{ ok: boolean; message: string }>
 }) {
   const [projectFilter, setProjectFilter] = useState('')
   const [search, setSearch] = useState('')
@@ -215,6 +230,9 @@ export default function AdminPaymentsTemplateView({
   const [viewOpen, setViewOpen] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [projectInvoiceOpen, setProjectInvoiceOpen] = useState(false)
+  const [transactionInvoiceOpen, setTransactionInvoiceOpen] = useState(false)
+  const [projectInvoiceUrl, setProjectInvoiceUrl] = useState('')
+  const [transactionInvoiceUrl, setTransactionInvoiceUrl] = useState('')
 
   const [selectedPayment, setSelectedPayment] = useState<PaymentRow | null>(null)
   const [confirmConfig, setConfirmConfig] = useState<{ kind: ConfirmKind; title: string; description: string; confirmLabel: string; tone: 'primary' | 'danger' } | null>(null)
@@ -232,6 +250,15 @@ export default function AdminPaymentsTemplateView({
     if (!projectFilter) return
     setAddForm((prev) => ({ ...prev, projectId: projectFilter }))
   }, [projectFilter])
+
+  useEffect(() => {
+    if (!selectedProject) {
+      setProjectInvoiceUrl('')
+      return
+    }
+    const existing = payments.find((item) => item.projectId === selectedProject.id && item.invoicePdfUrl)
+    setProjectInvoiceUrl(existing?.invoicePdfUrl || '')
+  }, [payments, selectedProject])
 
   const filtered = useMemo(() => {
     const keyword = search.trim().toLowerCase()
@@ -299,15 +326,26 @@ export default function AdminPaymentsTemplateView({
   }
 
   async function executeConfirm() {
-    if (!selectedPayment || !confirmConfig) return
-    setPending(true)
+    if (!confirmConfig) return
     try {
       if (confirmConfig.kind === 'delete') {
+        if (!selectedPayment) return
+        setPending(true)
         const formData = new FormData()
         formData.set('id', selectedPayment.id)
         await deletePaymentAction(formData)
         setViewOpen(false)
         addToast('Payment deleted.', 'success')
+      } else if (confirmConfig.kind === 'generateTransactionInvoice') {
+        if (!selectedPayment) return
+        await generateTransactionInvoice(selectedPayment.id)
+      } else if (confirmConfig.kind === 'generateProjectInvoice') {
+        if (!selectedProject) {
+          addToast('Select a project first to generate a full invoice.', 'default')
+        } else {
+          await generateProjectInvoice(selectedProject.id)
+          setProjectInvoiceOpen(true)
+        }
       }
       setConfirmOpen(false)
       setConfirmConfig(null)
@@ -318,13 +356,31 @@ export default function AdminPaymentsTemplateView({
     }
   }
 
+  async function generateTransactionInvoice(paymentId: string) {
+    setPending(true)
+    try {
+      const formData = new FormData()
+      formData.set('id', paymentId)
+      const result = await generateTransactionInvoiceAction(formData)
+      addToast(result.message, result.ok ? 'success' : 'danger')
+      if (result.ok && result.invoicePdfUrl) {
+        setTransactionInvoiceUrl(result.invoicePdfUrl)
+        setTransactionInvoiceOpen(true)
+      }
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to generate invoice.', 'danger')
+    } finally {
+      setPending(false)
+    }
+  }
+
   async function sendTransactionInvoice(paymentId: string) {
     setPending(true)
     try {
       const formData = new FormData()
       formData.set('id', paymentId)
-      await sendTransactionInvoiceEmailAction(formData)
-      addToast('Invoice email sent.', 'success')
+      const result = await sendTransactionInvoiceEmailAction(formData)
+      addToast(result.message, result.ok ? 'success' : 'danger')
     } catch (error) {
       addToast(error instanceof Error ? error.message : 'Failed to send invoice email.', 'danger')
     } finally {
@@ -337,8 +393,8 @@ export default function AdminPaymentsTemplateView({
     try {
       const formData = new FormData()
       formData.set('projectId', projectId)
-      await sendProjectInvoiceEmailAction(formData)
-      addToast('Project invoice email sent.', 'success')
+      const result = await sendProjectInvoiceEmailAction(formData)
+      addToast(result.message, result.ok ? 'success' : 'danger')
     } catch (error) {
       addToast(error instanceof Error ? error.message : 'Failed to send project invoice.', 'danger')
     } finally {
@@ -346,12 +402,21 @@ export default function AdminPaymentsTemplateView({
     }
   }
 
-  function openSingleInvoicePdf(paymentId: string) {
-    window.open(`/api/admin/payment/invoice?paymentId=${encodeURIComponent(paymentId)}`, '_blank', 'noopener,noreferrer')
-  }
-
-  function openProjectInvoicePdf(projectId: string) {
-    window.open(`/api/admin/payment/invoice?projectId=${encodeURIComponent(projectId)}`, '_blank', 'noopener,noreferrer')
+  async function generateProjectInvoice(projectId: string) {
+    setPending(true)
+    try {
+      const formData = new FormData()
+      formData.set('projectId', projectId)
+      const result = await generateProjectInvoiceAction(formData)
+      addToast(result.message, result.ok ? 'success' : 'danger')
+      if (result.ok && result.invoicePdfUrl) {
+        setProjectInvoiceUrl(result.invoicePdfUrl)
+      }
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to generate project invoice.', 'danger')
+    } finally {
+      setPending(false)
+    }
   }
 
   function exportCsv() {
@@ -399,17 +464,17 @@ export default function AdminPaymentsTemplateView({
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
-          <p className="text-xs uppercase tracking-wide apx-muted">Total Projected</p>
-          <p className="mt-1 text-2xl font-bold apx-text">{formatMoney(stats.totalProjected, 'PHP')}</p>
+        <div className="rounded-2xl border p-4" style={{ borderColor: 'rgba(22,163,74,0.45)', backgroundColor: 'rgba(22,163,74,0.12)' }}>
+          <p className="text-xs uppercase tracking-wide" style={{ color: '#166534' }}>Total Projected</p>
+          <p className="mt-1 text-2xl font-bold" style={{ color: '#166534' }}>{formatMoney(stats.totalProjected, 'PHP')}</p>
         </div>
-        <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
-          <p className="text-xs uppercase tracking-wide apx-muted">Total Collected</p>
-          <p className="mt-1 text-2xl font-bold apx-text">{formatMoney(stats.totalCollected, 'PHP')}</p>
+        <div className="rounded-2xl border p-4" style={{ borderColor: 'rgba(37,99,235,0.45)', backgroundColor: 'rgba(37,99,235,0.12)' }}>
+          <p className="text-xs uppercase tracking-wide" style={{ color: '#1d4ed8' }}>Total Collected</p>
+          <p className="mt-1 text-2xl font-bold" style={{ color: '#1d4ed8' }}>{formatMoney(stats.totalCollected, 'PHP')}</p>
         </div>
-        <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
-          <p className="text-xs uppercase tracking-wide apx-muted">Total Balance</p>
-          <p className="mt-1 text-2xl font-bold apx-text">{formatMoney(stats.totalBalance, 'PHP')}</p>
+        <div className="rounded-2xl border p-4" style={{ borderColor: 'rgba(220,38,38,0.45)', backgroundColor: 'rgba(220,38,38,0.12)' }}>
+          <p className="text-xs uppercase tracking-wide" style={{ color: '#b91c1c' }}>Total Balance</p>
+          <p className="mt-1 text-2xl font-bold" style={{ color: '#b91c1c' }}>{formatMoney(stats.totalBalance, 'PHP')}</p>
         </div>
       </div>
 
@@ -449,11 +514,18 @@ export default function AdminPaymentsTemplateView({
                 addToast('Select a project first to generate a full invoice.', 'default')
                 return
               }
-              setProjectInvoiceOpen(true)
+              setConfirmConfig({
+                kind: 'generateProjectInvoice',
+                title: 'Generate Project Invoice',
+                description: `Generate and save invoice ${selectedProject.invoiceNo || ''} for ${selectedProject.projectName}? Existing invoice file will be replaced.`,
+                confirmLabel: 'Generate',
+                tone: 'primary',
+              })
+              setConfirmOpen(true)
             }}
           >
             <ReceiptText className="h-4 w-4" />
-            Invoice
+            Generate Invoice
           </ApexButton>
           <ApexColumnsToggle
             columns={[
@@ -500,7 +572,7 @@ export default function AdminPaymentsTemplateView({
               return (
                 <tr
                   key={payment.id}
-                  className="cursor-pointer border-b last:border-b-0"
+                  className="apx-table-row cursor-pointer border-b last:border-b-0"
                   style={{ borderColor: 'var(--apx-border)' }}
                   onClick={() => {
                     setSelectedPayment(payment)
@@ -536,7 +608,22 @@ export default function AdminPaymentsTemplateView({
                   {columns.actions ? (
                     <td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
                       <div className="flex items-center justify-end gap-2">
-                        <button type="button" className="apx-icon-action" onClick={() => openSingleInvoicePdf(payment.id)} aria-label="Generate invoice PDF">
+                        <button
+                          type="button"
+                          className="apx-icon-action"
+                          onClick={() => {
+                            setSelectedPayment(payment)
+                            setConfirmConfig({
+                              kind: 'generateTransactionInvoice',
+                              title: 'Generate Transaction Invoice',
+                              description: `Generate transaction invoice for ${payment.projectName || 'this payment'}? It will be uploaded only if this payment has no saved invoice file yet.`,
+                              confirmLabel: 'Generate',
+                              tone: 'primary',
+                            })
+                            setConfirmOpen(true)
+                          }}
+                          aria-label="Generate invoice PDF"
+                        >
                           <ReceiptText className="h-4 w-4" />
                         </button>
                         <button type="button" className="apx-icon-action" onClick={() => void sendTransactionInvoice(payment.id)} aria-label="Send invoice email">
@@ -671,18 +758,40 @@ export default function AdminPaymentsTemplateView({
         ) : null}
       </ApexModal>
 
-      <ApexModal size="sm" open={projectInvoiceOpen} title="Project Invoice" subtitle="Generate full invoice for selected project." onClose={() => setProjectInvoiceOpen(false)}>
+      <ApexModal size="xl" open={projectInvoiceOpen} title="Project Invoice" subtitle="Generated invoice preview." onClose={() => setProjectInvoiceOpen(false)}>
         {selectedProject ? (
           <div className="space-y-3">
             <div className="rounded-xl border p-3" style={{ borderColor: 'var(--apx-border)' }}>
               <p className="font-semibold apx-text">{selectedProject.projectName}</p>
               <p className="text-xs apx-muted">{selectedProject.clientName}</p>
+              <p className="text-xs apx-muted">Invoice No: {selectedProject.invoiceNo || '-'}</p>
+            </div>
+            <div className="overflow-hidden rounded-xl border" style={{ borderColor: 'var(--apx-border)' }}>
+              {projectInvoiceUrl ? (
+                <iframe
+                  src={normalizeExternalUrl(projectInvoiceUrl)}
+                  title="Project invoice preview"
+                  className="h-[62vh] w-full"
+                />
+              ) : (
+                <div className="flex h-40 items-center justify-center text-sm apx-muted">Generate the invoice first to preview it.</div>
+              )}
             </div>
             <div className="flex justify-end gap-2">
               <ApexButton type="button" variant="outline" onClick={() => setProjectInvoiceOpen(false)}>Close</ApexButton>
-              <ApexButton type="button" variant="outline" onClick={() => openProjectInvoicePdf(selectedProject.id)}>
+              <ApexButton
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  if (!projectInvoiceUrl) {
+                    addToast('Generate the invoice first.', 'default')
+                    return
+                  }
+                  downloadExternalFile(projectInvoiceUrl)
+                }}
+              >
                 <ReceiptText className="h-4 w-4" />
-                Open PDF
+                Download
               </ApexButton>
               <ApexButton type="button" onClick={() => void sendProjectInvoice(selectedProject.id)}>
                 <Mail className="h-4 w-4" />
@@ -693,6 +802,56 @@ export default function AdminPaymentsTemplateView({
         ) : (
           <p className="text-sm apx-muted">Select a project first.</p>
         )}
+      </ApexModal>
+
+      <ApexModal
+        size="xl"
+        open={transactionInvoiceOpen}
+        title="Transaction Invoice"
+        subtitle="Generated invoice preview."
+        onClose={() => setTransactionInvoiceOpen(false)}
+      >
+        {selectedPayment ? (
+          <div className="space-y-3">
+            <div className="rounded-xl border p-3" style={{ borderColor: 'var(--apx-border)' }}>
+              <p className="font-semibold apx-text">{selectedPayment.projectName || '-'}</p>
+              <p className="text-xs apx-muted">{selectedPayment.clientName}</p>
+              <p className="text-xs apx-muted">{selectedPayment.invoiceNumber || 'Generated transaction invoice'}</p>
+            </div>
+            <div className="overflow-hidden rounded-xl border" style={{ borderColor: 'var(--apx-border)' }}>
+              {transactionInvoiceUrl ? (
+                <iframe
+                  src={normalizeExternalUrl(transactionInvoiceUrl)}
+                  title="Transaction invoice preview"
+                  className="h-[62vh] w-full"
+                />
+              ) : (
+                <div className="flex h-40 items-center justify-center text-sm apx-muted">Generate the invoice first to preview it.</div>
+              )}
+            </div>
+            <div className="flex justify-end gap-2">
+              <ApexButton type="button" variant="outline" onClick={() => setTransactionInvoiceOpen(false)}>Close</ApexButton>
+              <ApexButton
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  if (!transactionInvoiceUrl) {
+                    addToast('Generate the invoice first.', 'default')
+                    return
+                  }
+                  downloadExternalFile(transactionInvoiceUrl)
+                }}
+              >
+                <ReceiptText className="h-4 w-4" />
+                Download
+              </ApexButton>
+              <ApexButton type="button" onClick={() => void sendTransactionInvoice(selectedPayment.id)}>
+                <Mail className="h-4 w-4" />
+                Send Email
+              </ApexButton>
+            </div>
+          </div>
+        ) : null}
       </ApexModal>
 
       <ApexConfirmationModal
