@@ -67,6 +67,7 @@ async function ensureOngoingProjectsTable() {
   await sql("alter table ongoing_projects add column if not exists progress_color text not null default '#16a34a'")
   await sql("alter table ongoing_projects add column if not exists status text not null default 'active'")
   await sql('alter table ongoing_projects add column if not exists progress numeric(5,2) not null default 0')
+  await sql('alter table ongoing_projects add column if not exists invoice_no text')
   await sql(`
     update ongoing_projects
        set status = case
@@ -74,6 +75,22 @@ async function ensureOngoingProjectsTable() {
          else 'finished'
        end
      where status is null or trim(status) = ''
+  `)
+  await sql(`
+    with source as (
+      select id,
+             to_char(coalesce(start_date, created_at::date), 'YYYY-MM') as ym,
+             row_number() over (
+               partition by to_char(coalesce(start_date, created_at::date), 'YYYY-MM')
+               order by coalesce(start_date, created_at::date) asc, created_at asc, id asc
+             ) as seq
+        from ongoing_projects
+       where invoice_no is null or trim(invoice_no) = ''
+    )
+    update ongoing_projects op
+       set invoice_no = concat('INV-', source.ym, '-', lpad(source.seq::text, 3, '0'))
+      from source
+     where op.id = source.id
   `)
   await sql(`
     create table if not exists ongoing_project_progress (
@@ -99,6 +116,25 @@ function parseCurrency(value: FormDataEntryValue | null) {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
+function normalizeInvoiceDatePart(value: string) {
+  const match = value.match(/^(\d{4})-(\d{2})-\d{2}$/)
+  if (match) return `${match[1]}-${match[2]}`
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+}
+
+async function generateInvoiceNumberByDate(startDate: string) {
+  const datePart = normalizeInvoiceDatePart(startDate)
+  const counts = await sql<{ total: string }>(
+    `select count(*)::text as total
+       from ongoing_projects
+      where invoice_no like $1`,
+    [`INV-${datePart}-%`]
+  )
+  const nextIndex = Number(counts[0]?.total ?? '0') + 1
+  return `INV-${datePart}-${String(nextIndex).padStart(3, '0')}`
+}
+
 async function createOngoingProject(formData: FormData) {
   'use server'
   await requirePermission('projects', 'write')
@@ -116,6 +152,7 @@ async function createOngoingProject(formData: FormData) {
   const isActive = status !== 'finished'
   const totalPrice = parseCurrency(formData.get('totalPrice'))
   const balance = totalPrice
+  const invoiceNo = await generateInvoiceNumberByDate(startDate)
 
   if (!projectName) return
 
@@ -156,12 +193,13 @@ async function createOngoingProject(formData: FormData) {
       project_scope_file_url,
       other_files_urls,
       payment_term,
+      invoice_no,
       is_active,
       status,
       progress,
       total_price,
       balance
-    ) values ($1, $2, $3::date, $4::date, nullif($5, '')::uuid, $6, $7::uuid[], $8, $9, $10::text[], $11, $12, $13, 0, $14, $15)`,
+    ) values ($1, $2, $3::date, $4::date, nullif($5, '')::uuid, $6, $7::uuid[], $8, $9, $10::text[], $11, $12, $13, $14, 0, $15, $16)`,
     [
       projectName,
       projectDescription || null,
@@ -174,6 +212,7 @@ async function createOngoingProject(formData: FormData) {
       scopeUrl || null,
       otherFileUrls,
       paymentTerm || null,
+      invoiceNo,
       isActive,
       status,
       totalPrice,
@@ -530,6 +569,7 @@ export default async function AdminOngoingProjectsPage() {
       progress: string | null
       total_price: string | null
       balance: string | null
+      invoice_no: string | null
     }>(
       `select op.id,
               op.project_name,
@@ -550,7 +590,8 @@ export default async function AdminOngoingProjectsPage() {
               op.progress_color,
               op.progress::text,
               op.total_price::text,
-              op.balance::text
+              op.balance::text,
+              op.invoice_no
        from ongoing_projects op
        left join clients c on c.id = op.client_id
             order by op.created_at desc`
@@ -600,6 +641,7 @@ export default async function AdminOngoingProjectsPage() {
         progress: project.progress,
         totalPrice: project.total_price,
         balance: project.balance,
+        invoiceNo: project.invoice_no,
       }))}
       clients={clients.map((client) => ({ id: client.id, fullName: client.full_name, profileImage: client.profile_image }))}
       teamMembers={teamMembers.map((member) => ({ id: member.id, name: member.name, avatar: member.avatar || '' }))}
