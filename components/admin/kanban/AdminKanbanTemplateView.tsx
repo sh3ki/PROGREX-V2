@@ -342,24 +342,22 @@ export default function AdminKanbanTemplateView({
         </div>
       ) : (
         <>
-          <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="flex w-full flex-col gap-3 md:flex-row md:items-center">
-                <div className="w-full md:max-w-sm">
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide apx-muted">Project Name</label>
-                  <ApexDropdown
-                    value={projectFilter}
-                    options={[{ value: '', label: 'Select a project first' }, ...projects.map((project) => ({ value: project.id, label: `${project.name} - ${project.clientName}` }))]}
-                    onChange={(value) => {
-                      setProjectFilter(value)
-                      setSelectedIds([])
-                    }}
-                  />
-                </div>
-                <div className="w-full md:max-w-sm">
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide apx-muted">Search</label>
-                  <ApexSearchField value={search} onChange={setSearch} placeholder="Search tasks..." />
-                </div>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex w-full flex-col gap-3 md:flex-row md:items-center">
+              <div className="w-full md:max-w-sm">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide apx-muted">Project Name</label>
+                <ApexDropdown
+                  value={projectFilter}
+                  options={[{ value: '', label: 'Select a project first' }, ...projects.map((project) => ({ value: project.id, label: `${project.name} - ${project.clientName}` }))]}
+                  onChange={(value) => {
+                    setProjectFilter(value)
+                    setSelectedIds([])
+                  }}
+                />
+              </div>
+              <div className="w-full md:max-w-sm">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide apx-muted">Search</label>
+                <ApexSearchField value={search} onChange={setSearch} placeholder="Search tasks..." />
               </div>
             </div>
           </div>
