@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Image from 'next/image'
-import { CalendarDays, Edit2, Plus, Power, Trash2, User } from 'lucide-react'
+import { ArrowDown, CalendarDays, Edit2, Plus, Power, Trash2 } from 'lucide-react'
 import { ApexButton, ApexInput, ApexTextarea } from '@/components/admin/apex/AdminPrimitives'
 import {
   ApexBlockingSpinner,
@@ -18,7 +18,7 @@ import {
 } from '@/components/admin/apex/ApexDataUi'
 
 type TaskStatus = 'todo' | 'inprogress' | 'review' | 'done'
-type TaskPriority = 'low' | 'medium' | 'high'
+type TaskPriority = 'low' | 'medium' | 'high' | 'critical'
 
 type ProjectOption = {
   id: string
@@ -74,12 +74,13 @@ const LANES: Array<{ key: TaskStatus; label: string; color: string; soft: string
 ]
 
 const PRIORITIES: Array<{ key: TaskPriority; label: string; color: string }> = [
-  { key: 'low', label: 'Low', color: '#64748b' },
-  { key: 'medium', label: 'Medium', color: '#0284c7' },
-  { key: 'high', label: 'High', color: '#ea580c' },
+  { key: 'low', label: 'Low', color: '#2563eb' },
+  { key: 'medium', label: 'Medium', color: '#eab308' },
+  { key: 'high', label: 'High', color: '#f97316' },
+  { key: 'critical', label: 'Critical', color: '#ef4444' },
 ]
 
-const PRIORITY_SCORE: Record<TaskPriority, number> = { high: 3, medium: 2, low: 1 }
+const PRIORITY_SCORE: Record<TaskPriority, number> = { critical: 4, high: 3, medium: 2, low: 1 }
 
 function defaultForm(projectId = ''): TaskForm {
   return {
@@ -672,9 +673,9 @@ function TaskFormCard({
 }) {
   const [membersOpen, setMembersOpen] = useState(false)
   const selectedProject = projects.find((project) => project.id === form.projectId)
-  const membersLabel = form.assigneeIds.length
-    ? `${form.assigneeIds.length} member${form.assigneeIds.length > 1 ? 's' : ''} selected`
-    : 'Select team members (optional)'
+  const membersLabel = form.assigneeIds.length > 0
+    ? form.assigneeIds.map((id) => teamMembers.find((member) => member.id === id)?.name || id).join(', ')
+    : 'Select team members'
 
   return (
     <form
@@ -734,26 +735,32 @@ function TaskFormCard({
             style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface-alt)' }}
             onClick={() => setMembersOpen((prev) => !prev)}
           >
-            <span className="apx-text">{membersLabel}</span>
-            <User className="h-4 w-4 apx-muted" />
+            <span className={form.assigneeIds.length > 0 ? 'apx-text' : 'apx-muted'}>{membersLabel}</span>
+            <ArrowDown className={['h-3.5 w-3.5 transition-transform', membersOpen ? 'rotate-180' : 'rotate-0'].join(' ')} />
           </button>
           {membersOpen ? (
             <div className="absolute z-20 mt-2 max-h-48 w-full overflow-y-auto rounded-xl border p-2" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
-              {teamMembers.length ? teamMembers.map((member) => (
-                <label key={member.id} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-(--apx-surface-alt)">
-                  <input
-                    type="checkbox"
-                    checked={form.assigneeIds.includes(member.id)}
-                    onChange={() => {
-                      const next = form.assigneeIds.includes(member.id)
-                        ? form.assigneeIds.filter((id) => id !== member.id)
-                        : [...form.assigneeIds, member.id]
-                      onChange({ ...form, assigneeIds: next })
-                    }}
-                  />
-                  <span className="apx-text text-sm">{member.name}</span>
-                </label>
-              )) : <p className="px-2 py-1 text-xs apx-muted">No active team members found.</p>}
+              {teamMembers.length ? teamMembers.map((member) => {
+                const selected = form.assigneeIds.includes(member.id)
+                return (
+                  <label key={member.id} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-xs apx-text hover:bg-black/5">
+                    <ApexCheckbox
+                      checked={selected}
+                      onChange={() => {
+                        const next = selected
+                          ? form.assigneeIds.filter((id) => id !== member.id)
+                          : [...form.assigneeIds, member.id]
+                        onChange({ ...form, assigneeIds: next })
+                      }}
+                      ariaLabel={`Toggle ${member.name}`}
+                    />
+                    <span className="inline-flex h-5 w-5 items-center justify-center overflow-hidden rounded-full border" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface-alt)' }}>
+                      {member.avatar ? <Image src={member.avatar} alt={member.name} width={20} height={20} className="h-full w-full object-cover" /> : (member.name || 'U').slice(0, 1).toUpperCase()}
+                    </span>
+                    <span className="text-sm apx-text">{member.name}</span>
+                  </label>
+                )
+              }) : <p className="px-2 py-1 text-xs apx-muted">No active team members found.</p>}
             </div>
           ) : null}
         </div>
