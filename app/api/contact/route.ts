@@ -6,6 +6,23 @@ import { z } from 'zod'
 import { sql } from '@/lib/server/db'
 import { assertSameOrigin, getClientIp, hitRateLimit } from '@/lib/server/request-security'
 
+type ConfirmationPayload = {
+  name: string
+  email: string
+  phone: string
+  company: string
+  service: string
+  budget: string
+  message: string
+  requestMeeting: boolean
+  meetingDate: string
+  meetingStartTime: string
+  meetingDurationMinutes: number
+  attachmentUrls: string[]
+  pendingRecordType: 'booking' | 'contact'
+  pendingRecordId: string
+}
+
 const ALLOWED_DOC_TYPES = new Set([
   'application/pdf',
   'application/msword',
@@ -21,6 +38,46 @@ const ALLOWED_DOC_TYPES = new Set([
 ])
 
 const emailSchema = z.string().trim().toLowerCase().email()
+
+function normalizePhone(value: string) {
+  return value.replace(/\D+/g, '').slice(0, 20)
+}
+
+function resolveConfirmationBaseUrl(req: NextRequest) {
+  const configured = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || '').trim()
+  if (configured) return configured
+
+  const host = (req.headers.get('x-forwarded-host') || req.headers.get('host') || req.nextUrl.host || '').trim().toLowerCase()
+  if (host === 'progrex.cloud' || host === 'www.progrex.cloud' || host.endsWith('.progrex.cloud')) {
+    return 'https://www.progrex.cloud'
+  }
+
+  return req.nextUrl.origin
+}
+
+async function verifyTurnstile(token: string, ip: string) {
+  const secret = process.env.TURNSTILE_SECRET_KEY
+  if (!secret) return true
+  if (!token) return false
+
+  const payload = new FormData()
+  payload.set('secret', secret)
+  payload.set('response', token)
+  if (ip) payload.set('remoteip', ip)
+
+  try {
+    const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      body: payload,
+      cache: 'no-store',
+    })
+    if (!response.ok) return false
+    const data = (await response.json()) as { success?: boolean }
+    return Boolean(data.success)
+  } catch {
+    return false
+  }
+}
 
 async function validateEmailWithZoho(email: string) {
   const endpoint = process.env.ZOHO_EMAIL_VALIDATION_ENDPOINT
@@ -129,18 +186,28 @@ export async function POST(req: NextRequest) {
     const body = await req.formData()
     const name = String(body.get('name') ?? '').trim()
     const email = String(body.get('email') ?? '').trim()
-    const phone = String(body.get('phone') ?? '').trim()
+    const phone = normalizePhone(String(body.get('phone') ?? ''))
     const company = String(body.get('company') ?? '').trim()
     const service = String(body.get('service') ?? '').trim()
     const budget = String(body.get('budget') ?? '').trim()
     const message = String(body.get('message') ?? '').trim()
     const requestMeeting = String(body.get('requestMeeting') ?? 'false') === 'true'
+    const privacyConsent = String(body.get('privacyConsent') ?? 'false').toLowerCase() === 'true'
+    const turnstileToken = String(body.get('cf-turnstile-response') ?? '').trim()
     const meetingDate = String(body.get('meetingDate') ?? '').trim()
     const meetingStartTime = String(body.get('meetingStartTime') ?? '').trim()
     const meetingDurationMinutes = Number(body.get('meetingDurationMinutes') ?? 0) || 0
 
     if (!name || !email || !message) {
       return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 })
+    }
+
+    if (!privacyConsent) {
+      return NextResponse.json({ error: 'You must agree to the Data Privacy Policy and Terms before submitting.' }, { status: 400 })
+    }
+
+    if (!(await verifyTurnstile(turnstileToken, ip))) {
+      return NextResponse.json({ error: 'Security verification failed. Please try again.' }, { status: 400 })
     }
 
     if (!emailSchema.safeParse(email).success) {
@@ -211,6 +278,39 @@ export async function POST(req: NextRequest) {
       uploadedAttachmentUrls.push(uploaded)
     }
 
+    let pendingRecordType: 'booking' | 'contact' = requestMeeting ? 'booking' : 'contact'
+    let pendingRecordId = ''
+
+    if (requestMeeting) {
+      const inserted = await sql<{ id: string }>(
+        `insert into bookings(name, email, phone, company, service, source, status, requested_date, requested_start_time, requested_duration_minutes, budget, project_details, attachment_urls, is_active, is_approved)
+         values ($1, $2, $3, $4, $5, 'contact-form', 'pending', $6::date, $7, $8, $9, $10, $11::text[], true, false)
+         returning id::text`,
+        [
+          name,
+          email,
+          phone || null,
+          company || null,
+          service || null,
+          meetingDate || null,
+          meetingStartTime || null,
+          meetingDurationMinutes || 0,
+          budget || null,
+          message,
+          uploadedAttachmentUrls,
+        ]
+      )
+      pendingRecordId = String(inserted[0]?.id || '').trim()
+    } else {
+      const inserted = await sql<{ id: string }>(
+        `insert into contact_submissions(name, email, phone, company, service, budget, message, attachment_urls, status, request_meeting)
+         values ($1, $2, $3, $4, $5, $6, $7, $8::text[], 'pending', false)
+         returning id::text`,
+        [name, email, phone || null, company || null, service || null, budget || null, message, uploadedAttachmentUrls]
+      )
+      pendingRecordId = String(inserted[0]?.id || '').trim()
+    }
+
     const smtpHost = process.env.SMTP_HOST || 'smtp.zoho.com'
     const smtpPort = Number(process.env.SMTP_PORT || 587)
     const smtpUser = process.env.SMTP_USER
@@ -241,10 +341,10 @@ export async function POST(req: NextRequest) {
 
     const token = randomBytes(24).toString('hex')
     const tokenHash = createHash('sha256').update(token).digest('hex')
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || req.nextUrl.origin
+    const baseUrl = resolveConfirmationBaseUrl(req)
     const confirmUrl = `${baseUrl.replace(/\/$/, '')}/api/contact/confirm?token=${encodeURIComponent(token)}`
 
-    const payload = {
+    const payload: ConfirmationPayload = {
       name,
       email,
       phone,
@@ -257,11 +357,13 @@ export async function POST(req: NextRequest) {
       meetingStartTime,
       meetingDurationMinutes,
       attachmentUrls: uploadedAttachmentUrls,
+      pendingRecordType,
+      pendingRecordId,
     }
 
     await sql(
       `insert into contact_submission_confirmations(id, token_hash, payload, expires_at)
-       values ($1, $2, $3::jsonb, now() + interval '24 hours')`,
+       values ($1, $2, $3::jsonb, now() + interval '15 minutes')`,
       [randomBytes(16).toString('hex'), tokenHash, JSON.stringify(payload)]
     )
 
@@ -274,7 +376,7 @@ export async function POST(req: NextRequest) {
         </div>
         <div style="padding:22px 24px;color:#dbeafe;">
           <p style="margin:0 0 12px;font-size:14px;">Hi ${name},</p>
-          <p style="margin:0 0 12px;font-size:14px;line-height:1.7;">Please confirm your inquiry by clicking the button below. This link expires in 24 hours.</p>
+          <p style="margin:0 0 12px;font-size:14px;line-height:1.7;">Please confirm your inquiry by clicking the button below. This link expires in 15 minutes.</p>
           <a href="${confirmUrl}" style="display:inline-block;background:#0EA5E9;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:700;">Confirm and Send Message</a>
           <p style="margin:16px 0 0;font-size:12px;color:#93c5fd;word-break:break-all;">${confirmUrl}</p>
           <p style="margin:16px 0 0;font-size:12px;color:#93c5fd;">If this was not you, ignore this email.</p>
