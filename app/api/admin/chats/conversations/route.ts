@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
   let resolvedName = String(formData.get('name') ?? '').trim()
   if (!resolvedName) {
     if (isGroup) {
-      resolvedName = 'New Group Chat'
+      resolvedName = 'Group Chat'
     } else {
       const otherId = participantIds.find((item) => item !== admin.id) || admin.id
       const other = await sql<{ full_name: string }>('select full_name from admin_users where id = $1::uuid limit 1', [otherId])
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Group image must be an image file.' }, { status: 400 })
     }
     const filename = `${resolvedName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60) || 'group'}-${randomBytes(3).toString('hex')}`
-    groupImageUrl = await uploadImageToCloudinary(groupImage, { folder: 'ProgreX Chats/Group Images', filename })
+    groupImageUrl = await uploadImageToCloudinary(groupImage, { folder: 'ProgreX Chat Group Images', filename })
   }
 
   await sql(
