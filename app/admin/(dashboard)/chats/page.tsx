@@ -57,8 +57,8 @@ export default async function AdminChatsPage() {
   await ensureChatTables()
 
   const [users, conversations, messages] = await Promise.all([
-    sql<{ id: string; full_name: string; profile_image_url: string | null }>(
-      `select id, full_name, profile_image_url
+    sql<{ id: string; full_name: string; email: string | null; profile_image_url: string | null }>(
+      `select id, full_name, email, profile_image_url
          from admin_users
         where is_active = true
         order by full_name asc`
@@ -127,7 +127,7 @@ export default async function AdminChatsPage() {
   return (
     <AdminChatsTemplateView
       currentUser={{ id: admin.id, fullName: admin.fullName, profileImageUrl: admin.profileImageUrl || null }}
-      users={users.map((user) => ({ id: user.id, fullName: user.full_name, profileImageUrl: user.profile_image_url }))}
+      users={users.map((user) => ({ id: user.id, fullName: user.full_name, email: user.email || null, profileImageUrl: user.profile_image_url }))}
       initialConversations={conversations.map((conversation) => ({
         id: conversation.id,
         name: conversation.name,
