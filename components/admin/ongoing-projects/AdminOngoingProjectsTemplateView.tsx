@@ -50,6 +50,7 @@ type ProgressEntry = {
   projectId: string
   progress: number
   notes: string | null
+  createdBy: string | null
   createdAt: string
   updatedAt: string
 }
@@ -270,7 +271,7 @@ export default function AdminOngoingProjectsTemplateView({
   const [fileKeptOtherUrls, setFileKeptOtherUrls] = useState<string[]>([])
   const [progressSelectedIds, setProgressSelectedIds] = useState<string[]>([])
   const [editingProgressId, setEditingProgressId] = useState<string | null>(null)
-  const [progressDraft, setProgressDraft] = useState<{ progress: string; notes: string; color: string }>({ progress: '', notes: '', color: '#16a34a' })
+  const [progressDraft, setProgressDraft] = useState<{ progress: string; notes: string }>({ progress: '', notes: '' })
 
   const [confirmConfig, setConfirmConfig] = useState<{
     title: string
@@ -532,7 +533,6 @@ export default function AdminOngoingProjectsTemplateView({
         formData.set('projectId', selectedProject.id)
         formData.set('progress', String(Number(progressDraft.progress || '0') || 0))
         formData.set('notes', progressDraft.notes)
-        formData.set('color', progressDraft.color)
         if (confirmConfig.kind === 'editProgress' && editingProgressId) {
           formData.set('id', editingProgressId)
           await updateProjectProgressAction(formData)
@@ -543,7 +543,7 @@ export default function AdminOngoingProjectsTemplateView({
         }
         setProgressFormOpen(false)
         setEditingProgressId(null)
-        setProgressDraft({ progress: '', notes: '', color: selectedProject.progressColor || '#16a34a' })
+        setProgressDraft({ progress: '', notes: '' })
       }
 
       if (selectedProject && confirmConfig.kind === 'deleteProgress' && editingProgressId) {
@@ -858,7 +858,7 @@ export default function AdminOngoingProjectsTemplateView({
                         <div className="h-2 w-full overflow-hidden rounded-full" style={{ backgroundColor: 'rgba(148,163,184,0.28)' }}>
                           <div
                             className="h-full rounded-full"
-                            style={{ width: `${Math.max(0, Math.min(100, Number(project.progress ?? '0') || 0))}%`, backgroundColor: project.progressColor || '#16a34a' }}
+                            style={{ width: `${Math.max(0, Math.min(100, Number(project.progress ?? '0') || 0))}%`, backgroundColor: project.progressColor || 'var(--apx-primary)' }}
                           />
                         </div>
                         <p className="mt-1 text-xs font-semibold apx-text">{formatProgress(project.progress)}</p>
@@ -885,14 +885,21 @@ export default function AdminOngoingProjectsTemplateView({
                             setSelectedProject(project)
                             setProgressSelectedIds([])
                             setEditingProgressId(null)
-                            setProgressDraft({ progress: project.progress || '0', notes: '', color: project.progressColor || '#16a34a' })
+                            setProgressDraft({ progress: project.progress || '0', notes: '' })
                             setProgressOpen(true)
                           }}
                           aria-label="Manage progress"
                         >
                           <Gauge className="h-4 w-4" />
                         </button>
-                        <button type="button" className="apx-icon-action" onClick={() => addToast('Make payment is not connected yet.', 'default')} aria-label="Make payment"><CreditCard className="h-4 w-4" /></button>
+                        <button
+                          type="button"
+                          className="apx-icon-action"
+                          onClick={() => router.push(`/admin/payment?openAdd=1&projectId=${encodeURIComponent(project.id)}`)}
+                          aria-label="Make payment"
+                        >
+                          <CreditCard className="h-4 w-4" />
+                        </button>
                         <button type="button" className="apx-icon-action" onClick={() => addToast('Email action is not connected yet.', 'default')} aria-label="Email project"><Mail className="h-4 w-4" /></button>
                         <button
                           type="button"
@@ -1247,7 +1254,7 @@ export default function AdminOngoingProjectsTemplateView({
                 type="button"
                 onClick={() => {
                   setEditingProgressId(null)
-                  setProgressDraft({ progress: selectedProject.progress || '0', notes: '', color: selectedProject.progressColor || '#16a34a' })
+                  setProgressDraft({ progress: selectedProject.progress || '0', notes: '' })
                   setProgressFormOpen(true)
                 }}
               >
@@ -1287,6 +1294,7 @@ export default function AdminOngoingProjectsTemplateView({
                     </th>
                     <th className="px-4 py-3 font-semibold apx-text">Progress</th>
                     <th className="px-4 py-3 font-semibold apx-text">Notes</th>
+                    <th className="px-4 py-3 font-semibold apx-text">Created By</th>
                     <th className="px-4 py-3 font-semibold apx-text">Created</th>
                     <th className="px-4 py-3 text-right font-semibold apx-text">Actions</th>
                   </tr>
@@ -1300,6 +1308,7 @@ export default function AdminOngoingProjectsTemplateView({
                         </td>
                         <td className="px-4 py-3 apx-text">{Math.round(entry.progress)}%</td>
                         <td className="px-4 py-3 apx-text">{entry.notes || '-'}</td>
+                        <td className="px-4 py-3 apx-text">{entry.createdBy || 'Admin'}</td>
                         <td className="px-4 py-3 apx-text">{new Date(entry.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-2">
@@ -1308,7 +1317,7 @@ export default function AdminOngoingProjectsTemplateView({
                               className="apx-icon-action"
                               onClick={() => {
                                 setEditingProgressId(entry.id)
-                                setProgressDraft({ progress: String(entry.progress), notes: entry.notes || '', color: selectedProject.progressColor || '#16a34a' })
+                                setProgressDraft({ progress: String(entry.progress), notes: entry.notes || '' })
                                 setProgressFormOpen(true)
                               }}
                               aria-label="Edit progress entry"
@@ -1339,7 +1348,7 @@ export default function AdminOngoingProjectsTemplateView({
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={5} className="px-4 py-4 text-center text-sm apx-muted">No progress history yet.</td>
+                      <td colSpan={6} className="px-4 py-4 text-center text-sm apx-muted">No progress history yet.</td>
                     </tr>
                   )}
                 </tbody>
@@ -1383,16 +1392,6 @@ export default function AdminOngoingProjectsTemplateView({
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Notes</label>
             <ApexTextarea rows={3} value={progressDraft.notes} onChange={(event) => setProgressDraft((prev) => ({ ...prev, notes: event.target.value }))} />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium apx-muted">Progress Bar Color</label>
-            <input
-              type="color"
-              value={progressDraft.color}
-              onChange={(event) => setProgressDraft((prev) => ({ ...prev, color: event.target.value }))}
-              className="h-10 w-full cursor-pointer rounded-xl border px-2"
-              style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface-alt)' }}
-            />
           </div>
           <div className="flex justify-end gap-2 pt-1">
             <ApexButton type="button" variant="outline" onClick={() => setProgressFormOpen(false)}>Cancel</ApexButton>
