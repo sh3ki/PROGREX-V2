@@ -1,13 +1,14 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Download, Edit2, Info, MailPlus, Paperclip, Phone, Search, Send, Smile, Video, X } from 'lucide-react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { CheckCheck, Download, Edit2, Info, MailPlus, Paperclip, Phone, Search, Send, Smile, Video, X } from 'lucide-react'
 import { ApexBreadcrumbs, ApexModal } from '@/components/admin/apex/ApexDataUi'
 import { ApexButton, ApexInput } from '@/components/admin/apex/AdminPrimitives'
 
 type ChatUser = {
   id: string
   fullName: string
+  email?: string | null
   profileImageUrl: string | null
 }
 
@@ -36,15 +37,48 @@ type ChatMessage = {
 
 const EMOJIS = ['😀', '😂', '❤️', '👍', '🔥', '🎉', '🙏', '💡', '✅', '👀']
 
-function formatDateTime(value: string | null) {
-  if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  const day = String(date.getDate()).padStart(2, '0')
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const year = date.getFullYear()
-  const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
-  return `${day}/${month}/${year} ${time}`
+function toValidDate(value: string | null | undefined) {
+  if (!value) return null
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
+function formatMessageTime(value: string | null | undefined) {
+  const date = toValidDate(value)
+  if (!date) return '-'
+  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+}
+
+function formatConversationTime(value: string | null | undefined) {
+  const date = toValidDate(value)
+  if (!date) return '-'
+
+  const now = new Date()
+  const sameDay =
+    now.getFullYear() === date.getFullYear() &&
+    now.getMonth() === date.getMonth() &&
+    now.getDate() === date.getDate()
+
+  if (sameDay) {
+    return formatMessageTime(value)
+  }
+
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function formatDayDivider(value: string | null | undefined) {
+  const date = toValidDate(value)
+  if (!date) return ''
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+}
+
+function getInitials(value: string) {
+  return value
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((item) => item[0]?.toUpperCase() || '')
+    .join('') || 'NA'
 }
 
 export default function AdminChatsTemplateView({
@@ -60,7 +94,8 @@ export default function AdminChatsTemplateView({
 }) {
   const [conversations, setConversations] = useState(initialConversations)
   const [messages, setMessages] = useState(initialMessages)
-  const [activeConversationId, setActiveConversationId] = useState('')
+  const [activeConversationId, setActiveConversationId] = useState(initialConversations[0]?.id || '')
+  const [conversationSearch, setConversationSearch] = useState('')
   const [draft, setDraft] = useState('')
   const [addOpen, setAddOpen] = useState(false)
   const [addSearch, setAddSearch] = useState('')
@@ -76,18 +111,56 @@ export default function AdminChatsTemplateView({
   const [groupImageFile, setGroupImageFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
-  const activeConversation = conversations.find((item) => item.id === activeConversationId) || null
+  const usersById = useMemo(() => new Map(users.map((item) => [item.id, item])), [users])
+
+  const conversationsWithMeta = useMemo(() => {
+    return conversations.map((conversation) => {
+      const members = conversation.participantIds
+        .map((participantId) => usersById.get(participantId))
+        .filter(Boolean) as ChatUser[]
+      const other = conversation.isGroup ? null : members.find((member) => member.id !== currentUser.id) || null
+      const title = conversation.isGroup ? conversation.name : (other?.fullName || conversation.name)
+
+      return {
+        conversation,
+        members,
+        other,
+        title,
+        subtitle: conversation.isGroup ? `${members.length} members` : (other?.email || 'Direct conversation'),
+        avatarUrl: conversation.isGroup ? (conversation.groupImageUrl || null) : (other?.profileImageUrl || null),
+      }
+    })
+  }, [conversations, usersById, currentUser.id])
+
+  const activeConversationMeta = useMemo(
+    () => conversationsWithMeta.find((item) => item.conversation.id === activeConversationId) || null,
+    [conversationsWithMeta, activeConversationId],
+  )
+  const activeConversation = activeConversationMeta?.conversation || null
+  const participants = activeConversationMeta?.members || []
   const visibleMessages = messages.filter((item) => item.conversationId === activeConversationId)
   const typingName = typingByConversation[activeConversationId] || ''
-  const participants = useMemo(() => {
-    if (!activeConversation) return [] as ChatUser[]
-    const byId = new Map(users.map((item) => [item.id, item]))
-    return activeConversation.participantIds.map((id) => byId.get(id)).filter(Boolean) as ChatUser[]
-  }, [activeConversation, users])
-  const otherParticipant = useMemo(() => {
-    if (!activeConversation || activeConversation.isGroup) return null
-    return participants.find((item) => item.id !== currentUser.id) || null
-  }, [activeConversation, participants, currentUser.id])
+
+  const unreadByConversation = useMemo(() => {
+    const next = new Map<string, number>()
+    for (const message of messages) {
+      if (message.senderId === currentUser.id) continue
+      if (message.readBy.includes(currentUser.id)) continue
+      next.set(message.conversationId, (next.get(message.conversationId) || 0) + 1)
+    }
+    return next
+  }, [messages, currentUser.id])
+
+  const filteredConversations = useMemo(() => {
+    const keyword = conversationSearch.trim().toLowerCase()
+    if (!keyword) return conversationsWithMeta
+
+    return conversationsWithMeta.filter((item) => {
+      const title = item.title.toLowerCase()
+      const preview = (item.conversation.lastMessage || '').toLowerCase()
+      return title.includes(keyword) || preview.includes(keyword)
+    })
+  }, [conversationSearch, conversationsWithMeta])
 
   useEffect(() => {
     const source = new EventSource('/api/admin/chats/stream')
@@ -180,13 +253,6 @@ export default function AdminChatsTemplateView({
     const keyword = addSearchDebounced
     return users.filter((user) => user.id !== currentUser.id && user.fullName.toLowerCase().includes(keyword))
   }, [users, currentUser.id, addSearchDebounced])
-
-  const lastOwnMessage = useMemo(() => {
-    for (let i = visibleMessages.length - 1; i >= 0; i -= 1) {
-      if (visibleMessages[i].senderId === currentUser.id) return visibleMessages[i]
-    }
-    return null
-  }, [visibleMessages, currentUser.id])
 
   async function sendMessage() {
     const message = draft.trim()
@@ -311,36 +377,65 @@ export default function AdminChatsTemplateView({
 
       <div className="grid min-h-[74vh] grid-cols-1 overflow-hidden rounded-2xl border md:grid-cols-[320px_1fr]" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
         <aside className="border-b p-3 md:border-r md:border-b-0" style={{ borderColor: 'var(--apx-border)' }}>
+          <div className="mb-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 apx-muted" />
+              <ApexInput
+                className="pl-9"
+                value={conversationSearch}
+                onChange={(event) => setConversationSearch(event.target.value)}
+                placeholder="Search conversations..."
+              />
+            </div>
+          </div>
+
           <div className="space-y-1 overflow-y-auto">
-            {conversations.map((conversation) => (
-              <button
-                key={conversation.id}
-                type="button"
-                onClick={() => setActiveConversationId(conversation.id)}
-                className={[
-                  'w-full rounded-xl px-3 py-2 text-left transition-colors',
-                  activeConversationId === conversation.id ? 'bg-(--apx-surface-alt)' : 'hover:bg-(--apx-surface-alt)',
-                ].join(' ')}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full" style={{ backgroundColor: 'var(--apx-surface-alt)' }}>
-                    {conversation.groupImageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={conversation.groupImageUrl} alt={conversation.name} className="h-full w-full object-cover" />
-                    ) : (
-                      conversation.name.slice(0, 2).toUpperCase()
-                    )}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="truncate text-sm font-semibold apx-text">{conversation.name}</p>
-                      <span className="shrink-0 text-[10px] apx-muted">{formatDateTime(conversation.lastAt)}</span>
+            {filteredConversations.map((item) => {
+              const conversation = item.conversation
+              const unread = unreadByConversation.get(conversation.id) || 0
+              return (
+                <button
+                  key={conversation.id}
+                  type="button"
+                  onClick={() => setActiveConversationId(conversation.id)}
+                  className={[
+                    'w-full rounded-xl px-3 py-2.5 text-left transition-colors',
+                    activeConversationId === conversation.id ? 'bg-(--apx-surface-alt)' : 'hover:bg-(--apx-surface-alt)',
+                  ].join(' ')}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full text-xs font-semibold apx-text" style={{ backgroundColor: 'var(--apx-surface-alt)' }}>
+                      {item.avatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={item.avatarUrl} alt={item.title} className="h-full w-full object-cover" />
+                      ) : (
+                        getInitials(item.title)
+                      )}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="truncate text-sm font-semibold apx-text">{item.title}</p>
+                        <span className="shrink-0 text-[10px] apx-muted">{formatConversationTime(conversation.lastAt)}</span>
+                      </div>
+                      <div className="mt-0.5 flex items-center justify-between gap-2">
+                        <p className="truncate text-xs apx-muted">{conversation.lastMessage || 'No messages yet.'}</p>
+                        {unread > 0 ? (
+                          <span
+                            className="inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold text-white"
+                            style={{ backgroundColor: 'var(--apx-primary)' }}
+                          >
+                            {unread > 99 ? '99+' : unread}
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
-                    <p className="truncate text-xs apx-muted">{conversation.lastMessage || 'No messages yet.'}</p>
                   </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              )
+            })}
+            {filteredConversations.length === 0 ? (
+              <p className="px-2 py-6 text-center text-xs apx-muted">No conversations found.</p>
+            ) : null}
           </div>
         </aside>
 
@@ -348,22 +443,20 @@ export default function AdminChatsTemplateView({
           {activeConversation ? (
             <>
               <div className="flex items-center gap-3 border-b px-4 py-3" style={{ borderColor: 'var(--apx-border)' }}>
-                <div className="inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full" style={{ backgroundColor: 'var(--apx-surface-alt)' }}>
-                  {activeConversation.groupImageUrl ? (
+                <div className="inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full text-xs font-semibold apx-text" style={{ backgroundColor: 'var(--apx-surface-alt)' }}>
+                  {activeConversationMeta?.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={activeConversation.groupImageUrl} alt={activeConversation.name} className="h-full w-full object-cover" />
+                    <img src={activeConversationMeta.avatarUrl} alt={activeConversationMeta.title} className="h-full w-full object-cover" />
                   ) : (
-                    activeConversation.name.slice(0, 2).toUpperCase()
+                    getInitials(activeConversationMeta?.title || activeConversation.name)
                   )}
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-semibold apx-text">{activeConversation.isGroup ? activeConversation.name : (otherParticipant?.fullName || activeConversation.name)}</p>
+                  <p className="text-sm font-semibold apx-text">{activeConversationMeta?.title || activeConversation.name}</p>
                   <p className="text-xs apx-muted">
                     {typingName
                       ? `${typingName} is typing...`
-                      : activeConversation.isGroup
-                        ? `${participants.length} members`
-                        : 'Direct conversation'}
+                      : (activeConversationMeta?.subtitle || (activeConversation.isGroup ? `${participants.length} members` : 'Direct conversation'))}
                   </p>
                 </div>
                 <div className="flex items-center gap-1">
@@ -384,46 +477,75 @@ export default function AdminChatsTemplateView({
                 </div>
               </div>
 
-              <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
-                {visibleMessages.map((message) => {
-                  const mine = message.senderId === currentUser.id
-                  return (
-                    <div key={message.id} className={mine ? 'flex justify-end' : 'flex justify-start'}>
-                      <div className="max-w-[75%]">
-                        <div
-                          className={[
-                            'rounded-2xl px-3.5 py-2 text-sm',
-                            mine ? 'rounded-ee-md text-white' : 'rounded-es-md apx-text',
-                          ].join(' ')}
-                          style={mine ? { backgroundColor: 'var(--apx-primary)' } : { backgroundColor: 'var(--apx-surface-alt)' }}
-                        >
-                          {message.body ? <p>{message.body}</p> : null}
-                          {message.attachmentUrl ? (
-                            <div className="mt-2 rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: mine ? 'rgba(255,255,255,0.35)' : 'var(--apx-border)' }}>
-                              <p className={mine ? 'text-white/90' : 'apx-text'}>{message.attachmentName || 'Attachment'}</p>
-                              <button
-                                type="button"
-                                className="mt-1 inline-flex items-center gap-1 underline"
-                                onClick={() => window.open(message.attachmentUrl || '', '_blank', 'noopener,noreferrer')}
-                              >
-                                <Download className="h-3.5 w-3.5" />
-                                Download
-                              </button>
+              <div className="flex-1 overflow-y-auto px-4 py-4">
+                <div className="space-y-3">
+                  {visibleMessages.map((message, index) => {
+                    const mine = message.senderId === currentUser.id
+                    const prev = visibleMessages[index - 1]
+                    const prevDate = toValidDate(prev?.createdAt)
+                    const currentDate = toValidDate(message.createdAt)
+                    const showDivider =
+                      !prevDate ||
+                      !currentDate ||
+                      prevDate.getFullYear() !== currentDate.getFullYear() ||
+                      prevDate.getMonth() !== currentDate.getMonth() ||
+                      prevDate.getDate() !== currentDate.getDate()
+                    const seen = mine && message.readBy.some((id) => id !== currentUser.id)
+
+                    return (
+                      <Fragment key={message.id}>
+                        {showDivider ? (
+                          <div className="my-1 flex items-center gap-3">
+                            <div className="h-px flex-1" style={{ backgroundColor: 'var(--apx-border)' }} />
+                            <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider apx-muted">
+                              {formatDayDivider(message.createdAt)}
+                            </span>
+                            <div className="h-px flex-1" style={{ backgroundColor: 'var(--apx-border)' }} />
+                          </div>
+                        ) : null}
+
+                        <div className={mine ? 'flex justify-end' : 'flex justify-start'}>
+                          <div className="max-w-[75%]">
+                            <div
+                              className={[
+                                'rounded-2xl px-3.5 py-2 text-sm',
+                                mine ? 'rounded-ee-md text-white' : 'rounded-es-md apx-text',
+                              ].join(' ')}
+                              style={mine ? { backgroundColor: 'var(--apx-primary)' } : { backgroundColor: 'var(--apx-surface-alt)' }}
+                            >
+                              {message.body ? <p className="whitespace-pre-wrap wrap-break-word">{message.body}</p> : null}
+                              {message.attachmentUrl ? (
+                                <div className="mt-2 rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: mine ? 'rgba(255,255,255,0.35)' : 'var(--apx-border)' }}>
+                                  {message.attachmentKind === 'image' ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                      src={message.attachmentUrl}
+                                      alt={message.attachmentName || 'Image attachment'}
+                                      className="mb-2 max-h-52 w-full rounded-md object-cover"
+                                    />
+                                  ) : null}
+                                  <p className={mine ? 'text-white/90' : 'apx-text'}>{message.attachmentName || 'Attachment'}</p>
+                                  <button
+                                    type="button"
+                                    className="mt-1 inline-flex items-center gap-1 underline"
+                                    onClick={() => window.open(message.attachmentUrl || '', '_blank', 'noopener,noreferrer')}
+                                  >
+                                    <Download className="h-3.5 w-3.5" />
+                                    Download
+                                  </button>
+                                </div>
+                              ) : null}
                             </div>
-                          ) : null}
+                            <div className={['mt-1 flex items-center gap-1 px-1 text-[10px]', mine ? 'justify-end' : 'justify-start', 'apx-muted'].join(' ')}>
+                              <span>{formatMessageTime(message.createdAt)}</span>
+                              {mine ? <CheckCheck className="h-3 w-3" style={seen ? { color: 'var(--apx-primary)' } : { opacity: 0.6 }} /> : null}
+                            </div>
+                          </div>
                         </div>
-                        <p className={['mt-1 text-[10px]', mine ? 'text-right' : 'text-left', 'apx-muted'].join(' ')}>
-                          {formatDateTime(message.createdAt)}
-                        </p>
-                      </div>
-                    </div>
-                  )
-                })}
-                {lastOwnMessage ? (
-                  <p className="text-right text-[10px] apx-muted">
-                    {lastOwnMessage.readBy.length > 1 ? 'Seen' : 'Delivered'}
-                  </p>
-                ) : null}
+                      </Fragment>
+                    )
+                  })}
+                </div>
               </div>
 
               <div className="flex items-end gap-2 border-t px-4 py-3" style={{ borderColor: 'var(--apx-border)' }}>
@@ -552,7 +674,7 @@ export default function AdminChatsTemplateView({
         {activeConversation ? (
           <div className="space-y-3">
             <div className="rounded-xl border p-3" style={{ borderColor: 'var(--apx-border)' }}>
-              <p className="font-semibold apx-text">{activeConversation.name}</p>
+              <p className="font-semibold apx-text">{activeConversationMeta?.title || activeConversation.name}</p>
               <p className="text-xs apx-muted">{activeConversation.isGroup ? 'Group chat' : 'Direct chat'}</p>
             </div>
             <div>
