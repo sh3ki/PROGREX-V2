@@ -5,11 +5,15 @@ import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
 import AdminBookingsTemplateView from '@/components/admin/bookings/AdminBookingsTemplateView'
 
-const BOOKING_STATUSES = new Set(['new', 'scheduled', 'rescheduled', 'done', 'rejected'])
+const BOOKING_STATUSES = new Set(['pending', 'new', 'scheduled', 'rescheduled', 'done', 'rejected'])
 
 function normalizeBookingStatus(value: string) {
   const input = value.trim().toLowerCase()
   return BOOKING_STATUSES.has(input) ? input : 'new'
+}
+
+function normalizePhone(value: string) {
+  return value.replace(/\D+/g, '').slice(0, 20)
 }
 
 async function uploadRawToCloudinary(file: File, opts: { folder: string; filename: string }) {
@@ -64,7 +68,7 @@ async function createBooking(formData: FormData) {
 
   const name = String(formData.get('name') ?? '').trim()
   const email = String(formData.get('email') ?? '').trim()
-  const phone = String(formData.get('phone') ?? '').trim()
+  const phone = normalizePhone(String(formData.get('phone') ?? ''))
   const company = String(formData.get('company') ?? '').trim()
   const service = String(formData.get('service') ?? '').trim()
   const requestedDate = String(formData.get('requestedDate') ?? '').trim()
@@ -112,7 +116,7 @@ async function updateBooking(formData: FormData) {
 
   const name = String(formData.get('name') ?? '').trim()
   const email = String(formData.get('email') ?? '').trim()
-  const phone = String(formData.get('phone') ?? '').trim()
+  const phone = normalizePhone(String(formData.get('phone') ?? ''))
   const company = String(formData.get('company') ?? '').trim()
   const service = String(formData.get('service') ?? '').trim()
   const requestedDate = String(formData.get('requestedDate') ?? '').trim()
@@ -257,7 +261,20 @@ async function sendBookingEmail(formData: FormData) {
     from: `"ProgreX Team" <${smtpUser}>`,
     to: toEmail,
     subject,
-    html: `<p>Hello ${senderName || 'there'},</p><p>${reply.replace(/\n/g, '<br/>')}</p><p>Best regards,<br/>ProgreX Team</p>`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;background:#050511;border:1px solid #1c2d4d;border-radius:14px;overflow:hidden;">
+        <div style="padding:20px 24px;background:linear-gradient(135deg,#0EA5E9 0%,#2563eb 100%);">
+          <h1 style="margin:0;color:#fff;font-size:20px;">Booking Update</h1>
+          <p style="margin:6px 0 0;color:#e6f4ff;font-size:13px;">Message from ProgreX Team</p>
+        </div>
+        <div style="padding:22px 24px;color:#dbeafe;">
+          <p style="margin:0 0 12px;font-size:14px;">Hello ${senderName || 'there'},</p>
+          <p style="margin:0;font-size:14px;line-height:1.7;white-space:pre-line;background:#050510;padding:16px;border-radius:8px;border:1px solid #1e1b4b;">${reply}</p>
+          <p style="margin:20px 0 8px;font-size:14px;">Best regards,</p>
+          <p style="margin:0;font-size:14px;font-weight:700;">ProgreX Team</p>
+        </div>
+      </div>
+    `,
   })
 
   revalidatePath('/admin/bookings')
@@ -301,7 +318,7 @@ export default async function AdminBookingsPage() {
         phone: item.phone,
         company: item.company,
         service: item.service,
-        status: item.status || 'new',
+        status: item.status || 'pending',
         isActive: item.is_active,
         isArchived: item.is_archived,
         requestedDate: item.requested_date,
