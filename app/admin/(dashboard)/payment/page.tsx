@@ -7,10 +7,11 @@ import {
   generateInvoicePdf,
   getProjectInvoicePayload,
   getSinglePaymentInvoicePayload,
+  type InvoicePayload,
 } from '@/lib/server/paymentInvoice'
 import AdminPaymentsTemplateView from '@/components/admin/payments/AdminPaymentsTemplateView'
 
-const PAYMENT_STATUSES = new Set(['pending', 'partial', 'paid', 'refunded', 'failed'])
+const PAYMENT_STATUSES = new Set(['pending', 'paid', 'refunded', 'failed'])
 const PAYMENT_METHODS = new Set(['Cash', 'Gcash', 'Bank Transfer', 'Credit Card', 'PayPal'])
 
 type CurrencyOption = {
@@ -27,6 +28,8 @@ const CURRENCIES: CurrencyOption[] = [
   { code: 'JPY', symbol: '¥', label: 'Japanese Yen' },
   { code: 'AUD', symbol: 'A$', label: 'Australian Dollar' },
 ]
+
+const INVOICE_FOLDER_ROOT = 'ProgreX Invoice Files'
 
 function normalizeStatus(value: string) {
   const normalized = value.trim().toLowerCase()
@@ -59,11 +62,15 @@ async function ensurePaymentsTable() {
       client_name text not null,
       project_name text,
       amount numeric(12, 2) not null default 0,
+      ref_number text,
+      discount_amount numeric(12, 2) not null default 0,
+      tax_amount numeric(12, 2) not null default 0,
       currency text not null default 'PHP',
       currency_symbol text not null default '₱',
       currency_label text not null default 'Philippine Peso',
       payment_method text,
       payment_date date,
+      payment_time time,
       status text not null default 'pending',
       proof_url text,
       notes text,
@@ -80,6 +87,10 @@ async function ensurePaymentsTable() {
   `)
 
   await sql('alter table payments add column if not exists project_id uuid references ongoing_projects(id) on delete set null')
+  await sql('alter table payments add column if not exists ref_number text')
+  await sql('alter table payments add column if not exists discount_amount numeric(12, 2) not null default 0')
+  await sql('alter table payments add column if not exists tax_amount numeric(12, 2) not null default 0')
+  await sql('alter table payments add column if not exists payment_time time')
   await sql("alter table payments add column if not exists currency_symbol text not null default '₱'")
   await sql("alter table payments add column if not exists currency_label text not null default 'Philippine Peso'")
   await sql('alter table payments add column if not exists or_number text')
@@ -192,11 +203,16 @@ async function createPayment(formData: FormData) {
 
   const projectId = String(formData.get('projectId') ?? '').trim()
   const amount = parseAmount(String(formData.get('amount') ?? '0'))
+  const discountAmount = parseAmount(String(formData.get('discountAmount') ?? '0'))
+  const taxAmount = parseAmount(String(formData.get('taxAmount') ?? '0'))
+  const netAmount = Math.max(amount - discountAmount + taxAmount, 0)
   const currency = resolveCurrency(String(formData.get('currency') ?? 'PHP'))
   const paymentMethod = normalizePaymentMethod(String(formData.get('paymentMethod') ?? 'Gcash'))
   const paymentDate = String(formData.get('paymentDate') ?? '').trim()
+  const paymentTime = String(formData.get('paymentTime') ?? '').trim()
   const status = normalizeStatus(String(formData.get('status') ?? 'pending'))
   const notes = String(formData.get('notes') ?? '').trim()
+  const refNumber = String(formData.get('refNumber') ?? '').trim()
   const orNumber = String(formData.get('orNumber') ?? '').trim()
 
   if (!projectId) throw new Error('Project is required.')
@@ -231,29 +247,37 @@ async function createPayment(formData: FormData) {
       client_name,
       project_name,
       amount,
+      ref_number,
+      discount_amount,
+      tax_amount,
       currency,
       currency_symbol,
       currency_label,
       payment_method,
       payment_date,
+      payment_time,
       status,
       proof_url,
       notes,
       or_number,
       invoice_status
     )
-     values ($1, $2::uuid, $3, $4, $5, $6, $7, $8, $9, nullif($10, '')::date, $11, $12, nullif($13, ''), nullif($14, ''), 'draft')`,
+     values ($1, $2::uuid, $3, $4, $5, nullif($6, ''), $7, $8, $9, $10, $11, $12, nullif($13, '')::date, nullif($14, '')::time, $15, $16, nullif($17, ''), nullif($18, ''), 'draft')`,
     [
       randomUUID(),
       projectId,
       project[0].client_name || 'Unknown Client',
       project[0].project_name,
-      amount,
+      netAmount,
+      refNumber,
+      discountAmount,
+      taxAmount,
       currency.code,
       currency.symbol,
       currency.label,
       paymentMethod,
       paymentDate,
+      paymentTime,
       status,
       proofUrl,
       notes,
@@ -275,12 +299,17 @@ async function updatePayment(formData: FormData) {
 
   const projectId = String(formData.get('projectId') ?? '').trim()
   const amount = parseAmount(String(formData.get('amount') ?? '0'))
+  const discountAmount = parseAmount(String(formData.get('discountAmount') ?? '0'))
+  const taxAmount = parseAmount(String(formData.get('taxAmount') ?? '0'))
+  const netAmount = Math.max(amount - discountAmount + taxAmount, 0)
   const currency = resolveCurrency(String(formData.get('currency') ?? 'PHP'))
   const paymentMethod = normalizePaymentMethod(String(formData.get('paymentMethod') ?? 'Gcash'))
   const paymentDate = String(formData.get('paymentDate') ?? '').trim()
+  const paymentTime = String(formData.get('paymentTime') ?? '').trim()
   const status = normalizeStatus(String(formData.get('status') ?? 'pending'))
   const notes = String(formData.get('notes') ?? '').trim()
   const keepProof = String(formData.get('keepProof') ?? '1') === '1'
+  const refNumber = String(formData.get('refNumber') ?? '').trim()
   const orNumber = String(formData.get('orNumber') ?? '').trim()
 
   if (!projectId) throw new Error('Project is required.')
@@ -316,15 +345,19 @@ async function updatePayment(formData: FormData) {
             client_name = $3,
             project_name = $4,
             amount = $5,
-            currency = $6,
-            currency_symbol = $7,
-            currency_label = $8,
-            payment_method = $9,
-            payment_date = nullif($10, '')::date,
-            status = $11,
-            proof_url = $12,
-            notes = nullif($13, ''),
-            or_number = nullif($14, ''),
+            ref_number = nullif($6, ''),
+            discount_amount = $7,
+            tax_amount = $8,
+            currency = $9,
+            currency_symbol = $10,
+            currency_label = $11,
+            payment_method = $12,
+            payment_date = nullif($13, '')::date,
+            payment_time = nullif($14, '')::time,
+            status = $15,
+            proof_url = $16,
+            notes = nullif($17, ''),
+            or_number = nullif($18, ''),
             updated_at = now()
       where id = $1`,
     [
@@ -332,12 +365,16 @@ async function updatePayment(formData: FormData) {
       projectId,
       project[0].client_name || 'Unknown Client',
       project[0].project_name,
-      amount,
+          netAmount,
+          refNumber,
+          discountAmount,
+          taxAmount,
       currency.code,
       currency.symbol,
       currency.label,
       paymentMethod,
       paymentDate,
+          paymentTime,
       status,
       proofUrl,
       notes,
@@ -370,10 +407,6 @@ function normalizeInvoiceFilename(value: string) {
   return value.replace(/[^a-zA-Z0-9\- ]+/g, '').replace(/\s+/g, ' ').trim().slice(0, 120) || 'Invoice'
 }
 
-function buildTransactionInvoiceNumber(projectInvoiceNo: string, paymentId: string) {
-  return `${projectInvoiceNo}-TXN-${paymentId.replace(/[^a-z0-9]/gi, '').slice(0, 6).toUpperCase()}`
-}
-
 async function getProjectInvoiceNumber(projectId: string) {
   const rows = await sql<{ invoice_no: string | null; start_date: string | null }>(
     `select invoice_no,
@@ -394,7 +427,11 @@ async function getProjectInvoiceNumber(projectId: string) {
 }
 
 async function createOrReplaceTransactionInvoice(paymentId: string) {
-  const paymentRows = await sql<{ project_id: string | null; invoice_pdf_public_id: string | null; project_name: string | null }>(
+  const paymentRows = await sql<{
+    project_id: string | null
+    invoice_pdf_public_id: string | null
+    project_name: string | null
+  }>(
     'select project_id::text, invoice_pdf_public_id, project_name from payments where id = $1 limit 1',
     [paymentId]
   )
@@ -407,24 +444,20 @@ async function createOrReplaceTransactionInvoice(paymentId: string) {
   if (!payload) throw new Error('Payment invoice data not found.')
 
   const projectInvoiceNo = await getProjectInvoiceNumber(projectId)
-  const invoiceNumber = buildTransactionInvoiceNumber(projectInvoiceNo, paymentId)
-  const existingRows = await sql<{ invoice_pdf_url: string | null; invoice_pdf_public_id: string | null }>(
-    'select invoice_pdf_url, invoice_pdf_public_id from payments where id = $1 limit 1',
+  const invoiceNumber = projectInvoiceNo
+  const existingRows = await sql<{ invoice_pdf_public_id: string | null }>(
+    'select invoice_pdf_public_id from payments where id = $1 limit 1',
     [paymentId]
   )
-  const existingInvoiceUrl = String(existingRows[0]?.invoice_pdf_url || '').trim()
   const existingInvoicePublicId = String(existingRows[0]?.invoice_pdf_public_id || '').trim()
 
-  if (existingInvoiceUrl && existingInvoicePublicId) {
-    const pdfBytes = await generateInvoicePdf({ ...payload, invoiceNumber })
-    return { invoiceNumber, invoicePdfUrl: existingInvoiceUrl, payload: { ...payload, invoiceNumber }, pdfBytes }
-  }
+  await deleteRawFromCloudinary(existingInvoicePublicId || null)
 
   const pdfBytes = await generateInvoicePdf({ ...payload, invoiceNumber })
-  const folderName = `ProgreX Invoices/${slugifyInvoicePart(payload.projectName)}`
+  const folderName = `${INVOICE_FOLDER_ROOT}/${slugifyInvoicePart(payload.projectName)}`
   const uploaded = await uploadInvoicePdfToCloudinary(pdfBytes, {
     folder: folderName,
-    filename: invoiceNumber,
+    filename: normalizeInvoiceFilename(`${invoiceNumber} ${payload.projectName} Transaction Receipt`),
   })
 
   await sql(
@@ -453,14 +486,16 @@ async function createOrReplaceProjectInvoice(projectId: string) {
        from payments
       where project_id = $1::uuid
         and invoice_pdf_public_id is not null
-      order by updated_at desc nulls last, created_at desc nulls last
-      limit 1`,
+      order by updated_at desc nulls last, created_at desc nulls last`,
     [projectId]
   )
-  await deleteRawFromCloudinary(existing[0]?.invoice_pdf_public_id ?? null)
 
-  const folderName = `ProgreX Invoices/${slugifyInvoicePart(payload.projectName)}`
-  const projectFilename = normalizeInvoiceFilename(`${payload.projectName} - Invoice`)
+  for (const row of existing) {
+    await deleteRawFromCloudinary(row.invoice_pdf_public_id ?? null)
+  }
+
+  const folderName = `${INVOICE_FOLDER_ROOT}/${slugifyInvoicePart(payload.projectName)}`
+  const projectFilename = normalizeInvoiceFilename(`${projectInvoiceNo} ${payload.projectName} Project Receipt`)
   const uploaded = await uploadInvoicePdfToCloudinary(pdfBytes, {
     folder: folderName,
     filename: projectFilename,
@@ -480,7 +515,14 @@ async function createOrReplaceProjectInvoice(projectId: string) {
   return { invoiceNumber: projectInvoiceNo, invoicePdfUrl: uploaded.secureUrl, payload: { ...payload, invoiceNumber: projectInvoiceNo }, pdfBytes }
 }
 
-async function sendTransactionInvoiceEmail(formData: FormData) {
+type InvoiceActionResult = {
+  ok: boolean
+  message: string
+  invoicePdfUrl?: string
+  invoicePayload?: InvoicePayload
+}
+
+async function sendTransactionInvoiceEmail(formData: FormData): Promise<InvoiceActionResult> {
   'use server'
   try {
     await requirePermission('dashboard', 'write')
@@ -523,14 +565,19 @@ async function sendTransactionInvoiceEmail(formData: FormData) {
 
     await sql("update payments set invoice_status = 'sent', invoice_sent_at = now(), updated_at = now() where id = $1", [id])
     revalidatePath('/admin/payment')
-    return { ok: true as const, message: 'Invoice email sent.', invoicePdfUrl: generated.invoicePdfUrl }
+    return {
+      ok: true as const,
+      message: 'Invoice email sent.',
+      invoicePdfUrl: generated.invoicePdfUrl,
+      invoicePayload: generated.payload,
+    }
   } catch (error) {
     console.error('sendTransactionInvoiceEmail error', error)
     return { ok: false as const, message: error instanceof Error ? error.message : 'Failed to send invoice email.' }
   }
 }
 
-async function generateTransactionInvoice(formData: FormData) {
+async function generateTransactionInvoice(formData: FormData): Promise<InvoiceActionResult> {
   'use server'
   try {
     await requirePermission('dashboard', 'write')
@@ -541,14 +588,19 @@ async function generateTransactionInvoice(formData: FormData) {
 
     const generated = await createOrReplaceTransactionInvoice(id)
     revalidatePath('/admin/payment')
-    return { ok: true as const, message: 'Invoice generated.', invoicePdfUrl: generated.invoicePdfUrl }
+    return {
+      ok: true as const,
+      message: 'Invoice generated.',
+      invoicePdfUrl: generated.invoicePdfUrl,
+      invoicePayload: generated.payload,
+    }
   } catch (error) {
     console.error('generateTransactionInvoice error', error)
     return { ok: false as const, message: error instanceof Error ? error.message : 'Failed to generate invoice.' }
   }
 }
 
-async function sendProjectInvoiceEmail(formData: FormData) {
+async function sendProjectInvoiceEmail(formData: FormData): Promise<InvoiceActionResult> {
   'use server'
   try {
     await requirePermission('dashboard', 'write')
@@ -591,14 +643,19 @@ async function sendProjectInvoiceEmail(formData: FormData) {
 
     await sql("update payments set invoice_status = 'sent', invoice_sent_at = now(), updated_at = now() where project_id = $1::uuid", [projectId])
     revalidatePath('/admin/payment')
-    return { ok: true as const, message: 'Project invoice email sent.', invoicePdfUrl: generated.invoicePdfUrl }
+    return {
+      ok: true as const,
+      message: 'Project invoice email sent.',
+      invoicePdfUrl: generated.invoicePdfUrl,
+      invoicePayload: generated.payload,
+    }
   } catch (error) {
     console.error('sendProjectInvoiceEmail error', error)
     return { ok: false as const, message: error instanceof Error ? error.message : 'Failed to send project invoice email.' }
   }
 }
 
-async function generateProjectInvoice(formData: FormData) {
+async function generateProjectInvoice(formData: FormData): Promise<InvoiceActionResult> {
   'use server'
   try {
     await requirePermission('dashboard', 'write')
@@ -609,7 +666,12 @@ async function generateProjectInvoice(formData: FormData) {
 
     const generated = await createOrReplaceProjectInvoice(projectId)
     revalidatePath('/admin/payment')
-    return { ok: true as const, message: 'Project invoice generated.', invoicePdfUrl: generated.invoicePdfUrl }
+    return {
+      ok: true as const,
+      message: 'Project invoice generated.',
+      invoicePdfUrl: generated.invoicePdfUrl,
+      invoicePayload: generated.payload,
+    }
   } catch (error) {
     console.error('generateProjectInvoice error', error)
     return { ok: false as const, message: error instanceof Error ? error.message : 'Failed to generate project invoice.' }
@@ -629,11 +691,15 @@ export default async function AdminPaymentPage() {
       client_name: string
       client_email: string | null
       amount: string
+      ref_number: string | null
+      discount_amount: string | null
+      tax_amount: string | null
       currency: string
       currency_symbol: string | null
       currency_label: string | null
       payment_method: string | null
       payment_date: string | null
+      payment_time: string | null
       status: string
       proof_url: string | null
       notes: string | null
@@ -647,6 +713,7 @@ export default async function AdminPaymentPage() {
       total_price: string | null
       project_paid: string | null
       project_balance: string | null
+      per_transaction_balance: string | null
     }>(
       `select p.id,
               p.project_id::text,
@@ -655,11 +722,15 @@ export default async function AdminPaymentPage() {
               p.client_name,
               c.email as client_email,
               p.amount::text,
+              p.ref_number,
+              p.discount_amount::text,
+              p.tax_amount::text,
               p.currency,
               p.currency_symbol,
               p.currency_label,
               p.payment_method,
               p.payment_date::text,
+              p.payment_time::text,
               p.status,
               p.proof_url,
               p.notes,
@@ -675,20 +746,29 @@ export default async function AdminPaymentPage() {
                 select coalesce(sum(px.amount), 0)::text
                   from payments px
                  where px.project_id = p.project_id
-                   and px.status in ('paid', 'partial')
+                   and px.status = 'paid'
               ) as project_paid,
               (
                 coalesce(op.total_price, 0) - (
                   select coalesce(sum(px.amount), 0)
                     from payments px
                    where px.project_id = p.project_id
-                     and px.status in ('paid', 'partial')
+                     and px.status = 'paid'
                 )
-              )::text as project_balance
+              )::text as project_balance,
+              (
+                coalesce(op.total_price, 0) -
+                sum(case when p.status = 'paid' then p.amount else 0 end)
+                  over (
+                    partition by p.project_id
+                    order by coalesce(p.payment_date, p.created_at::date) asc, coalesce(p.payment_time, '00:00'::time) asc, p.created_at asc
+                    rows between unbounded preceding and current row
+                  )
+              )::text as per_transaction_balance
          from payments p
          left join ongoing_projects op on op.id = p.project_id
          left join clients c on c.full_name = p.client_name
-        order by p.payment_date desc nulls last, p.created_at desc`
+        order by p.payment_date desc nulls last, p.payment_time desc nulls last, p.created_at desc`
     ),
     sql<{ id: string; project_name: string; category: string | null; client_name: string | null; client_email: string | null; total_price: string | null; invoice_no: string | null }>(
       `select op.id,
@@ -705,7 +785,7 @@ export default async function AdminPaymentPage() {
     sql<{ total_projected: string | null; total_collected: string | null }>(
       `select
           (select coalesce(sum(total_price), 0)::text from ongoing_projects) as total_projected,
-          (select coalesce(sum(amount), 0)::text from payments where status in ('paid', 'partial')) as total_collected`
+          (select coalesce(sum(amount), 0)::text from payments where status = 'paid') as total_collected`
     ),
   ])
 
@@ -724,11 +804,15 @@ export default async function AdminPaymentPage() {
         clientEmail: row.client_email,
         totalPrice: Number(row.total_price || '0'),
         amount: Number(row.amount || '0'),
+        refNumber: row.ref_number,
+        discountAmount: Number(row.discount_amount || '0'),
+        taxAmount: Number(row.tax_amount || '0'),
         currency: row.currency || 'PHP',
         currencySymbol: row.currency_symbol || '₱',
         currencyLabel: row.currency_label || 'Philippine Peso',
         paymentMethod: row.payment_method,
         paymentDate: row.payment_date,
+        paymentTime: row.payment_time,
         status: normalizeStatus(row.status || 'pending'),
         proofUrl: row.proof_url,
         notes: row.notes,
@@ -740,6 +824,7 @@ export default async function AdminPaymentPage() {
         invoicePdfUrl: row.invoice_pdf_url,
         projectPaid: Number(row.project_paid || '0'),
         projectBalance: Number(row.project_balance || '0'),
+        transactionBalance: Number(row.per_transaction_balance || '0'),
         createdAt: row.created_at,
       }))}
       projects={projects.map((project) => ({
