@@ -67,7 +67,7 @@ export function ApexImageDropzone({
         >
           {previewUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={previewUrl} alt="Profile preview" className="h-full w-full object-cover" />
+            <img src={previewUrl} alt="Profile preview" className={previewVariant === 'portrait' ? 'h-full w-full object-contain' : 'h-full w-full object-cover'} />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-xs apx-muted">No image</div>
           )}
