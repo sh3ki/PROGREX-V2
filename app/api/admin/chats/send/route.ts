@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
     const safeBase = attachment.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 70) || 'chat-file'
     const filename = `${safeBase}-${randomBytes(3).toString('hex')}`
     attachmentUrl = await uploadAttachmentToCloudinary(attachment, {
-      folder: 'ProgreX Chats/Attachments',
+      folder: 'ProgreX Chat Attachments',
       filename,
       kind: isImage ? 'image' : 'raw',
     })
