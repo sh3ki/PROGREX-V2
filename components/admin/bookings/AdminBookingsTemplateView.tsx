@@ -57,7 +57,7 @@ type BookingFormState = {
   projectDetails: string
 }
 
-const STATUS_OPTIONS = ['new', 'scheduled', 'rescheduled', 'done', 'rejected']
+const STATUS_OPTIONS = ['pending', 'new', 'scheduled', 'rescheduled', 'done', 'rejected']
 
 const SERVICE_OPTIONS = [
   'Book a Meeting',
@@ -140,7 +140,7 @@ function formFromBooking(booking: BookingRow): BookingFormState {
 }
 
 function normalizeStatusForEdit(value: string) {
-  return STATUS_OPTIONS.includes(value) ? value : 'new'
+  return STATUS_OPTIONS.includes(value) ? value : 'pending'
 }
 
 function downloadCsv(filename: string, rows: string[][]) {
@@ -152,6 +152,10 @@ function downloadCsv(filename: string, rows: string[][]) {
   anchor.download = filename
   anchor.click()
   URL.revokeObjectURL(url)
+}
+
+function normalizePhone(value: string) {
+  return value.replace(/\D+/g, '').slice(0, 20)
 }
 
 export default function AdminBookingsTemplateView({
@@ -249,6 +253,7 @@ export default function AdminBookingsTemplateView({
 
   const counts = useMemo(() => ({
     all: bookings.length,
+    pending: bookings.filter((b) => b.status === 'pending').length,
     new: bookings.filter((b) => b.status === 'new').length,
     scheduled: bookings.filter((b) => b.status === 'scheduled').length,
     rescheduled: bookings.filter((b) => b.status === 'rescheduled').length,
@@ -300,7 +305,7 @@ export default function AdminBookingsTemplateView({
     if (form.id) formData.set('id', form.id)
     formData.set('name', form.name)
     formData.set('email', form.email)
-    formData.set('phone', form.phone)
+    formData.set('phone', normalizePhone(form.phone))
     formData.set('company', form.company)
     formData.set('service', form.service)
     formData.set('requestedDate', form.requestedDate)
@@ -489,6 +494,7 @@ export default function AdminBookingsTemplateView({
       <ApexStatusTabs
         tabs={[
           { key: 'all', label: 'All', count: counts.all },
+          { key: 'pending', label: 'Pending', count: counts.pending, indicatorColor: '#64748b' },
           { key: 'new', label: 'New', count: counts.new, indicatorColor: '#3b82f6' },
           { key: 'scheduled', label: 'Scheduled', count: counts.scheduled, indicatorColor: '#eab308' },
           { key: 'rescheduled', label: 'Rescheduled', count: counts.rescheduled, indicatorColor: '#f97316' },
@@ -862,7 +868,7 @@ export default function AdminBookingsTemplateView({
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Phone</label>
-            <ApexInput value={addForm.phone} onChange={(event) => setAddForm((prev) => ({ ...prev, phone: event.target.value }))} />
+            <ApexInput type="tel" inputMode="numeric" maxLength={20} value={addForm.phone} onChange={(event) => setAddForm((prev) => ({ ...prev, phone: normalizePhone(event.target.value) }))} />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Company</label>
@@ -951,7 +957,7 @@ export default function AdminBookingsTemplateView({
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Phone</label>
-            <ApexInput value={editForm.phone} onChange={(event) => setEditForm((prev) => ({ ...prev, phone: event.target.value }))} />
+            <ApexInput type="tel" inputMode="numeric" maxLength={20} value={editForm.phone} onChange={(event) => setEditForm((prev) => ({ ...prev, phone: normalizePhone(event.target.value) }))} />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Company</label>
