@@ -240,8 +240,8 @@ export default function AdminLayoutShell({
   }, [])
 
   useEffect(() => {
-    const warningMs = 13 * 60 * 1000
-    const logoutMs = 15 * 60 * 1000
+    const warningMs = 58 * 60 * 1000
+    const logoutMs = 60 * 60 * 1000
     const awayMs = 5 * 60 * 1000
 
     lastActivityRef.current = Date.now()
