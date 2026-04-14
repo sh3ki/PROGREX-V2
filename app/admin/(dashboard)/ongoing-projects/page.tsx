@@ -98,10 +98,12 @@ async function ensureOngoingProjectsTable() {
       project_id uuid not null references ongoing_projects(id) on delete cascade,
       progress numeric(5,2) not null,
       notes text,
+      created_by text,
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now()
     )
   `)
+  await sql('alter table ongoing_project_progress add column if not exists created_by text')
 }
 
 function normalizeProjectStatus(value: string) {
@@ -114,6 +116,18 @@ function parseCurrency(value: FormDataEntryValue | null) {
   const raw = String(value ?? '').trim().replace(/[^0-9.\-]/g, '')
   const parsed = Number(raw)
   return Number.isFinite(parsed) ? parsed : 0
+}
+
+function normalizedProgressValue(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)))
+}
+
+function progressColorByValue(value: number) {
+  const progress = normalizedProgressValue(value)
+  if (progress < 25) return '#ef4444'
+  if (progress < 50) return '#f59e0b'
+  if (progress < 75) return '#3b82f6'
+  return '#16a34a'
 }
 
 function normalizeInvoiceDatePart(value: string) {
@@ -152,6 +166,8 @@ async function createOngoingProject(formData: FormData) {
   const isActive = status !== 'finished'
   const totalPrice = parseCurrency(formData.get('totalPrice'))
   const balance = totalPrice
+  const initialProgress = 0
+  const initialProgressColor = progressColorByValue(initialProgress)
   const invoiceNo = await generateInvoiceNumberByDate(startDate)
 
   if (!projectName) return
@@ -197,9 +213,10 @@ async function createOngoingProject(formData: FormData) {
       is_active,
       status,
       progress,
+      progress_color,
       total_price,
       balance
-    ) values ($1, $2, $3::date, $4::date, nullif($5, '')::uuid, $6, $7::uuid[], $8, $9, $10::text[], $11, $12, $13, $14, 0, $15, $16)`,
+    ) values ($1, $2, $3::date, $4::date, nullif($5, '')::uuid, $6, $7::uuid[], $8, $9, $10::text[], $11, $12, $13, $14, $15, $16, $17, $18)`,
     [
       projectName,
       projectDescription || null,
@@ -215,6 +232,8 @@ async function createOngoingProject(formData: FormData) {
       invoiceNo,
       isActive,
       status,
+      initialProgress,
+      initialProgressColor,
       totalPrice,
       balance,
     ]
@@ -256,6 +275,8 @@ async function updateOngoingProject(formData: FormData) {
     paidAmount = Number(paidRows[0]?.total_paid ?? '0') || 0
   }
   const balance = Math.max(totalPrice - paidAmount, 0)
+  const normalizedProgress = normalizedProgressValue(progressValue)
+  const progressColor = progressColorByValue(normalizedProgress)
   const existingAgreementFileUrl = String(formData.get('existingAgreementFileUrl') ?? '').trim()
   const existingScopeFileUrl = String(formData.get('existingScopeFileUrl') ?? '').trim()
   const keptOtherFileUrls = String(formData.get('keptOtherFileUrls') ?? '')
@@ -307,8 +328,9 @@ async function updateOngoingProject(formData: FormData) {
          is_active = $13,
          status = $14,
          progress = $15,
-         total_price = $16,
-         balance = $17,
+         progress_color = $16,
+         total_price = $17,
+         balance = $18,
          updated_at = now()
      where id = $1::uuid`,
     [
@@ -326,7 +348,8 @@ async function updateOngoingProject(formData: FormData) {
       paymentTerm,
       isActive,
       status,
-      progressValue,
+      normalizedProgress,
+      progressColor,
       totalPrice,
       balance,
     ]
@@ -448,18 +471,18 @@ async function bulkSetMaintenanceOngoingProjects(formData: FormData) {
 
 async function createProjectProgress(formData: FormData) {
   'use server'
-  await requirePermission('projects', 'write')
+  const admin = await requirePermission('projects', 'write')
 
   const projectId = String(formData.get('projectId') ?? '').trim()
-  const progress = Math.max(0, Math.min(100, Number(formData.get('progress') ?? 0) || 0))
+  const progress = normalizedProgressValue(Number(formData.get('progress') ?? 0) || 0)
   const notes = String(formData.get('notes') ?? '').trim()
-  const colorRaw = String(formData.get('color') ?? '').trim()
-  const color = /^#[0-9a-fA-F]{6}$/.test(colorRaw) ? colorRaw : '#16a34a'
+  const color = progressColorByValue(progress)
+  const createdBy = admin.fullName || 'Admin'
   if (!projectId) return
 
   await sql(
-    'insert into ongoing_project_progress(project_id, progress, notes) values ($1::uuid, $2, $3)',
-    [projectId, progress, notes || null]
+    'insert into ongoing_project_progress(project_id, progress, notes, created_by) values ($1::uuid, $2, $3, $4)',
+    [projectId, progress, notes || null, createdBy]
   )
   await sql('update ongoing_projects set progress = $2, progress_color = $3, updated_at = now() where id = $1::uuid', [projectId, progress, color])
   revalidatePath('/admin/ongoing-projects')
@@ -471,10 +494,9 @@ async function updateProjectProgress(formData: FormData) {
 
   const id = String(formData.get('id') ?? '').trim()
   const projectId = String(formData.get('projectId') ?? '').trim()
-  const progress = Math.max(0, Math.min(100, Number(formData.get('progress') ?? 0) || 0))
+  const progress = normalizedProgressValue(Number(formData.get('progress') ?? 0) || 0)
   const notes = String(formData.get('notes') ?? '').trim()
-  const colorRaw = String(formData.get('color') ?? '').trim()
-  const color = /^#[0-9a-fA-F]{6}$/.test(colorRaw) ? colorRaw : '#16a34a'
+  const color = progressColorByValue(progress)
   if (!id || !projectId) return
 
   await sql(
@@ -502,8 +524,9 @@ async function deleteProjectProgress(formData: FormData) {
     'select progress::text from ongoing_project_progress where project_id = $1::uuid order by created_at desc limit 1',
     [projectId]
   )
-  const latestProgress = Number(latest[0]?.progress ?? '0') || 0
-  await sql('update ongoing_projects set progress = $2, updated_at = now() where id = $1::uuid', [projectId, latestProgress])
+  const latestProgress = normalizedProgressValue(Number(latest[0]?.progress ?? '0') || 0)
+  const color = progressColorByValue(latestProgress)
+  await sql('update ongoing_projects set progress = $2, progress_color = $3, updated_at = now() where id = $1::uuid', [projectId, latestProgress, color])
   revalidatePath('/admin/ongoing-projects')
 }
 
@@ -523,8 +546,9 @@ async function bulkDeleteProjectProgress(formData: FormData) {
     'select progress::text from ongoing_project_progress where project_id = $1::uuid order by created_at desc limit 1',
     [projectId]
   )
-  const latestProgress = Number(latest[0]?.progress ?? '0') || 0
-  await sql('update ongoing_projects set progress = $2, updated_at = now() where id = $1::uuid', [projectId, latestProgress])
+  const latestProgress = normalizedProgressValue(Number(latest[0]?.progress ?? '0') || 0)
+  const color = progressColorByValue(latestProgress)
+  await sql('update ongoing_projects set progress = $2, progress_color = $3, updated_at = now() where id = $1::uuid', [projectId, latestProgress, color])
   revalidatePath('/admin/ongoing-projects')
 }
 
@@ -609,10 +633,11 @@ export default async function AdminOngoingProjectsPage() {
       project_id: string
       progress: string
       notes: string | null
+      created_by: string | null
       created_at: string
       updated_at: string
     }>(
-      `select id, project_id::text, progress::text, notes, created_at::text, updated_at::text
+      `select id, project_id::text, progress::text, notes, created_by, created_at::text, updated_at::text
          from ongoing_project_progress
         order by created_at desc`
     ),
@@ -659,6 +684,7 @@ export default async function AdminOngoingProjectsPage() {
         projectId: row.project_id,
         progress: Number(row.progress || '0'),
         notes: row.notes,
+        createdBy: row.created_by,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       }))}
