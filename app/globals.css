@@ -489,6 +489,8 @@
 
   .apx-icon-action,
   .apx-icon-action-danger {
+    position: relative;
+    overflow: visible;
     border-radius: 10px;
     padding: 0.45rem;
     border: 1px solid var(--apx-border);
@@ -521,6 +523,32 @@
   .apx-icon-action-danger svg {
     width: 1rem;
     height: 1rem;
+  }
+
+  .apx-icon-action[aria-label]:hover::after,
+  .apx-icon-action-danger[aria-label]:hover::after {
+    content: attr(aria-label);
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 8px);
+    transform: translateX(-50%);
+    white-space: normal;
+    max-width: min(220px, 70vw);
+    text-align: center;
+    border-radius: 8px;
+    border: 1px solid var(--apx-border);
+    background: var(--apx-surface);
+    color: var(--apx-text);
+    padding: 0.2rem 0.5rem;
+    font-size: 0.65rem;
+    line-height: 1rem;
+    z-index: 140;
+    box-shadow: 0 10px 22px rgba(2, 6, 23, 0.24);
+    pointer-events: none;
+  }
+
+  .overflow-x-auto {
+    overflow-y: visible;
   }
 
   .apx-table-row {
