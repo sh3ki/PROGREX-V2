@@ -17,6 +17,12 @@ type PendingPayload = {
   meetingStartTime?: string
   meetingDurationMinutes?: number
   attachmentUrls: string[]
+  pendingRecordType?: 'booking' | 'contact'
+  pendingRecordId?: string
+}
+
+function normalizePhone(value: string | undefined) {
+  return String(value || '').replace(/\D+/g, '').slice(0, 20)
 }
 
 function buildDetailsRows(payload: PendingPayload) {
@@ -144,29 +150,61 @@ export async function GET(req: NextRequest) {
     })
 
     if (payload.requestMeeting) {
-      await sql(
-        `insert into bookings(name, email, phone, company, service, source, status, requested_date, requested_start_time, requested_duration_minutes, budget, project_details, attachment_urls, is_active, is_approved)
-         values ($1, $2, $3, $4, $5, 'contact-form', 'new', $6::date, $7, $8, $9, $10, $11::text[], true, false)`,
-        [
-          payload.name,
-          payload.email,
-          payload.phone || null,
-          payload.company || null,
-          payload.service || null,
-          payload.meetingDate || null,
-          payload.meetingStartTime || null,
-          payload.meetingDurationMinutes || 0,
-          payload.budget || null,
-          payload.message,
-          payload.attachmentUrls,
-        ]
-      )
+      const pendingId = String(payload.pendingRecordId || '').trim()
+      const updated = pendingId
+        ? await sql<{ id: string }>(
+            `update bookings
+                set status = 'new',
+                    updated_at = now()
+              where id = $1::uuid
+                and email = $2
+                and status = 'pending'
+              returning id::text`,
+            [pendingId, payload.email]
+          )
+        : []
+
+      if (!updated.length) {
+        await sql(
+          `insert into bookings(name, email, phone, company, service, source, status, requested_date, requested_start_time, requested_duration_minutes, budget, project_details, attachment_urls, is_active, is_approved)
+           values ($1, $2, $3, $4, $5, 'contact-form', 'new', $6::date, $7, $8, $9, $10, $11::text[], true, false)`,
+          [
+            payload.name,
+            payload.email,
+            normalizePhone(payload.phone) || null,
+            payload.company || null,
+            payload.service || null,
+            payload.meetingDate || null,
+            payload.meetingStartTime || null,
+            payload.meetingDurationMinutes || 0,
+            payload.budget || null,
+            payload.message,
+            payload.attachmentUrls,
+          ]
+        )
+      }
     } else {
-      await sql(
-        `insert into contact_submissions(name, email, phone, company, service, budget, message, attachment_urls, status, request_meeting)
-         values ($1, $2, $3, $4, $5, $6, $7, $8::text[], 'new', false)`,
-        [payload.name, payload.email, payload.phone || null, payload.company || null, payload.service || null, payload.budget || null, payload.message, payload.attachmentUrls]
-      )
+      const pendingId = String(payload.pendingRecordId || '').trim()
+      const updated = pendingId
+        ? await sql<{ id: string }>(
+            `update contact_submissions
+                set status = 'new',
+                    updated_at = now()
+              where id = $1::uuid
+                and email = $2
+                and status = 'pending'
+              returning id::text`,
+            [pendingId, payload.email]
+          )
+        : []
+
+      if (!updated.length) {
+        await sql(
+          `insert into contact_submissions(name, email, phone, company, service, budget, message, attachment_urls, status, request_meeting)
+           values ($1, $2, $3, $4, $5, $6, $7, $8::text[], 'new', false)`,
+          [payload.name, payload.email, normalizePhone(payload.phone) || null, payload.company || null, payload.service || null, payload.budget || null, payload.message, payload.attachmentUrls]
+        )
+      }
     }
 
     await sql('update contact_submission_confirmations set consumed_at = now() where id = $1', [pending[0].id])
