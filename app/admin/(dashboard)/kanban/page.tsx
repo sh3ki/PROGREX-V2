@@ -4,7 +4,7 @@ import { sql } from '@/lib/server/db'
 import AdminKanbanTemplateView from '../../../../components/admin/kanban/AdminKanbanTemplateView'
 
 type TaskStatus = 'todo' | 'inprogress' | 'review' | 'done'
-type TaskPriority = 'low' | 'medium' | 'high'
+type TaskPriority = 'low' | 'medium' | 'high' | 'critical'
 
 function normalizeStatus(value: string): TaskStatus {
   const normalized = value.trim().toLowerCase()
@@ -14,7 +14,7 @@ function normalizeStatus(value: string): TaskStatus {
 
 function normalizePriority(value: string): TaskPriority {
   const normalized = value.trim().toLowerCase()
-  if (normalized === 'low' || normalized === 'high') return normalized
+  if (normalized === 'low' || normalized === 'high' || normalized === 'critical') return normalized
   return 'medium'
 }
 
