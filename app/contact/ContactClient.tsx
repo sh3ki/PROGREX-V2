@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { Mail, Phone, MapPin, Github, Twitter, Facebook, Instagram, Youtube, ExternalLink } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
 import SectionWrapper from '@/components/SectionWrapper'
 import ConstellationDecor from '@/components/ConstellationDecor'
 import ContactFormCard from '@/components/contact/ContactFormCard'
@@ -21,7 +22,20 @@ const WhatsAppIcon = ({ size = 16 }: { size?: number }) => (
 
 export default function ContactClient() {
   const { t, translations } = useTranslation()
+  const searchParams = useSearchParams()
   const socialLabels = translations.contact.socialLabels as unknown as string[]
+  const confirmationStatus = searchParams.get('confirm')
+
+  const confirmationMeta =
+    confirmationStatus === 'success'
+      ? { message: 'Your inquiry has been confirmed and submitted. Thank you.', color: '#16a34a' }
+      : confirmationStatus === 'expired'
+        ? { message: 'This confirmation link has expired. Please submit the form again.', color: '#dc2626' }
+        : confirmationStatus === 'invalid'
+          ? { message: 'Invalid confirmation link. Please check your email or submit again.', color: '#dc2626' }
+          : confirmationStatus === 'error'
+            ? { message: 'We could not complete confirmation at this time. Please try again later.', color: '#d97706' }
+            : null
 
   return (
     <>
@@ -38,6 +52,14 @@ export default function ContactClient() {
               {t('contact.title')} <span className="text-gradient-nebula">{t('contact.highlight')}</span>
             </h1>
             <p className="mx-auto max-w-xl text-lg leading-relaxed text-slate-300">{t('contact.subtitle')}</p>
+            {confirmationMeta ? (
+              <div
+                className="mx-auto mt-5 max-w-2xl rounded-xl border px-4 py-3 text-sm"
+                style={{ borderColor: `${confirmationMeta.color}66`, color: confirmationMeta.color, backgroundColor: `${confirmationMeta.color}1A` }}
+              >
+                {confirmationMeta.message}
+              </div>
+            ) : null}
           </motion.div>
         </div>
       </section>

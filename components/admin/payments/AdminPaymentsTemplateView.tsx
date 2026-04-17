@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Edit2, Eye, Mail, Plus, ReceiptText, Trash2 } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Download, Edit2, Eye, Mail, Plus, ReceiptText, Trash2 } from 'lucide-react'
 import { ApexButton, ApexInput, ApexTextarea } from '@/components/admin/apex/AdminPrimitives'
 import {
   ApexBlockingSpinner,
@@ -33,11 +34,15 @@ type PaymentRow = {
   clientEmail: string | null
   totalPrice: number
   amount: number
+  refNumber: string | null
+  discountAmount: number
+  taxAmount: number
   currency: string
   currencySymbol: string
   currencyLabel: string
   paymentMethod: string | null
   paymentDate: string | null
+  paymentTime: string | null
   status: string
   proofUrl: string | null
   notes: string | null
@@ -46,8 +51,10 @@ type PaymentRow = {
   invoiceStatus: string
   invoiceDueDate: string | null
   invoiceSentAt: string | null
+  invoicePdfUrl: string | null
   projectPaid: number
   projectBalance: number
+  transactionBalance: number
   createdAt: string | null
 }
 
@@ -58,6 +65,35 @@ type ProjectOption = {
   clientName: string
   clientEmail: string | null
   totalPrice: number
+  invoiceNo: string | null
+}
+
+type InvoicePreviewRow = {
+  id: string
+  projectId: string | null
+  projectName: string
+  amount: number
+  currencyCode: string
+  paymentMethod: string | null
+  paymentDate: string | null
+  status: string
+  orNumber: string | null
+  notes: string | null
+}
+
+type InvoicePreviewPayload = {
+  invoiceKind: 'transaction' | 'project'
+  invoiceNumber: string
+  title: string
+  subtitle: string
+  generatedAt: string
+  projectName: string
+  clientName: string
+  clientEmail: string | null
+  rows: InvoicePreviewRow[]
+  totalAmount: number
+  projectTotalAmount: number
+  currencyCode: string
 }
 
 type ColumnKey = 'project' | 'client' | 'totalPrice' | 'amountPaid' | 'date' | 'or' | 'method' | 'balance' | 'status' | 'actions'
@@ -66,29 +102,42 @@ type PaymentFormState = {
   id?: string
   projectId: string
   amount: string
+  discountAmount: string
+  taxAmount: string
   currency: string
   paymentMethod: string
   paymentDate: string
+  paymentTime: string
   status: string
+  refNumber: string
   orNumber: string
   notes: string
 }
 
-type ConfirmKind = 'delete'
+type ConfirmKind = 'delete' | 'generateTransactionInvoice' | 'generateProjectInvoice'
 
 function dateToday() {
   const now = new Date()
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 }
 
+function timeNow() {
+  const now = new Date()
+  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+}
+
 function defaultForm(projectId = ''): PaymentFormState {
   return {
     projectId,
     amount: '',
+    discountAmount: '',
+    taxAmount: '',
     currency: 'PHP',
     paymentMethod: 'Gcash',
     paymentDate: dateToday(),
+    paymentTime: timeNow(),
     status: 'pending',
+    refNumber: '',
     orNumber: '',
     notes: '',
   }
@@ -98,11 +147,15 @@ function fromPayment(payment: PaymentRow): PaymentFormState {
   return {
     id: payment.id,
     projectId: payment.projectId || '',
-    amount: formatAmountInput(payment.amount),
+    amount: formatAmountInput(Math.max(payment.amount - payment.taxAmount + payment.discountAmount, 0)),
+    discountAmount: payment.discountAmount > 0 ? formatAmountInput(payment.discountAmount) : '',
+    taxAmount: payment.taxAmount > 0 ? formatAmountInput(payment.taxAmount) : '',
     currency: payment.currency,
     paymentMethod: payment.paymentMethod || 'Gcash',
     paymentDate: payment.paymentDate || dateToday(),
+    paymentTime: payment.paymentTime || timeNow(),
     status: payment.status || 'pending',
+    refNumber: payment.refNumber || '',
     orNumber: payment.orNumber || '',
     notes: payment.notes || '',
   }
@@ -134,11 +187,40 @@ function formatDate(value: string | null) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+function formatDateTime(dateValue: string | null, timeValue: string | null) {
+  if (!dateValue) return '-'
+  const datePart = formatDate(dateValue)
+  if (!timeValue) return datePart
+  const [hourRaw, minuteRaw] = timeValue.split(':')
+  const hour = Number(hourRaw)
+  const minute = Number(minuteRaw)
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return datePart
+  const dt = new Date()
+  dt.setHours(hour, minute, 0, 0)
+  return `${datePart} ${dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+}
+
+function formatDateTimeValue(value: string | null) {
+  if (!value) return '-'
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return value
+  return parsed.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+}
+
 function normalizeExternalUrl(url: string) {
   const trimmed = url.trim()
   if (!trimmed) return ''
   if (/^https?:\/\//i.test(trimmed)) return trimmed
   return `https://${trimmed}`
+}
+
+function downloadExternalFile(url: string) {
+  const link = document.createElement('a')
+  link.href = normalizeExternalUrl(url)
+  link.target = '_blank'
+  link.rel = 'noopener noreferrer'
+  link.download = ''
+  link.click()
 }
 
 function methodBadgeStyle(method: string | null) {
@@ -154,7 +236,6 @@ function methodBadgeStyle(method: string | null) {
 function statusBadgeStyle(status: string) {
   const normalized = status.toLowerCase()
   if (normalized === 'paid') return { bg: 'rgba(22,163,74,0.14)', fg: '#166534' }
-  if (normalized === 'partial') return { bg: 'rgba(245,158,11,0.16)', fg: '#92400e' }
   if (normalized === 'refunded') return { bg: 'rgba(99,102,241,0.16)', fg: '#3730a3' }
   if (normalized === 'failed') return { bg: 'rgba(239,68,68,0.14)', fg: '#991b1b' }
   return { bg: 'rgba(100,116,139,0.16)', fg: '#334155' }
@@ -179,7 +260,9 @@ export default function AdminPaymentsTemplateView({
   createPaymentAction,
   updatePaymentAction,
   deletePaymentAction,
+  generateTransactionInvoiceAction,
   sendTransactionInvoiceEmailAction,
+  generateProjectInvoiceAction,
   sendProjectInvoiceEmailAction,
 }: {
   payments: PaymentRow[]
@@ -189,9 +272,13 @@ export default function AdminPaymentsTemplateView({
   createPaymentAction: (formData: FormData) => Promise<void>
   updatePaymentAction: (formData: FormData) => Promise<void>
   deletePaymentAction: (formData: FormData) => Promise<void>
-  sendTransactionInvoiceEmailAction: (formData: FormData) => Promise<void>
-  sendProjectInvoiceEmailAction: (formData: FormData) => Promise<void>
+  generateTransactionInvoiceAction: (formData: FormData) => Promise<{ ok: boolean; message: string; invoicePdfUrl?: string; invoicePayload?: InvoicePreviewPayload }>
+  sendTransactionInvoiceEmailAction: (formData: FormData) => Promise<{ ok: boolean; message: string; invoicePdfUrl?: string; invoicePayload?: InvoicePreviewPayload }>
+  generateProjectInvoiceAction: (formData: FormData) => Promise<{ ok: boolean; message: string; invoicePdfUrl?: string; invoicePayload?: InvoicePreviewPayload }>
+  sendProjectInvoiceEmailAction: (formData: FormData) => Promise<{ ok: boolean; message: string; invoicePdfUrl?: string; invoicePayload?: InvoicePreviewPayload }>
 }) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [projectFilter, setProjectFilter] = useState('')
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('all')
@@ -215,6 +302,14 @@ export default function AdminPaymentsTemplateView({
   const [viewOpen, setViewOpen] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [projectInvoiceOpen, setProjectInvoiceOpen] = useState(false)
+  const [transactionInvoiceOpen, setTransactionInvoiceOpen] = useState(false)
+  const [proofOpen, setProofOpen] = useState(false)
+  const [projectInvoiceUrl, setProjectInvoiceUrl] = useState('')
+  const [transactionInvoiceUrl, setTransactionInvoiceUrl] = useState('')
+  const [projectInvoicePayload, setProjectInvoicePayload] = useState<InvoicePreviewPayload | null>(null)
+  const [transactionInvoicePayload, setTransactionInvoicePayload] = useState<InvoicePreviewPayload | null>(null)
+  const [proofViewUrl, setProofViewUrl] = useState('')
+  const [proofViewLabel, setProofViewLabel] = useState('')
 
   const [selectedPayment, setSelectedPayment] = useState<PaymentRow | null>(null)
   const [confirmConfig, setConfirmConfig] = useState<{ kind: ConfirmKind; title: string; description: string; confirmLabel: string; tone: 'primary' | 'danger' } | null>(null)
@@ -224,6 +319,7 @@ export default function AdminPaymentsTemplateView({
   const [addProofFile, setAddProofFile] = useState<File | null>(null)
   const [editProofFile, setEditProofFile] = useState<File | null>(null)
   const [keepEditProof, setKeepEditProof] = useState(true)
+  const [queryHandled, setQueryHandled] = useState(false)
 
   const projectMap = useMemo(() => new Map(projects.map((project) => [project.id, project])), [projects])
   const selectedProject = projectFilter ? projectMap.get(projectFilter) || null : null
@@ -233,6 +329,40 @@ export default function AdminPaymentsTemplateView({
     setAddForm((prev) => ({ ...prev, projectId: projectFilter }))
   }, [projectFilter])
 
+  useEffect(() => {
+    if (queryHandled) return
+
+    const openAdd = searchParams.get('openAdd')
+    if (openAdd !== '1') {
+      setQueryHandled(true)
+      return
+    }
+
+    const projectId = searchParams.get('projectId') || ''
+    const hasProject = projectId && projects.some((project) => project.id === projectId)
+    if (hasProject) {
+      setProjectFilter(projectId)
+      setAddForm(defaultForm(projectId))
+    } else {
+      setAddForm(defaultForm())
+    }
+    setAddProofFile(null)
+    setAddOpen(true)
+    setQueryHandled(true)
+    router.replace('/admin/payment')
+  }, [projects, queryHandled, router, searchParams])
+
+  useEffect(() => {
+    if (!selectedProject) {
+      setProjectInvoiceUrl('')
+      setProjectInvoicePayload(null)
+      return
+    }
+    const existing = payments.find((item) => item.projectId === selectedProject.id && item.invoicePdfUrl)
+    setProjectInvoiceUrl(existing?.invoicePdfUrl || '')
+    setProjectInvoicePayload(null)
+  }, [payments, selectedProject])
+
   const filtered = useMemo(() => {
     const keyword = search.trim().toLowerCase()
     return payments.filter((payment) => {
@@ -240,7 +370,7 @@ export default function AdminPaymentsTemplateView({
       const statusMatch = status === 'all' ? true : payment.status === status
       if (!statusMatch) return false
       if (!keyword) return true
-      return [payment.projectName || '', payment.category || '', payment.clientName, payment.orNumber || '', payment.paymentMethod || '', payment.notes || '']
+      return [payment.projectName || '', payment.category || '', payment.clientName, payment.refNumber || '', payment.orNumber || '', payment.paymentMethod || '', payment.notes || '']
         .join(' ')
         .toLowerCase()
         .includes(keyword)
@@ -258,10 +388,14 @@ export default function AdminPaymentsTemplateView({
     if (form.id) formData.set('id', form.id)
     formData.set('projectId', form.projectId)
     formData.set('amount', String(parseAmountInput(form.amount)))
+    formData.set('discountAmount', String(parseAmountInput(form.discountAmount)))
+    formData.set('taxAmount', String(parseAmountInput(form.taxAmount)))
     formData.set('currency', form.currency)
     formData.set('paymentMethod', form.paymentMethod)
     formData.set('paymentDate', form.paymentDate)
+    formData.set('paymentTime', form.paymentTime)
     formData.set('status', form.status)
+    formData.set('refNumber', form.refNumber)
     formData.set('orNumber', form.orNumber)
     formData.set('notes', form.notes)
     formData.set('keepProof', keepProof ? '1' : '0')
@@ -299,15 +433,27 @@ export default function AdminPaymentsTemplateView({
   }
 
   async function executeConfirm() {
-    if (!selectedPayment || !confirmConfig) return
-    setPending(true)
+    if (!confirmConfig) return
     try {
       if (confirmConfig.kind === 'delete') {
+        if (!selectedPayment) return
+        setPending(true)
         const formData = new FormData()
         formData.set('id', selectedPayment.id)
         await deletePaymentAction(formData)
         setViewOpen(false)
         addToast('Payment deleted.', 'success')
+      } else if (confirmConfig.kind === 'generateTransactionInvoice') {
+        if (!selectedPayment) return
+        const ok = await generateTransactionInvoice(selectedPayment.id)
+        if (ok) setTransactionInvoiceOpen(true)
+      } else if (confirmConfig.kind === 'generateProjectInvoice') {
+        if (!selectedProject) {
+          addToast('Select a project first to generate a full invoice.', 'default')
+        } else {
+          const ok = await generateProjectInvoice(selectedProject.id)
+          if (ok) setProjectInvoiceOpen(true)
+        }
       }
       setConfirmOpen(false)
       setConfirmConfig(null)
@@ -318,13 +464,35 @@ export default function AdminPaymentsTemplateView({
     }
   }
 
+  async function generateTransactionInvoice(paymentId: string) {
+    setPending(true)
+    try {
+      const formData = new FormData()
+      formData.set('id', paymentId)
+      const result = await generateTransactionInvoiceAction(formData)
+      addToast(result.message, result.ok ? 'success' : 'danger')
+      if (result.ok && result.invoicePdfUrl) {
+        setTransactionInvoiceUrl(result.invoicePdfUrl)
+      }
+      setTransactionInvoicePayload(result.invoicePayload || null)
+      return result.ok
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to generate invoice.', 'danger')
+      return false
+    } finally {
+      setPending(false)
+    }
+  }
+
   async function sendTransactionInvoice(paymentId: string) {
     setPending(true)
     try {
       const formData = new FormData()
       formData.set('id', paymentId)
-      await sendTransactionInvoiceEmailAction(formData)
-      addToast('Invoice email sent.', 'success')
+      const result = await sendTransactionInvoiceEmailAction(formData)
+      addToast(result.message, result.ok ? 'success' : 'danger')
+      if (result.invoicePdfUrl) setTransactionInvoiceUrl(result.invoicePdfUrl)
+      if (result.invoicePayload) setTransactionInvoicePayload(result.invoicePayload)
     } catch (error) {
       addToast(error instanceof Error ? error.message : 'Failed to send invoice email.', 'danger')
     } finally {
@@ -337,8 +505,10 @@ export default function AdminPaymentsTemplateView({
     try {
       const formData = new FormData()
       formData.set('projectId', projectId)
-      await sendProjectInvoiceEmailAction(formData)
-      addToast('Project invoice email sent.', 'success')
+      const result = await sendProjectInvoiceEmailAction(formData)
+      addToast(result.message, result.ok ? 'success' : 'danger')
+      if (result.invoicePdfUrl) setProjectInvoiceUrl(result.invoicePdfUrl)
+      if (result.invoicePayload) setProjectInvoicePayload(result.invoicePayload)
     } catch (error) {
       addToast(error instanceof Error ? error.message : 'Failed to send project invoice.', 'danger')
     } finally {
@@ -346,12 +516,24 @@ export default function AdminPaymentsTemplateView({
     }
   }
 
-  function openSingleInvoicePdf(paymentId: string) {
-    window.open(`/api/admin/payment/invoice?paymentId=${encodeURIComponent(paymentId)}`, '_blank', 'noopener,noreferrer')
-  }
-
-  function openProjectInvoicePdf(projectId: string) {
-    window.open(`/api/admin/payment/invoice?projectId=${encodeURIComponent(projectId)}`, '_blank', 'noopener,noreferrer')
+  async function generateProjectInvoice(projectId: string) {
+    setPending(true)
+    try {
+      const formData = new FormData()
+      formData.set('projectId', projectId)
+      const result = await generateProjectInvoiceAction(formData)
+      addToast(result.message, result.ok ? 'success' : 'danger')
+      if (result.ok && result.invoicePdfUrl) {
+        setProjectInvoiceUrl(result.invoicePdfUrl)
+      }
+      setProjectInvoicePayload(result.invoicePayload || null)
+      return result.ok
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to generate project invoice.', 'danger')
+      return false
+    } finally {
+      setPending(false)
+    }
   }
 
   function exportCsv() {
@@ -361,13 +543,13 @@ export default function AdminPaymentsTemplateView({
       row.clientName,
       formatMoney(row.totalPrice, 'PHP'),
       formatMoney(row.amount, row.currency),
-      formatDate(row.paymentDate),
+      formatDateTime(row.paymentDate, row.paymentTime),
       row.orNumber || '',
       row.paymentMethod || '',
-      formatMoney(row.projectBalance, 'PHP'),
+      formatMoney(row.transactionBalance, 'PHP'),
       row.status,
     ])
-    downloadCsv('payments-export.csv', [['Project', 'Category', 'Client', 'Total Price', 'Amount Paid', 'Date', 'O.R. #', 'Payment Method', 'Balance', 'Status'], ...rows])
+    downloadCsv('payments-export.csv', [['Project', 'Category', 'Client', 'Total Price', 'Amount Paid', 'Date Time', 'O.R. #', 'Payment Method', 'Balance After Tx', 'Status'], ...rows])
     addToast('Payments exported.', 'success')
   }
 
@@ -399,17 +581,17 @@ export default function AdminPaymentsTemplateView({
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
-          <p className="text-xs uppercase tracking-wide apx-muted">Total Projected</p>
-          <p className="mt-1 text-2xl font-bold apx-text">{formatMoney(stats.totalProjected, 'PHP')}</p>
+        <div className="rounded-2xl border p-4" style={{ borderColor: 'rgba(22,163,74,0.45)', backgroundColor: 'rgba(22,163,74,0.12)' }}>
+          <p className="text-xs uppercase tracking-wide" style={{ color: '#166534' }}>Total Projected</p>
+          <p className="mt-1 text-2xl font-bold" style={{ color: '#166534' }}>{formatMoney(stats.totalProjected, 'PHP')}</p>
         </div>
-        <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
-          <p className="text-xs uppercase tracking-wide apx-muted">Total Collected</p>
-          <p className="mt-1 text-2xl font-bold apx-text">{formatMoney(stats.totalCollected, 'PHP')}</p>
+        <div className="rounded-2xl border p-4" style={{ borderColor: 'rgba(37,99,235,0.45)', backgroundColor: 'rgba(37,99,235,0.12)' }}>
+          <p className="text-xs uppercase tracking-wide" style={{ color: '#1d4ed8' }}>Total Collected</p>
+          <p className="mt-1 text-2xl font-bold" style={{ color: '#1d4ed8' }}>{formatMoney(stats.totalCollected, 'PHP')}</p>
         </div>
-        <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>
-          <p className="text-xs uppercase tracking-wide apx-muted">Total Balance</p>
-          <p className="mt-1 text-2xl font-bold apx-text">{formatMoney(stats.totalBalance, 'PHP')}</p>
+        <div className="rounded-2xl border p-4" style={{ borderColor: 'rgba(220,38,38,0.45)', backgroundColor: 'rgba(220,38,38,0.12)' }}>
+          <p className="text-xs uppercase tracking-wide" style={{ color: '#b91c1c' }}>Total Balance</p>
+          <p className="mt-1 text-2xl font-bold" style={{ color: '#b91c1c' }}>{formatMoney(stats.totalBalance, 'PHP')}</p>
         </div>
       </div>
 
@@ -417,7 +599,6 @@ export default function AdminPaymentsTemplateView({
         tabs={[
           { key: 'all', label: 'All', count: payments.length },
           { key: 'pending', label: 'Pending', count: payments.filter((item) => item.status === 'pending').length, indicatorColor: '#64748b' },
-          { key: 'partial', label: 'Partial', count: payments.filter((item) => item.status === 'partial').length, indicatorColor: '#f59e0b' },
           { key: 'paid', label: 'Paid', count: payments.filter((item) => item.status === 'paid').length, indicatorColor: '#16a34a' },
           { key: 'refunded', label: 'Refunded', count: payments.filter((item) => item.status === 'refunded').length, indicatorColor: '#6366f1' },
           { key: 'failed', label: 'Failed', count: payments.filter((item) => item.status === 'failed').length, indicatorColor: '#ef4444' },
@@ -449,11 +630,32 @@ export default function AdminPaymentsTemplateView({
                 addToast('Select a project first to generate a full invoice.', 'default')
                 return
               }
-              setProjectInvoiceOpen(true)
+              setConfirmConfig({
+                kind: 'generateProjectInvoice',
+                title: 'Generate Project Invoice',
+                description: `Generate and save invoice ${selectedProject.invoiceNo || ''} for ${selectedProject.projectName}? Existing invoice file will be replaced.`,
+                confirmLabel: 'Generate',
+                tone: 'primary',
+              })
+              setConfirmOpen(true)
             }}
           >
             <ReceiptText className="h-4 w-4" />
-            Invoice
+            Generate Invoice
+          </ApexButton>
+          <ApexButton
+            type="button"
+            variant="outline"
+            onClick={() => {
+              if (!selectedProject) {
+                addToast('Select a project first to send invoice.', 'default')
+                return
+              }
+              void sendProjectInvoice(selectedProject.id)
+            }}
+          >
+            <Mail className="h-4 w-4" />
+            Send Invoice
           </ApexButton>
           <ApexColumnsToggle
             columns={[
@@ -461,8 +663,8 @@ export default function AdminPaymentsTemplateView({
               { key: 'client', label: 'Client', visible: columns.client },
               { key: 'totalPrice', label: 'Total Price', visible: columns.totalPrice },
               { key: 'amountPaid', label: 'Amount Paid', visible: columns.amountPaid },
-              { key: 'date', label: 'Date', visible: columns.date },
-              { key: 'or', label: 'O.R. #', visible: columns.or },
+              { key: 'date', label: 'Date Time', visible: columns.date },
+              { key: 'or', label: 'Ref / O.R. #', visible: columns.or },
               { key: 'method', label: 'Payment Method', visible: columns.method },
               { key: 'balance', label: 'Balance', visible: columns.balance },
               { key: 'status', label: 'Status', visible: columns.status },
@@ -485,8 +687,8 @@ export default function AdminPaymentsTemplateView({
               {columns.client ? <th className="px-4 py-3 font-semibold apx-text">Client</th> : null}
               {columns.totalPrice ? <th className="px-4 py-3 font-semibold apx-text">Total Price</th> : null}
               {columns.amountPaid ? <th className="px-4 py-3 font-semibold apx-text">Amount Paid</th> : null}
-              {columns.date ? <th className="px-4 py-3 font-semibold apx-text">Date</th> : null}
-              {columns.or ? <th className="px-4 py-3 font-semibold apx-text">O.R. #</th> : null}
+              {columns.date ? <th className="px-4 py-3 font-semibold apx-text">Date Time</th> : null}
+              {columns.or ? <th className="px-4 py-3 font-semibold apx-text">Ref / O.R. #</th> : null}
               {columns.method ? <th className="px-4 py-3 font-semibold apx-text">Payment Method</th> : null}
               {columns.balance ? <th className="px-4 py-3 font-semibold apx-text">Balance</th> : null}
               {columns.status ? <th className="px-4 py-3 font-semibold apx-text">Status</th> : null}
@@ -500,7 +702,7 @@ export default function AdminPaymentsTemplateView({
               return (
                 <tr
                   key={payment.id}
-                  className="cursor-pointer border-b last:border-b-0"
+                  className="apx-table-row cursor-pointer border-b last:border-b-0"
                   style={{ borderColor: 'var(--apx-border)' }}
                   onClick={() => {
                     setSelectedPayment(payment)
@@ -516,8 +718,13 @@ export default function AdminPaymentsTemplateView({
                   {columns.client ? <td className="px-4 py-3 apx-text">{payment.clientName}</td> : null}
                   {columns.totalPrice ? <td className="px-4 py-3 apx-text">{formatMoney(payment.totalPrice, 'PHP')}</td> : null}
                   {columns.amountPaid ? <td className="px-4 py-3 apx-text">{formatMoney(payment.amount, payment.currency)}</td> : null}
-                  {columns.date ? <td className="px-4 py-3 apx-text">{formatDate(payment.paymentDate)}</td> : null}
-                  {columns.or ? <td className="px-4 py-3 apx-text">{payment.orNumber || '-'}</td> : null}
+                  {columns.date ? <td className="px-4 py-3 apx-text">{formatDateTime(payment.paymentDate, payment.paymentTime)}</td> : null}
+                  {columns.or ? (
+                    <td className="px-4 py-3">
+                      <p className="apx-text">{payment.refNumber || '-'}</p>
+                      <p className="text-xs apx-muted">OR: {payment.orNumber || '-'}</p>
+                    </td>
+                  ) : null}
                   {columns.method ? (
                     <td className="px-4 py-3">
                       <span className="inline-flex rounded-full px-2 py-1 text-xs font-semibold" style={{ backgroundColor: methodStyle.bg, color: methodStyle.fg }}>
@@ -525,7 +732,7 @@ export default function AdminPaymentsTemplateView({
                       </span>
                     </td>
                   ) : null}
-                  {columns.balance ? <td className="px-4 py-3 apx-text">{formatMoney(payment.projectBalance, 'PHP')}</td> : null}
+                  {columns.balance ? <td className="px-4 py-3 apx-text">{formatMoney(payment.transactionBalance, 'PHP')}</td> : null}
                   {columns.status ? (
                     <td className="px-4 py-3">
                       <span className="inline-flex rounded-full px-2 py-1 text-xs font-semibold" style={{ backgroundColor: statusStyle.bg, color: statusStyle.fg }}>
@@ -536,7 +743,22 @@ export default function AdminPaymentsTemplateView({
                   {columns.actions ? (
                     <td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
                       <div className="flex items-center justify-end gap-2">
-                        <button type="button" className="apx-icon-action" onClick={() => openSingleInvoicePdf(payment.id)} aria-label="Generate invoice PDF">
+                        <button
+                          type="button"
+                          className="apx-icon-action"
+                          onClick={() => {
+                            setSelectedPayment(payment)
+                            setConfirmConfig({
+                              kind: 'generateTransactionInvoice',
+                              title: 'Generate Transaction Invoice',
+                              description: `Generate transaction invoice for ${payment.projectName || 'this payment'}? Existing invoice PDF will be replaced.`,
+                              confirmLabel: 'Generate',
+                              tone: 'primary',
+                            })
+                            setConfirmOpen(true)
+                          }}
+                          aria-label="Generate invoice PDF"
+                        >
                           <ReceiptText className="h-4 w-4" />
                         </button>
                         <button type="button" className="apx-icon-action" onClick={() => void sendTransactionInvoice(payment.id)} aria-label="Send invoice email">
@@ -550,7 +772,9 @@ export default function AdminPaymentsTemplateView({
                               addToast('No proof of payment image uploaded.', 'default')
                               return
                             }
-                            window.open(normalizeExternalUrl(payment.proofUrl), '_blank', 'noopener,noreferrer')
+                            setProofViewUrl(normalizeExternalUrl(payment.proofUrl))
+                            setProofViewLabel(`${payment.projectName || 'Payment'} - ${payment.clientName}`)
+                            setProofOpen(true)
                           }}
                           aria-label="View proof of payment"
                         >
@@ -645,10 +869,15 @@ export default function AdminPaymentsTemplateView({
               <div><p className="text-xs apx-muted">Client</p><p className="apx-text">{selectedPayment.clientName}</p></div>
               <div><p className="text-xs apx-muted">Total Price</p><p className="apx-text">{formatMoney(selectedPayment.totalPrice, 'PHP')}</p></div>
               <div><p className="text-xs apx-muted">Amount Paid</p><p className="apx-text">{formatMoney(selectedPayment.amount, selectedPayment.currency)}</p></div>
-              <div><p className="text-xs apx-muted">Balance</p><p className="apx-text">{formatMoney(selectedPayment.projectBalance, 'PHP')}</p></div>
+              <div><p className="text-xs apx-muted">Discount</p><p className="apx-text">{formatMoney(selectedPayment.discountAmount, selectedPayment.currency)}</p></div>
+              <div><p className="text-xs apx-muted">Tax</p><p className="apx-text">{formatMoney(selectedPayment.taxAmount, selectedPayment.currency)}</p></div>
+              <div><p className="text-xs apx-muted">Balance After Tx</p><p className="apx-text">{formatMoney(selectedPayment.transactionBalance, 'PHP')}</p></div>
+              <div><p className="text-xs apx-muted">Ref #</p><p className="apx-text">{selectedPayment.refNumber || '-'}</p></div>
               <div><p className="text-xs apx-muted">O.R. #</p><p className="apx-text">{selectedPayment.orNumber || '-'}</p></div>
               <div><p className="text-xs apx-muted">Method</p><p className="apx-text">{selectedPayment.paymentMethod || '-'}</p></div>
-              <div><p className="text-xs apx-muted">Date</p><p className="apx-text">{formatDate(selectedPayment.paymentDate)}</p></div>
+              <div><p className="text-xs apx-muted">Date Time</p><p className="apx-text">{formatDateTime(selectedPayment.paymentDate, selectedPayment.paymentTime)}</p></div>
+              <div><p className="text-xs apx-muted">Status</p><p className="apx-text">{selectedPayment.status}</p></div>
+              <div><p className="text-xs apx-muted">Invoice #</p><p className="apx-text">{selectedPayment.invoiceNumber || '-'}</p></div>
             </div>
             {selectedPayment.notes ? (
               <div>
@@ -657,32 +886,114 @@ export default function AdminPaymentsTemplateView({
               </div>
             ) : null}
             {selectedPayment.proofUrl ? (
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"
-                style={{ borderColor: 'var(--apx-border)', color: 'var(--apx-primary)' }}
-                onClick={() => window.open(normalizeExternalUrl(selectedPayment.proofUrl || ''), '_blank', 'noopener,noreferrer')}
-              >
-                <Eye className="h-4 w-4" />
-                View Proof Image
-              </button>
+              <div className="space-y-2 rounded-xl border p-3" style={{ borderColor: 'var(--apx-border)' }}>
+                <p className="text-xs apx-muted">Proof of Payment</p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={normalizeExternalUrl(selectedPayment.proofUrl)} alt="Proof of payment" className="h-48 w-full rounded-lg border object-contain" style={{ borderColor: 'var(--apx-border)' }} />
+                <div className="flex justify-end gap-2">
+                  <ApexButton type="button" variant="outline" onClick={() => {
+                    setProofViewUrl(normalizeExternalUrl(selectedPayment.proofUrl || ''))
+                    setProofViewLabel(`${selectedPayment.projectName || 'Payment'} - ${selectedPayment.clientName}`)
+                    setProofOpen(true)
+                  }}>
+                    <Eye className="h-4 w-4" />
+                    View Full
+                  </ApexButton>
+                  <ApexButton type="button" variant="outline" onClick={() => downloadExternalFile(normalizeExternalUrl(selectedPayment.proofUrl || ''))}>
+                    <Download className="h-4 w-4" />
+                    Download
+                  </ApexButton>
+                </div>
+              </div>
             ) : null}
           </div>
         ) : null}
       </ApexModal>
 
-      <ApexModal size="sm" open={projectInvoiceOpen} title="Project Invoice" subtitle="Generate full invoice for selected project." onClose={() => setProjectInvoiceOpen(false)}>
+      <ApexModal size="xl" open={projectInvoiceOpen} title="Project Invoice" subtitle="Generated invoice preview." onClose={() => setProjectInvoiceOpen(false)}>
         {selectedProject ? (
           <div className="space-y-3">
             <div className="rounded-xl border p-3" style={{ borderColor: 'var(--apx-border)' }}>
-              <p className="font-semibold apx-text">{selectedProject.projectName}</p>
-              <p className="text-xs apx-muted">{selectedProject.clientName}</p>
+              <p className="font-semibold apx-text">{projectInvoicePayload?.projectName || selectedProject.projectName}</p>
+              <p className="text-xs apx-muted">{projectInvoicePayload?.clientName || selectedProject.clientName}</p>
+              <p className="text-xs apx-muted">Invoice No: {projectInvoicePayload?.invoiceNumber || selectedProject.invoiceNo || '-'}</p>
+              <p className="text-xs apx-muted">Generated: {projectInvoicePayload ? formatDateTimeValue(projectInvoicePayload.generatedAt) : '-'}</p>
             </div>
+
+            <div className="rounded-xl border p-3" style={{ borderColor: 'var(--apx-border)' }}>
+              <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
+                <div>
+                  <p className="text-xs apx-muted">Total Paid</p>
+                  <p className="font-semibold apx-text">
+                    {projectInvoicePayload ? formatMoney(projectInvoicePayload.totalAmount, projectInvoicePayload.currencyCode) : '-'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs apx-muted">Project Total</p>
+                  <p className="font-semibold apx-text">
+                    {projectInvoicePayload ? formatMoney(projectInvoicePayload.projectTotalAmount, projectInvoicePayload.currencyCode) : '-'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs apx-muted">Balance</p>
+                  <p className="font-semibold apx-text">
+                    {projectInvoicePayload
+                      ? formatMoney(Math.max(projectInvoicePayload.projectTotalAmount - projectInvoicePayload.totalAmount, 0), projectInvoicePayload.currencyCode)
+                      : '-'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs apx-muted">Payments</p>
+                  <p className="font-semibold apx-text">{projectInvoicePayload?.rows.length || 0}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto rounded-xl border" style={{ borderColor: 'var(--apx-border)' }}>
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b" style={{ borderColor: 'var(--apx-border)' }}>
+                    <th className="px-3 py-2 font-semibold apx-text">Date</th>
+                    <th className="px-3 py-2 font-semibold apx-text">O.R. #</th>
+                    <th className="px-3 py-2 font-semibold apx-text">Method</th>
+                    <th className="px-3 py-2 font-semibold apx-text">Status</th>
+                    <th className="px-3 py-2 text-right font-semibold apx-text">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(projectInvoicePayload?.rows || []).map((row) => (
+                    <tr key={row.id} className="border-b last:border-b-0" style={{ borderColor: 'var(--apx-border)' }}>
+                      <td className="px-3 py-2 apx-text">{formatDate(row.paymentDate)}</td>
+                      <td className="px-3 py-2 apx-text">{row.orNumber || '-'}</td>
+                      <td className="px-3 py-2 apx-text">{row.paymentMethod || '-'}</td>
+                      <td className="px-3 py-2 apx-text">{row.status}</td>
+                      <td className="px-3 py-2 text-right apx-text">{formatMoney(row.amount, row.currencyCode)}</td>
+                    </tr>
+                  ))}
+                  {projectInvoicePayload && projectInvoicePayload.rows.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-3 py-6 text-center text-sm apx-muted">No payments included in this invoice.</td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+
             <div className="flex justify-end gap-2">
               <ApexButton type="button" variant="outline" onClick={() => setProjectInvoiceOpen(false)}>Close</ApexButton>
-              <ApexButton type="button" variant="outline" onClick={() => openProjectInvoicePdf(selectedProject.id)}>
+              <ApexButton
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  if (!projectInvoiceUrl) {
+                    addToast('Generate the invoice first.', 'default')
+                    return
+                  }
+                  downloadExternalFile(projectInvoiceUrl)
+                }}
+              >
                 <ReceiptText className="h-4 w-4" />
-                Open PDF
+                Download
               </ApexButton>
               <ApexButton type="button" onClick={() => void sendProjectInvoice(selectedProject.id)}>
                 <Mail className="h-4 w-4" />
@@ -693,6 +1004,93 @@ export default function AdminPaymentsTemplateView({
         ) : (
           <p className="text-sm apx-muted">Select a project first.</p>
         )}
+      </ApexModal>
+
+      <ApexModal
+        size="xl"
+        open={transactionInvoiceOpen}
+        title="Transaction Invoice"
+        subtitle="Generated invoice preview."
+        onClose={() => setTransactionInvoiceOpen(false)}
+      >
+        {selectedPayment ? (
+          <div className="space-y-3">
+            <div className="rounded-xl border p-3" style={{ borderColor: 'var(--apx-border)' }}>
+              <p className="font-semibold apx-text">{transactionInvoicePayload?.projectName || selectedPayment.projectName || '-'}</p>
+              <p className="text-xs apx-muted">{transactionInvoicePayload?.clientName || selectedPayment.clientName}</p>
+              <p className="text-xs apx-muted">Invoice No: {transactionInvoicePayload?.invoiceNumber || selectedPayment.invoiceNumber || '-'}</p>
+              <p className="text-xs apx-muted">Generated: {transactionInvoicePayload ? formatDateTimeValue(transactionInvoicePayload.generatedAt) : '-'}</p>
+            </div>
+
+            <div className="rounded-xl border p-3" style={{ borderColor: 'var(--apx-border)' }}>
+              <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
+                <div>
+                  <p className="text-xs apx-muted">Amount</p>
+                  <p className="font-semibold apx-text">
+                    {transactionInvoicePayload ? formatMoney(transactionInvoicePayload.totalAmount, transactionInvoicePayload.currencyCode) : '-'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs apx-muted">O.R. #</p>
+                  <p className="font-semibold apx-text">{transactionInvoicePayload?.rows[0]?.orNumber || selectedPayment.orNumber || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs apx-muted">Method</p>
+                  <p className="font-semibold apx-text">{transactionInvoicePayload?.rows[0]?.paymentMethod || selectedPayment.paymentMethod || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs apx-muted">Date</p>
+                  <p className="font-semibold apx-text">{formatDate(transactionInvoicePayload?.rows[0]?.paymentDate || selectedPayment.paymentDate)}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border p-3" style={{ borderColor: 'var(--apx-border)' }}>
+              <p className="text-xs apx-muted">Receipt Note</p>
+              <p className="mt-1 text-sm apx-text whitespace-pre-wrap">{transactionInvoicePayload?.rows[0]?.notes || selectedPayment.notes || '-'}</p>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <ApexButton type="button" variant="outline" onClick={() => setTransactionInvoiceOpen(false)}>Close</ApexButton>
+              <ApexButton
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  if (!transactionInvoiceUrl) {
+                    addToast('Generate the invoice first.', 'default')
+                    return
+                  }
+                  downloadExternalFile(transactionInvoiceUrl)
+                }}
+              >
+                <ReceiptText className="h-4 w-4" />
+                Download
+              </ApexButton>
+              <ApexButton type="button" onClick={() => void sendTransactionInvoice(selectedPayment.id)}>
+                <Mail className="h-4 w-4" />
+                Send Email
+              </ApexButton>
+            </div>
+          </div>
+        ) : null}
+      </ApexModal>
+
+      <ApexModal size="lg" open={proofOpen} title="Payment Proof" subtitle={proofViewLabel || 'Proof of payment preview'} onClose={() => setProofOpen(false)}>
+        {proofViewUrl ? (
+          <div className="space-y-3">
+            <div className="overflow-hidden rounded-xl border" style={{ borderColor: 'var(--apx-border)' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={proofViewUrl} alt="Payment proof" className="h-[62vh] w-full object-contain" />
+            </div>
+            <div className="flex justify-end gap-2">
+              <ApexButton type="button" variant="outline" onClick={() => setProofOpen(false)}>Close</ApexButton>
+              <ApexButton type="button" variant="outline" onClick={() => downloadExternalFile(proofViewUrl)}>
+                <Download className="h-4 w-4" />
+                Download
+              </ApexButton>
+            </div>
+          </div>
+        ) : null}
       </ApexModal>
 
       <ApexConfirmationModal
@@ -769,7 +1167,14 @@ function PaymentForm({
         <label className="mb-1 block text-xs font-medium apx-muted">Total Price</label>
         <ApexInput value={selectedProject ? formatMoney(selectedProject.totalPrice, 'PHP') : ''} readOnly />
       </div>
-
+      <div>
+        <label className="mb-1 block text-xs font-medium apx-muted">Payment Date</label>
+        <ApexInput type="date" value={form.paymentDate} onChange={(event) => onChange({ ...form, paymentDate: event.target.value })} />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-medium apx-muted">Payment Time</label>
+        <ApexInput type="time" value={form.paymentTime} onChange={(event) => onChange({ ...form, paymentTime: event.target.value })} />
+      </div>
       <div>
         <label className="mb-1 block text-xs font-medium apx-muted">Payment Method</label>
         <ApexDropdown
@@ -785,10 +1190,23 @@ function PaymentForm({
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium apx-muted">Payment Date</label>
-        <ApexInput type="date" value={form.paymentDate} onChange={(event) => onChange({ ...form, paymentDate: event.target.value })} />
+        <label className="mb-1 block text-xs font-medium apx-muted">Ref # (optional)</label>
+        <ApexInput value={form.refNumber} onChange={(event) => onChange({ ...form, refNumber: event.target.value })} />
       </div>
-
+      <div>
+        <label className="mb-1 block text-xs font-medium apx-muted">O.R. # (optional)</label>
+        <ApexInput value={form.orNumber} onChange={(event) => onChange({ ...form, orNumber: event.target.value })} />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-medium apx-muted">Amount</label>
+        <ApexInput
+          value={form.amount}
+          onChange={(event) => onChange({ ...form, amount: event.target.value })}
+          onBlur={() => onChange({ ...form, amount: formatMoney(parseAmountInput(form.amount), selectedCurrency.code) })}
+          placeholder={`${selectedCurrency.symbol} 0.00`}
+          required
+        />
+      </div>
       <div>
         <label className="mb-1 block text-xs font-medium apx-muted">Currency</label>
         <ApexDropdown
@@ -803,7 +1221,6 @@ function PaymentForm({
           value={form.status}
           options={[
             { value: 'pending', label: 'Pending' },
-            { value: 'partial', label: 'Partial' },
             { value: 'paid', label: 'Paid' },
             { value: 'refunded', label: 'Refunded' },
             { value: 'failed', label: 'Failed' },
@@ -811,20 +1228,24 @@ function PaymentForm({
           onChange={(value) => onChange({ ...form, status: value })}
         />
       </div>
-
       <div>
-        <label className="mb-1 block text-xs font-medium apx-muted">Amount</label>
+        <label className="mb-1 block text-xs font-medium apx-muted">Discount (optional)</label>
         <ApexInput
-          value={form.amount}
-          onChange={(event) => onChange({ ...form, amount: event.target.value })}
-          onBlur={() => onChange({ ...form, amount: formatMoney(parseAmountInput(form.amount), selectedCurrency.code) })}
+          value={form.discountAmount}
+          onChange={(event) => onChange({ ...form, discountAmount: event.target.value })}
+          onBlur={() => onChange({ ...form, discountAmount: form.discountAmount ? formatMoney(parseAmountInput(form.discountAmount), selectedCurrency.code) : '' })}
           placeholder={`${selectedCurrency.symbol} 0.00`}
-          required
         />
       </div>
+
       <div>
-        <label className="mb-1 block text-xs font-medium apx-muted">O.R. # (optional)</label>
-        <ApexInput value={form.orNumber} onChange={(event) => onChange({ ...form, orNumber: event.target.value })} />
+        <label className="mb-1 block text-xs font-medium apx-muted">Tax (optional)</label>
+        <ApexInput
+          value={form.taxAmount}
+          onChange={(event) => onChange({ ...form, taxAmount: event.target.value })}
+          onBlur={() => onChange({ ...form, taxAmount: form.taxAmount ? formatMoney(parseAmountInput(form.taxAmount), selectedCurrency.code) : '' })}
+          placeholder={`${selectedCurrency.symbol} 0.00`}
+        />
       </div>
 
       <div className="md:col-span-2">

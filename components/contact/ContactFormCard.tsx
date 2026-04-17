@@ -2,9 +2,18 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import Script from 'next/script'
 import { CalendarDays, Check, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Paperclip, Send, X as XIcon } from 'lucide-react'
 import { ApexCheckbox } from '@/components/admin/apex/ApexDataUi'
 import { useTranslation } from '@/components/TranslationProvider'
+
+declare global {
+  interface Window {
+    turnstile?: {
+      reset?: () => void
+    }
+  }
+}
 
 type AvailabilityEvent = {
   event_date: string
@@ -99,6 +108,7 @@ function bookedLabel(startTime: string | null, endTime: string | null) {
 export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void }) {
   const { t, translations } = useTranslation()
   const budgets = translations.form.budgetOptions as unknown as string[]
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ''
 
   const [form, setForm] = useState<FormData>({
     name: '',
@@ -113,11 +123,14 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
   const [errors, setErrors] = useState<Partial<FormData>>({})
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [loadingPhase, setLoadingPhase] = useState<'verify' | 'sending'>('verify')
+  const [pendingEmailConfirmation, setPendingEmailConfirmation] = useState(false)
   const [serverError, setServerError] = useState('')
   const [attachedFiles, setAttachedFiles] = useState<File[]>([])
   const [fileError, setFileError] = useState('')
   const [dragOver, setDragOver] = useState(false)
+  const [privacyAccepted, setPrivacyAccepted] = useState(false)
+  const [privacyError, setPrivacyError] = useState('')
+  const [privacyModalOpen, setPrivacyModalOpen] = useState(false)
 
   const [bookMeeting, setBookMeeting] = useState(false)
   const [bookingModalOpen, setBookingModalOpen] = useState(false)
@@ -128,6 +141,7 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
   const [monthCursor, setMonthCursor] = useState(() => startOfMonth(new Date()))
   const [selectedDate, setSelectedDate] = useState(() => toDateKey(new Date()))
 
+  const formRef = useRef<HTMLFormElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const MAX_FILE_SIZE = 10 * 1024 * 1024
 
@@ -161,21 +175,6 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
       .then((data: { events?: AvailabilityEvent[] }) => setAvailability(data.events || []))
       .catch(() => setAvailability([]))
   }, [bookingModalOpen, bookMeeting])
-
-  useEffect(() => {
-    if (!loading) {
-      setLoadingPhase('verify')
-      return
-    }
-
-    const startedAt = Date.now()
-    const timer = setInterval(() => {
-      const elapsed = Date.now() - startedAt
-      setLoadingPhase(elapsed >= 8000 ? 'sending' : 'verify')
-    }, 500)
-
-    return () => clearInterval(timer)
-  }, [loading])
 
   function hasOverlap(date: string, startTime: string, durationMinutes: number) {
     const start = toMinutes(startTime)
@@ -231,8 +230,10 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
     if (!form.message.trim()) nextErrors.message = t('form.messageRequired')
     if (!form.service.trim()) nextErrors.service = 'Please select a service.'
     if (form.service === 'Others' && !form.otherService.trim()) nextErrors.otherService = 'Please enter your custom service.'
+    if (!privacyAccepted) setPrivacyError('You must agree to the Data Privacy Policy and Terms before submitting.')
+    else setPrivacyError('')
     setErrors(nextErrors)
-    return Object.keys(nextErrors).length === 0
+    return Object.keys(nextErrors).length === 0 && privacyAccepted
   }
 
   function saveBookingSelection() {
@@ -286,6 +287,13 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
       payload.set('budget', form.budget)
       payload.set('message', form.message)
       payload.set('requestMeeting', String(bookMeeting))
+      payload.set('privacyConsent', privacyAccepted ? 'true' : 'false')
+
+      const turnstileToken = formRef.current?.querySelector<HTMLInputElement>('input[name="cf-turnstile-response"]')?.value?.trim() || ''
+      if (turnstileSiteKey && !turnstileToken) {
+        throw new Error('Please complete the security check.')
+      }
+      if (turnstileToken) payload.set('cf-turnstile-response', turnstileToken)
 
       if (bookMeeting && selectedBooking) {
         payload.set('meetingDate', selectedBooking.date)
@@ -311,6 +319,10 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
 
       setAttachedFiles([])
       setSelectedBooking(null)
+      setPrivacyAccepted(false)
+      setPrivacyError('')
+      window.turnstile?.reset?.()
+      setPendingEmailConfirmation(Boolean(data.pendingConfirmation))
       setSubmitted(true)
       onSuccess?.()
     } catch (err: unknown) {
@@ -322,6 +334,8 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
 
   return (
     <>
+      {turnstileSiteKey ? <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="afterInteractive" async defer /> : null}
+
       {loading ? (
         <div className="fixed inset-0 z-120 flex items-center justify-center bg-black/75 backdrop-blur-[2px]">
           <div className="inline-flex flex-col items-center gap-2 rounded-xl border border-cyan-300/30 bg-[#050b18] px-5 py-3 text-sm text-cyan-100">
@@ -332,7 +346,7 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
             >
               <span className="h-4 w-4 rounded-full border border-cyan-100/35 border-t-cyan-100" />
             </motion.span>
-            <span>{loadingPhase === 'verify' ? 'Please wait while we verify your email.' : 'Sending Message'}</span>
+            <span>Sending confirmation email...</span>
           </div>
         </div>
       ) : null}
@@ -356,7 +370,9 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
           </motion.div>
           <h2 className="mb-3 text-2xl font-extrabold text-white">{t('form.successTitle')}</h2>
           <p className="mb-6 text-slate-400">
-            Thank you, <strong className="text-white">{form.name}</strong>! {t('form.successMsg')}
+            {pendingEmailConfirmation
+              ? <>Thank you, <strong className="text-white">{form.name}</strong>! Please check your email and click the confirmation link so we can finalize your inquiry.</>
+              : <>Thank you, <strong className="text-white">{form.name}</strong>! {t('form.successMsg')}</>}
           </p>
           <button
             onClick={() => {
@@ -365,6 +381,9 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
               setBookMeeting(false)
               setSelectedBooking(null)
               setAttachedFiles([])
+              setPrivacyAccepted(false)
+              setPrivacyError('')
+              window.turnstile?.reset?.()
             }}
             className="btn-outline text-sm px-6 py-2.5 inline-flex"
           >
@@ -373,6 +392,7 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
         </motion.div>
       ) : (
         <motion.form
+          ref={formRef}
           key="form"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -390,7 +410,15 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <Field label={`${t('form.fullName')} ${t('form.required')}`} value={form.name} onChange={(v) => setForm((prev) => ({ ...prev, name: v }))} error={errors.name} placeholder={t('form.namePlaceholder')} />
             <Field label={`${t('form.email')} ${t('form.required')}`} type="email" value={form.email} onChange={(v) => setForm((prev) => ({ ...prev, email: v }))} error={errors.email} placeholder={t('form.emailPlaceholder')} />
-            <Field label={t('form.phone')} type="tel" value={form.phone} onChange={(v) => setForm((prev) => ({ ...prev, phone: v }))} placeholder={t('form.phonePlaceholder')} />
+            <Field
+              label={t('form.phone')}
+              type="tel"
+              inputMode="numeric"
+              maxLength={20}
+              value={form.phone}
+              onChange={(v) => setForm((prev) => ({ ...prev, phone: v.replace(/\D+/g, '').slice(0, 20) }))}
+              placeholder={t('form.phonePlaceholder')}
+            />
             <Field label={t('form.company')} value={form.company} onChange={(v) => setForm((prev) => ({ ...prev, company: v }))} placeholder={t('form.companyPlaceholder')} />
           </div>
 
@@ -504,6 +532,38 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
             </div>
             <p className="mt-1 text-[11px] text-slate-500">Up to 3 files, max 10MB each. Document formats only.</p>
             {fileError ? <p className="mt-1.5 text-xs text-red-400">{fileError}</p> : null}
+
+            {turnstileSiteKey ? (
+              <div className="mt-3 rounded-xl border border-nebula-700/30 px-3 py-3">
+                <div className="cf-turnstile" data-sitekey={turnstileSiteKey} />
+              </div>
+            ) : null}
+
+            <div className="mt-3 rounded-xl border border-nebula-700/30 p-3">
+              <label className="inline-flex items-start gap-2 text-xs text-slate-300">
+                <ApexCheckbox
+                  checked={privacyAccepted}
+                  onChange={() => {
+                    const next = !privacyAccepted
+                    setPrivacyAccepted(next)
+                    if (next) setPrivacyError('')
+                  }}
+                  ariaLabel="Agree to data privacy and terms"
+                />
+                <span>
+                  I agree to the Data Privacy Policy and Terms of Service.
+                  {' '}
+                  <button
+                    type="button"
+                    className="text-nebula-300 underline underline-offset-2"
+                    onClick={() => setPrivacyModalOpen(true)}
+                  >
+                    Read policy
+                  </button>
+                </span>
+              </label>
+              {privacyError ? <p className="mt-1.5 text-xs text-red-400">{privacyError}</p> : null}
+            </div>
           </div>
 
           {serverError ? <p className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-sm text-red-400">{serverError}</p> : null}
@@ -670,6 +730,38 @@ export default function ContactFormCard({ onSuccess }: { onSuccess?: () => void 
         </motion.form>
       )}
       </AnimatePresence>
+
+      {privacyModalOpen ? (
+        <div className="fixed inset-0 z-140 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-2xl rounded-2xl border border-nebula-700/40 bg-[#070f1e] p-5 text-slate-200">
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <h3 className="text-lg font-semibold text-white">Data Privacy and Terms</h3>
+              <button type="button" onClick={() => setPrivacyModalOpen(false)} className="text-slate-400 hover:text-white">
+                <XIcon size={16} />
+              </button>
+            </div>
+            <div className="max-h-[52vh] space-y-3 overflow-y-auto pr-1 text-sm leading-6 text-slate-300">
+              <p>We collect and process the information you provide to evaluate your request, communicate updates, and deliver software services.</p>
+              <p>By submitting, you confirm your details are accurate and that you are authorized to share any uploaded files.</p>
+              <p>Your information is handled securely and only shared with authorized personnel or processors required to fulfill your inquiry.</p>
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button type="button" className="apx-btn-outline" onClick={() => setPrivacyModalOpen(false)}>Close</button>
+              <button
+                type="button"
+                className="btn-primary px-4! py-2! text-xs!"
+                onClick={() => {
+                  setPrivacyAccepted(true)
+                  setPrivacyError('')
+                  setPrivacyModalOpen(false)
+                }}
+              >
+                I Agree
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   )
 }
@@ -768,6 +860,8 @@ function Field({
   error,
   placeholder,
   type = 'text',
+  inputMode,
+  maxLength,
 }: {
   label: string
   value: string
@@ -775,12 +869,16 @@ function Field({
   error?: string
   placeholder?: string
   type?: string
+  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode']
+  maxLength?: number
 }) {
   return (
     <div>
       <label className="mb-1.5 block text-sm font-medium text-white/60">{label}</label>
       <input
         type={type}
+        inputMode={inputMode}
+        maxLength={maxLength}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}

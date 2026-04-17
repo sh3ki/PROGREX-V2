@@ -52,6 +52,7 @@ type NavSection = {
 
 type ColorPreset = 'blue' | 'emerald' | 'violet' | 'rose' | 'orange' | 'cyan' | 'indigo' | 'teal' | 'amber' | 'fuchsia'
 type Density = 'compact' | 'comfortable' | 'spacious'
+type PresenceStatus = 'online' | 'away' | 'offline'
 
 const COLOR_PRESETS: { key: ColorPreset; value: string }[] = [
   { key: 'blue', value: '#2563eb' },
@@ -163,6 +164,7 @@ export default function AdminLayoutShell({
   const hasAutoLoggedOutRef = useRef(false)
   const [idleWarningOpen, setIdleWarningOpen] = useState(false)
   const [idleSecondsLeft, setIdleSecondsLeft] = useState(120)
+  const [presenceStatus, setPresenceStatus] = useState<PresenceStatus>('online')
 
   const title = useMemo(() => getPageTitle(pathname), [pathname])
   const activePreset = COLOR_PRESETS.find((preset) => preset.key === colorPreset) ?? COLOR_PRESETS[0]
@@ -232,11 +234,15 @@ export default function AdminLayoutShell({
     hasAutoLoggedOutRef.current = false
     setIdleSecondsLeft(120)
     setIdleWarningOpen(false)
+    if (document.visibilityState === 'visible') {
+      setPresenceStatus('online')
+    }
   }, [])
 
   useEffect(() => {
-    const warningMs = 13 * 60 * 1000
-    const logoutMs = 15 * 60 * 1000
+    const warningMs = 58 * 60 * 1000
+    const logoutMs = 60 * 60 * 1000
+    const awayMs = 5 * 60 * 1000
 
     lastActivityRef.current = Date.now()
 
@@ -251,6 +257,14 @@ export default function AdminLayoutShell({
 
     const timer = window.setInterval(() => {
       const idleMs = Date.now() - lastActivityRef.current
+      if (document.visibilityState !== 'visible') {
+        setPresenceStatus('offline')
+      } else if (idleMs >= awayMs) {
+        setPresenceStatus('away')
+      } else {
+        setPresenceStatus('online')
+      }
+
       if (idleMs >= logoutMs) {
         if (hasAutoLoggedOutRef.current) return
         hasAutoLoggedOutRef.current = true
@@ -272,6 +286,8 @@ export default function AdminLayoutShell({
       }
     }
   }, [markActivity])
+
+  const presenceDotColor = presenceStatus === 'online' ? '#22c55e' : presenceStatus === 'away' ? '#f59e0b' : '#94a3b8'
 
   function resetToDefaults() {
     setIsDark(true)
@@ -523,6 +539,11 @@ export default function AdminLayoutShell({
                       initials
                     )}
                   </button>
+                  <span
+                    title={presenceStatus[0].toUpperCase() + presenceStatus.slice(1)}
+                    className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border"
+                    style={{ backgroundColor: presenceDotColor, borderColor: 'var(--apx-surface)' }}
+                  />
 
                   {profileMenuOpen ? (
                     <div className="absolute right-0 mt-2 w-60 overflow-hidden rounded-xl border shadow-xl" style={{ borderColor: 'var(--apx-border)', backgroundColor: 'var(--apx-surface)' }}>

@@ -51,7 +51,7 @@ type ContactFormState = {
 type ColumnKey = 'requester' | 'service' | 'budget' | 'created' | 'status' | 'actions'
 type SortKey = Exclude<ColumnKey, 'actions'>
 
-const STATUS_OPTIONS = ['new', 'in-progress', 'replied', 'resolved', 'archived']
+const STATUS_OPTIONS = ['pending', 'new', 'in-progress', 'replied', 'resolved', 'archived']
 const SERVICE_OPTIONS = [
   'Book a Meeting',
   'Request a Demo',
@@ -77,7 +77,7 @@ function defaultForm(): ContactFormState {
     service: '',
     budget: '',
     message: '',
-    status: 'new',
+    status: 'pending',
   }
 }
 
@@ -114,6 +114,10 @@ function downloadCsv(filename: string, rows: string[][]) {
   anchor.download = filename
   anchor.click()
   URL.revokeObjectURL(url)
+}
+
+function normalizePhone(value: string) {
+  return value.replace(/\D+/g, '').slice(0, 20)
 }
 
 export default function AdminContactSubmissionsTemplateView({
@@ -165,7 +169,7 @@ export default function AdminContactSubmissionsTemplateView({
   const [editKeptAttachmentUrls, setEditKeptAttachmentUrls] = useState<string[]>([])
   const [emailSubject, setEmailSubject] = useState('Your message has been received')
   const [emailReply, setEmailReply] = useState('')
-  const [statusDraft, setStatusDraft] = useState('new')
+  const [statusDraft, setStatusDraft] = useState('pending')
 
   const [confirmConfig, setConfirmConfig] = useState<{
     title: string
@@ -205,6 +209,7 @@ export default function AdminContactSubmissionsTemplateView({
 
   const counts = useMemo(() => ({
     all: submissions.length,
+    pending: submissions.filter((s) => s.status === 'pending').length,
     new: submissions.filter((s) => s.status === 'new').length,
     inProgress: submissions.filter((s) => s.status === 'in-progress').length,
     replied: submissions.filter((s) => s.status === 'replied').length,
@@ -292,7 +297,7 @@ export default function AdminContactSubmissionsTemplateView({
     if (form.id) formData.set('id', form.id)
     formData.set('name', form.name)
     formData.set('email', form.email)
-    formData.set('phone', form.phone)
+    formData.set('phone', normalizePhone(form.phone))
     formData.set('company', form.company)
     formData.set('service', form.service)
     formData.set('budget', form.budget)
@@ -417,6 +422,7 @@ export default function AdminContactSubmissionsTemplateView({
       <ApexStatusTabs
         tabs={[
           { key: 'all', label: 'All', count: counts.all },
+          { key: 'pending', label: 'Pending', count: counts.pending, indicatorColor: '#64748b' },
           { key: 'new', label: 'New', count: counts.new, indicatorColor: '#3b82f6' },
           { key: 'in-progress', label: 'In Progress', count: counts.inProgress, indicatorColor: '#a855f7' },
           { key: 'replied', label: 'Replied', count: counts.replied, indicatorColor: '#eab308' },
@@ -769,7 +775,7 @@ export default function AdminContactSubmissionsTemplateView({
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Phone</label>
-            <ApexInput value={addForm.phone} onChange={(event) => setAddForm((prev) => ({ ...prev, phone: event.target.value }))} />
+            <ApexInput type="tel" inputMode="numeric" maxLength={20} value={addForm.phone} onChange={(event) => setAddForm((prev) => ({ ...prev, phone: normalizePhone(event.target.value) }))} />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Company</label>
@@ -841,7 +847,7 @@ export default function AdminContactSubmissionsTemplateView({
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Phone</label>
-            <ApexInput value={editForm.phone} onChange={(event) => setEditForm((prev) => ({ ...prev, phone: event.target.value }))} />
+            <ApexInput type="tel" inputMode="numeric" maxLength={20} value={editForm.phone} onChange={(event) => setEditForm((prev) => ({ ...prev, phone: normalizePhone(event.target.value) }))} />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium apx-muted">Company</label>
