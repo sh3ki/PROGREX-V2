@@ -505,14 +505,14 @@ export default function Footer() {
 
   const companyHrefs = ['/about', '/about#team', '/projects', '/contact']
   const servicesHrefs = ['/services/custom-software-development', '/services/web-development', '/services/mobile-app-development', '/services']
-  const productsHrefs = ['/ready-made-systems', '/ready-made-systems', '/ready-made-systems', '/ready-made-systems']
+  // const productsHrefs = ['/ready-made-systems', '/ready-made-systems', '/ready-made-systems', '/ready-made-systems']
   const resourcesHrefs = ['/blogs', '/projects', 'modal:privacy', 'modal:terms']
 
   const tFooter = translations.footer
   const footerLinks = {
     [tFooter.companyHeading]: companyHrefs.map((href, i) => ({ label: (tFooter.companyLinks as unknown as string[])[i] ?? '', href })),
     [tFooter.servicesHeading]: servicesHrefs.map((href, i) => ({ label: (tFooter.servicesLinks as unknown as string[])[i] ?? '', href })),
-    [tFooter.productsHeading]: productsHrefs.map((href, i) => ({ label: (tFooter.productsLinks as unknown as string[])[i] ?? '', href })),
+    // [tFooter.productsHeading]: productsHrefs.map((href, i) => ({ label: (tFooter.productsLinks as unknown as string[])[i] ?? '', href })),
     [tFooter.resourcesHeading]: resourcesHrefs.map((href, i) => ({ label: (tFooter.resourcesLinks as unknown as string[])[i] ?? '', href })),
   }
 
