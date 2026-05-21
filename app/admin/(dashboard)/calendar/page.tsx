@@ -1,7 +1,8 @@
-import { revalidatePath } from 'next/cache'
+﻿import { revalidatePath } from 'next/cache'
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
 import AdminCalendarTemplateView from '@/components/admin/calendar/AdminCalendarTemplateView'
+import { ensureAllTablesOnce } from '@/lib/server/dbInit'
 
 function combineDateTime(date: string, time: string) {
   const safeDate = date.trim()
@@ -29,7 +30,7 @@ async function ensureCalendarColumns() {
 async function createEvent(formData: FormData) {
   'use server'
   await requirePermission('calendar', 'write')
-  await ensureCalendarColumns()
+  await ensureAllTablesOnce()
 
   const title = String(formData.get('title') ?? '').trim()
   const description = String(formData.get('description') ?? '').trim()
@@ -57,7 +58,7 @@ async function createEvent(formData: FormData) {
 async function updateEvent(formData: FormData) {
   'use server'
   await requirePermission('calendar', 'write')
-  await ensureCalendarColumns()
+  await ensureAllTablesOnce()
 
   const id = String(formData.get('id') ?? '').trim()
   const title = String(formData.get('title') ?? '').trim()
@@ -107,7 +108,7 @@ async function deleteEvent(formData: FormData) {
 
 export default async function AdminCalendarPage() {
   await requirePermission('calendar', 'read')
-  await ensureCalendarColumns()
+  await ensureAllTablesOnce()
 
   const events = await sql<{
     id: string
