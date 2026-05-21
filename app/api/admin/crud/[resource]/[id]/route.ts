@@ -1,8 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import type { AdminPermissionKey } from '@/lib/server/permissions'
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
+import { CACHE_TAGS } from '@/lib/server/public-data'
 import { assertSameOrigin } from '@/lib/server/request-security'
+
+const PUBLIC_CACHE_TAGS: Partial<Record<string, string[]>> = {
+  projects: [CACHE_TAGS.projects],
+  teams:    [CACHE_TAGS.team, CACHE_TAGS.blogs],
+  blogs:    [CACHE_TAGS.blogs],
+  systems:  [CACHE_TAGS.systems],
+}
+
+function bustPublicCache(resource: string) {
+  const tags = PUBLIC_CACHE_TAGS[resource]
+  if (tags) tags.forEach((t) => revalidateTag(t, { expire: 0 }))
+}
 
 type ResourceConfig = {
   table: string
@@ -103,6 +117,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ resou
       [id, ...values]
     )
 
+    bustPublicCache(resource)
     return NextResponse.json({ data: updated[0] })
   } catch (error) {
     return mapApiError(error)
@@ -121,6 +136,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ reso
 
     await requirePermission(config.permission, 'delete')
     await sql(`delete from ${config.table} where id = $1`, [id])
+    bustPublicCache(resource)
     return NextResponse.json({ success: true })
   } catch (error) {
     return mapApiError(error)
