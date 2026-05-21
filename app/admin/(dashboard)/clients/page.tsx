@@ -1,8 +1,9 @@
-import { revalidatePath } from 'next/cache'
+﻿import { revalidatePath } from 'next/cache'
 import { createHash, randomBytes } from 'node:crypto'
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
 import AdminClientsTemplateView from '../../../../components/admin/clients/AdminClientsTemplateView'
+import { ensureAllTablesOnce } from '@/lib/server/dbInit'
 
 async function uploadImageToCloudinary(file: File, opts: { folder: string; filename: string }) {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
@@ -60,7 +61,7 @@ async function ensureClientsTable() {
 async function createClient(formData: FormData) {
   'use server'
   await requirePermission('teams', 'write')
-  await ensureClientsTable()
+  await ensureAllTablesOnce()
 
   const fullName = String(formData.get('fullName') ?? '').trim()
   const otherMemberNames = String(formData.get('otherMemberNames') ?? '')
@@ -94,7 +95,7 @@ async function createClient(formData: FormData) {
 async function updateClient(formData: FormData) {
   'use server'
   await requirePermission('teams', 'write')
-  await ensureClientsTable()
+  await ensureAllTablesOnce()
 
   const id = String(formData.get('id') ?? '').trim()
   if (!id) return
@@ -191,7 +192,7 @@ async function bulkDeleteClients(formData: FormData) {
 
 export default async function AdminClientsPage() {
   await requirePermission('teams', 'read')
-  await ensureClientsTable()
+  await ensureAllTablesOnce()
 
   const clients = await sql<{
     id: string
