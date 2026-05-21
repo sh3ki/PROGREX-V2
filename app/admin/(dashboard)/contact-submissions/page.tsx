@@ -1,9 +1,10 @@
-import nodemailer from 'nodemailer'
+﻿import nodemailer from 'nodemailer'
 import { createHash, randomBytes } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
 import AdminContactSubmissionsTemplateView from '@/components/admin/contact-submissions/AdminContactSubmissionsTemplateView'
+import { ensureAllTablesOnce } from '@/lib/server/dbInit'
 
 const CONTACT_STATUSES = new Set(['pending', 'new', 'in-progress', 'replied', 'resolved', 'archived'])
 
@@ -55,7 +56,7 @@ async function ensureContactColumns() {
 async function createContactSubmission(formData: FormData) {
   'use server'
   await requirePermission('bookings', 'write')
-  await ensureContactColumns()
+  await ensureAllTablesOnce()
 
   const name = String(formData.get('name') ?? '').trim()
   const email = String(formData.get('email') ?? '').trim()
@@ -93,7 +94,7 @@ async function createContactSubmission(formData: FormData) {
 async function updateContactSubmission(formData: FormData) {
   'use server'
   await requirePermission('bookings', 'write')
-  await ensureContactColumns()
+  await ensureAllTablesOnce()
 
   const id = String(formData.get('id') ?? '').trim()
   if (!id) return
@@ -262,7 +263,7 @@ async function sendContactEmail(formData: FormData) {
 
 export default async function AdminContactSubmissionsPage() {
   await requirePermission('bookings', 'read')
-  await ensureContactColumns()
+  await ensureAllTablesOnce()
 
   const submissions = await sql<{
     id: string
