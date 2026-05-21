@@ -24,7 +24,11 @@ const g = globalThis as typeof globalThis & {
 
 export function ensureAllTablesOnce(): Promise<void> {
   if (!g.__allTablesReady) {
-    g.__allTablesReady = _runAllDDL()
+    g.__allTablesReady = _runAllDDL().catch((err) => {
+      // Clear so the next request retries rather than permanently returning a rejected promise
+      g.__allTablesReady = undefined
+      throw err
+    })
   }
   return g.__allTablesReady
 }
