@@ -1,60 +1,11 @@
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
+import { ensureChatTablesOnce } from '@/lib/server/adminChatSse'
 import AdminChatsTemplateView from '@/components/admin/chats/AdminChatsTemplateView'
-
-async function ensureChatTables() {
-  await sql(`
-    create table if not exists admin_chat_conversations (
-      id uuid primary key default gen_random_uuid(),
-      name text not null,
-      is_group boolean not null default false,
-      group_image_url text,
-      created_by uuid not null references admin_users(id) on delete cascade,
-      created_at timestamptz not null default now(),
-      updated_at timestamptz not null default now()
-    )
-  `)
-
-  await sql(`
-    create table if not exists admin_chat_participants (
-      conversation_id uuid not null references admin_chat_conversations(id) on delete cascade,
-      user_id uuid not null references admin_users(id) on delete cascade,
-      joined_at timestamptz not null default now(),
-      primary key (conversation_id, user_id)
-    )
-  `)
-
-  await sql(`
-    create table if not exists admin_chat_messages (
-      id uuid primary key default gen_random_uuid(),
-      conversation_id uuid not null references admin_chat_conversations(id) on delete cascade,
-      sender_id uuid not null references admin_users(id) on delete cascade,
-      body text not null,
-      attachment_url text,
-      attachment_name text,
-      attachment_kind text,
-      created_at timestamptz not null default now()
-    )
-  `)
-
-  await sql('alter table admin_chat_conversations add column if not exists group_image_url text')
-  await sql('alter table admin_chat_messages add column if not exists attachment_url text')
-  await sql('alter table admin_chat_messages add column if not exists attachment_name text')
-  await sql('alter table admin_chat_messages add column if not exists attachment_kind text')
-
-  await sql(`
-    create table if not exists admin_chat_message_reads (
-      message_id uuid not null references admin_chat_messages(id) on delete cascade,
-      user_id uuid not null references admin_users(id) on delete cascade,
-      read_at timestamptz not null default now(),
-      primary key (message_id, user_id)
-    )
-  `)
-}
 
 export default async function AdminChatsPage() {
   const admin = await requirePermission('dashboard', 'read')
-  await ensureChatTables()
+  await ensureChatTablesOnce()
 
   const [users, conversations, messages] = await Promise.all([
     sql<{ id: string; full_name: string; email: string | null; profile_image_url: string | null }>(
