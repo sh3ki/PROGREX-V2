@@ -8,7 +8,7 @@ import {
   getPublicSystems,
 } from '@/lib/server/public-data'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600 // ISR: re-fetch DB data at most once per hour
 
 export const metadata: Metadata = {
   title: 'PROGREX — Technology Solutions That Drives Success',
