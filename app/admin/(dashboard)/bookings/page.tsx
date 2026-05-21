@@ -1,9 +1,10 @@
-import nodemailer from 'nodemailer'
+﻿import nodemailer from 'nodemailer'
 import { createHash, randomBytes } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
 import AdminBookingsTemplateView from '@/components/admin/bookings/AdminBookingsTemplateView'
+import { ensureAllTablesOnce } from '@/lib/server/dbInit'
 
 const BOOKING_STATUSES = new Set(['pending', 'new', 'scheduled', 'rescheduled', 'done', 'rejected'])
 
@@ -64,7 +65,7 @@ async function ensureBookingColumns() {
 async function createBooking(formData: FormData) {
   'use server'
   await requirePermission('bookings', 'write')
-  await ensureBookingColumns()
+  await ensureAllTablesOnce()
 
   const name = String(formData.get('name') ?? '').trim()
   const email = String(formData.get('email') ?? '').trim()
@@ -109,7 +110,7 @@ async function createBooking(formData: FormData) {
 async function updateBooking(formData: FormData) {
   'use server'
   await requirePermission('bookings', 'write')
-  await ensureBookingColumns()
+  await ensureAllTablesOnce()
 
   const id = String(formData.get('id') ?? '').trim()
   if (!id) return
@@ -282,7 +283,7 @@ async function sendBookingEmail(formData: FormData) {
 
 export default async function AdminBookingsPage() {
   await requirePermission('bookings', 'read')
-  await ensureBookingColumns()
+  await ensureAllTablesOnce()
 
   const bookings = await sql<{
     id: string
