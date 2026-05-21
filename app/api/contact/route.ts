@@ -323,17 +323,6 @@ export async function POST(req: NextRequest) {
       auth: { user: smtpUser, pass: smtpPass },
     })
 
-    await sql(`
-      create table if not exists contact_submission_confirmations (
-        id text primary key,
-        token_hash text unique not null,
-        payload jsonb not null,
-        created_at timestamptz not null default now(),
-        expires_at timestamptz not null,
-        consumed_at timestamptz
-      )
-    `)
-
     const token = randomBytes(24).toString('hex')
     const tokenHash = createHash('sha256').update(token).digest('hex')
     const baseUrl = resolveConfirmationBaseUrl(req)
