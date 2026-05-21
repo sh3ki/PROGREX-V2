@@ -1,22 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server/auth'
 import { sql } from '@/lib/server/db'
-import { broadcastToUsers } from '@/lib/server/adminChatSse'
-
-async function ensureReadsTable() {
-  await sql(`
-    create table if not exists admin_chat_message_reads (
-      message_id uuid not null references admin_chat_messages(id) on delete cascade,
-      user_id uuid not null references admin_users(id) on delete cascade,
-      read_at timestamptz not null default now(),
-      primary key (message_id, user_id)
-    )
-  `)
-}
+import { broadcastToUsers, ensureChatTablesOnce, getCachedParticipants } from '@/lib/server/adminChatSse'
 
 export async function POST(req: NextRequest) {
   const admin = await requireAdmin()
-  await ensureReadsTable()
+  await ensureChatTablesOnce()
 
   const body = (await req.json()) as { conversationId?: string }
   const conversationId = String(body.conversationId || '').trim()
@@ -24,14 +13,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Conversation is required.' }, { status: 400 })
   }
 
-  const allowed = await sql<{ ok: number }>(
-    `select 1 as ok
-       from admin_chat_participants
-      where conversation_id = $1::uuid and user_id = $2::uuid
-      limit 1`,
-    [conversationId, admin.id]
-  )
-  if (!allowed.length) {
+  // Single cached query doubles as both access check and broadcast target list.
+  const participantIds = await getCachedParticipants(conversationId)
+  if (!participantIds.includes(admin.id)) {
     return NextResponse.json({ error: 'Conversation access denied.' }, { status: 403 })
   }
 
@@ -54,13 +38,8 @@ export async function POST(req: NextRequest) {
     [conversationId],
   )
 
-  const participants = await sql<{ user_id: string }>(
-    'select user_id::text from admin_chat_participants where conversation_id = $1::uuid',
-    [conversationId]
-  )
-
   broadcastToUsers(
-    participants.map((item) => item.user_id).filter((id) => id !== admin.id),
+    participantIds.filter((id) => id !== admin.id),
     'read',
     {
       type: 'read',
