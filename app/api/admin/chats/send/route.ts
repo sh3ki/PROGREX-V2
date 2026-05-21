@@ -2,55 +2,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server/auth'
 import { sql } from '@/lib/server/db'
-import { broadcastToUsers } from '@/lib/server/adminChatSse'
-
-async function ensureChatTables() {
-  await sql(`
-    create table if not exists admin_chat_conversations (
-      id uuid primary key default gen_random_uuid(),
-      name text not null,
-      is_group boolean not null default false,
-      created_by uuid not null references admin_users(id) on delete cascade,
-      created_at timestamptz not null default now(),
-      updated_at timestamptz not null default now()
-    )
-  `)
-
-  await sql(`
-    create table if not exists admin_chat_participants (
-      conversation_id uuid not null references admin_chat_conversations(id) on delete cascade,
-      user_id uuid not null references admin_users(id) on delete cascade,
-      joined_at timestamptz not null default now(),
-      primary key (conversation_id, user_id)
-    )
-  `)
-
-  await sql(`
-    create table if not exists admin_chat_messages (
-      id uuid primary key default gen_random_uuid(),
-      conversation_id uuid not null references admin_chat_conversations(id) on delete cascade,
-      sender_id uuid not null references admin_users(id) on delete cascade,
-      body text not null,
-      attachment_url text,
-      attachment_name text,
-      attachment_kind text,
-      created_at timestamptz not null default now()
-    )
-  `)
-
-  await sql('alter table admin_chat_messages add column if not exists attachment_url text')
-  await sql('alter table admin_chat_messages add column if not exists attachment_name text')
-  await sql('alter table admin_chat_messages add column if not exists attachment_kind text')
-
-  await sql(`
-    create table if not exists admin_chat_message_reads (
-      message_id uuid not null references admin_chat_messages(id) on delete cascade,
-      user_id uuid not null references admin_users(id) on delete cascade,
-      read_at timestamptz not null default now(),
-      primary key (message_id, user_id)
-    )
-  `)
-}
+import { broadcastToUsers, ensureChatTablesOnce, getCachedParticipants } from '@/lib/server/adminChatSse'
 
 async function uploadAttachmentToCloudinary(file: File, opts: { folder: string; filename: string; kind: 'image' | 'raw' }) {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
@@ -82,7 +34,7 @@ async function uploadAttachmentToCloudinary(file: File, opts: { folder: string; 
 
 export async function POST(req: NextRequest) {
   const admin = await requireAdmin()
-  await ensureChatTables()
+  await ensureChatTablesOnce()
 
   const formData = await req.formData()
   const conversationId = String(formData.get('conversationId') ?? '').trim()
@@ -138,10 +90,7 @@ export async function POST(req: NextRequest) {
 
   await sql('update admin_chat_conversations set updated_at = now() where id = $1::uuid', [conversationId])
 
-  const participants = await sql<{ user_id: string }>(
-    'select user_id::text from admin_chat_participants where conversation_id = $1::uuid',
-    [conversationId]
-  )
+  const participantIds = await getCachedParticipants(conversationId)
 
   const event = {
     type: 'message',
@@ -161,7 +110,7 @@ export async function POST(req: NextRequest) {
   }
 
   broadcastToUsers(
-    participants.map((item) => item.user_id),
+    participantIds,
     'message',
     event,
   )
