@@ -9,7 +9,8 @@
     "lint": "eslint",
     "db:setup": "tsx scripts/setup-db.ts",
     "db:reset-seed": "tsx scripts/setup-db.ts --reset",
-    "db:reset-admin": "tsx scripts/reset-db-admin-seed.ts"
+    "db:reset-admin": "tsx scripts/reset-db-admin-seed.ts",
+    "db:migrate": "tsx scripts/migrate-neon-to-supabase.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
