@@ -110,6 +110,11 @@ export default function AdminChatsTemplateView({
   const [messageAttachmentFile, setMessageAttachmentFile] = useState<File | null>(null)
   const [groupImageFile, setGroupImageFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  // Typing debounce: avoids a DB query on every keystroke.
+  // sendTyping(true) fires once when typing starts; sendTyping(false) fires
+  // 3 s after the last keystroke (or immediately on send/clear).
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isTypingSentRef = useRef<boolean>(false)
 
   const usersById = useMemo(() => new Map(users.map((item) => [item.id, item])), [users])
 
@@ -560,7 +565,25 @@ export default function AdminChatsTemplateView({
                   value={draft}
                   onChange={(event) => {
                     setDraft(event.target.value)
-                    void sendTyping(Boolean(event.target.value.trim()))
+                    const hasText = Boolean(event.target.value.trim())
+                    if (typingTimerRef.current) clearTimeout(typingTimerRef.current)
+                    if (hasText) {
+                      // Send 'typing: true' only once when typing begins
+                      if (!isTypingSentRef.current) {
+                        isTypingSentRef.current = true
+                        void sendTyping(true)
+                      }
+                      // Auto-stop after 3 s of no further input
+                      typingTimerRef.current = setTimeout(() => {
+                        isTypingSentRef.current = false
+                        void sendTyping(false)
+                      }, 3000)
+                    } else {
+                      if (isTypingSentRef.current) {
+                        isTypingSentRef.current = false
+                        void sendTyping(false)
+                      }
+                    }
                   }}
                   placeholder="Type a message..."
                   onKeyDown={(event) => {

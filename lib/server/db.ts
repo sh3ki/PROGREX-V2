@@ -18,10 +18,13 @@ const NETWORK_ERROR_CODES = ['ENETUNREACH', 'ENOTFOUND', 'ECONNREFUSED', 'ETIMED
 export async function sql<T extends QueryResultRow = QueryResultRow>(
   query: string, params: unknown[] = []
 ): Promise<T[]> {
-  // Pass undefined (not []) when there are no params so Neon uses the simple
-  // query protocol, which supports multi-statement strings (e.g. schema.sql).
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rows = await (_neon as any)(query, params.length ? params : undefined)
+  // Use .query() — the conventional parameterized-query API for neon() v1.1+.
+  // Omit params entirely when there are none so Neon receives params:[] and
+  // uses the simple query protocol, which supports multi-statement strings
+  // (e.g. schema.sql). Passing params:[] explicitly has the same effect.
+  const rows = params.length
+    ? await _neon.query(query, params as unknown[])
+    : await _neon.query(query)
   return rows as T[]
 }
 
