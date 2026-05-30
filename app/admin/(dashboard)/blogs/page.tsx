@@ -1,8 +1,9 @@
-import { revalidatePath } from 'next/cache'
+﻿import { revalidatePath } from 'next/cache'
 import { createHash, randomBytes } from 'node:crypto'
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
 import AdminBlogsTemplateView from '@/components/admin/blogs/AdminBlogsTemplateView'
+import { ensureAllTablesOnce } from '@/lib/server/dbInit'
 
 function slugify(value: string) {
   return value
@@ -266,7 +267,7 @@ async function resolveBlogImage(formData: FormData, title: string, fallback: str
 async function saveBlog(formData: FormData) {
   'use server'
   await requirePermission('blogs', 'write')
-  await ensureBlogColumns()
+  await ensureAllTablesOnce()
 
   const id = String(formData.get('id') ?? '')
   const title = String(formData.get('title') ?? '').trim()
@@ -486,7 +487,7 @@ async function bulkSetBlogsDraft(formData: FormData) {
 
 export default async function AdminBlogsPage() {
   await requirePermission('blogs', 'read')
-  await ensureBlogColumns()
+  await ensureAllTablesOnce()
 
   const blogs = await sql<{
     id: string

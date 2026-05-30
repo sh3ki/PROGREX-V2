@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import nodemailer from 'nodemailer'
 import { z } from 'zod'
 import { sql } from '@/lib/server/db'
+import { ensureAllTablesOnce } from '@/lib/server/dbInit'
 import { assertSameOrigin, getClientIp, hitRateLimit } from '@/lib/server/request-security'
 
 type ConfirmationPayload = {
@@ -175,13 +176,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Too many requests. Please try again shortly.' }, { status: 429 })
     }
 
-    await sql('alter table bookings add column if not exists is_approved boolean not null default false')
-    await sql('alter table bookings add column if not exists requested_date date')
-    await sql('alter table bookings add column if not exists requested_start_time text')
-    await sql('alter table bookings add column if not exists requested_duration_minutes integer')
-    await sql('alter table bookings add column if not exists attachment_urls text[] default array[]::text[]')
-    await sql('alter table contact_submissions add column if not exists attachment_urls text[] default array[]::text[]')
-    await sql('alter table contact_submissions add column if not exists request_meeting boolean not null default false')
+    await ensureAllTablesOnce()
 
     const body = await req.formData()
     const name = String(body.get('name') ?? '').trim()
@@ -327,17 +322,6 @@ export async function POST(req: NextRequest) {
       secure: smtpSecure,
       auth: { user: smtpUser, pass: smtpPass },
     })
-
-    await sql(`
-      create table if not exists contact_submission_confirmations (
-        id text primary key,
-        token_hash text unique not null,
-        payload jsonb not null,
-        created_at timestamptz not null default now(),
-        expires_at timestamptz not null,
-        consumed_at timestamptz
-      )
-    `)
 
     const token = randomBytes(24).toString('hex')
     const tokenHash = createHash('sha256').update(token).digest('hex')

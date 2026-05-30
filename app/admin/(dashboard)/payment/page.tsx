@@ -1,8 +1,9 @@
-import { randomBytes, randomUUID, createHash } from 'node:crypto'
+﻿import { randomBytes, randomUUID, createHash } from 'node:crypto'
 import nodemailer from 'nodemailer'
 import { revalidatePath } from 'next/cache'
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
+import { ensureAllTablesOnce } from '@/lib/server/dbInit'
 import {
   generateInvoicePdf,
   getProjectInvoicePayload,
@@ -199,7 +200,7 @@ async function uploadProofToCloudinary(file: File, opts: { folder: string; filen
 async function createPayment(formData: FormData) {
   'use server'
   await requirePermission('dashboard', 'write')
-  await ensurePaymentsTable()
+  await ensureAllTablesOnce()
 
   const projectId = String(formData.get('projectId') ?? '').trim()
   const amount = parseAmount(String(formData.get('amount') ?? '0'))
@@ -292,7 +293,7 @@ async function createPayment(formData: FormData) {
 async function updatePayment(formData: FormData) {
   'use server'
   await requirePermission('dashboard', 'write')
-  await ensurePaymentsTable()
+  await ensureAllTablesOnce()
 
   const id = String(formData.get('id') ?? '').trim()
   if (!id) throw new Error('Payment ID is required.')
@@ -389,7 +390,7 @@ async function updatePayment(formData: FormData) {
 async function deletePayment(formData: FormData) {
   'use server'
   await requirePermission('dashboard', 'delete')
-  await ensurePaymentsTable()
+  await ensureAllTablesOnce()
 
   const id = String(formData.get('id') ?? '').trim()
   if (!id) return
@@ -526,7 +527,7 @@ async function sendTransactionInvoiceEmail(formData: FormData): Promise<InvoiceA
   'use server'
   try {
     await requirePermission('dashboard', 'write')
-    await ensurePaymentsTable()
+    await ensureAllTablesOnce()
 
     const id = String(formData.get('id') ?? '').trim()
     if (!id) return { ok: false as const, message: 'Payment ID is missing.' }
@@ -581,7 +582,7 @@ async function generateTransactionInvoice(formData: FormData): Promise<InvoiceAc
   'use server'
   try {
     await requirePermission('dashboard', 'write')
-    await ensurePaymentsTable()
+    await ensureAllTablesOnce()
 
     const id = String(formData.get('id') ?? '').trim()
     if (!id) return { ok: false as const, message: 'Payment ID is missing.' }
@@ -604,7 +605,7 @@ async function sendProjectInvoiceEmail(formData: FormData): Promise<InvoiceActio
   'use server'
   try {
     await requirePermission('dashboard', 'write')
-    await ensurePaymentsTable()
+    await ensureAllTablesOnce()
 
     const projectId = String(formData.get('projectId') ?? '').trim()
     if (!projectId) return { ok: false as const, message: 'Project is required.' }
@@ -659,7 +660,7 @@ async function generateProjectInvoice(formData: FormData): Promise<InvoiceAction
   'use server'
   try {
     await requirePermission('dashboard', 'write')
-    await ensurePaymentsTable()
+    await ensureAllTablesOnce()
 
     const projectId = String(formData.get('projectId') ?? '').trim()
     if (!projectId) return { ok: false as const, message: 'Project is required.' }
@@ -680,7 +681,7 @@ async function generateProjectInvoice(formData: FormData): Promise<InvoiceAction
 
 export default async function AdminPaymentPage() {
   await requirePermission('dashboard', 'read')
-  await ensurePaymentsTable()
+  await ensureAllTablesOnce()
 
   const [rows, projects, totals] = await Promise.all([
     sql<{

@@ -12,6 +12,9 @@
     "db:reset-admin": "tsx scripts/reset-db-admin-seed.ts"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.106.2",
     "@types/nodemailer": "^7.0.11",
     "bcryptjs": "^3.0.3",
     "framer-motion": "^12.34.3",

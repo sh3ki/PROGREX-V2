@@ -2,32 +2,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server/auth'
 import { sql } from '@/lib/server/db'
-import { broadcastToUsers } from '@/lib/server/adminChatSse'
-
-async function ensureChatTables() {
-  await sql(`
-    create table if not exists admin_chat_conversations (
-      id uuid primary key default gen_random_uuid(),
-      name text not null,
-      is_group boolean not null default false,
-      group_image_url text,
-      created_by uuid not null references admin_users(id) on delete cascade,
-      created_at timestamptz not null default now(),
-      updated_at timestamptz not null default now()
-    )
-  `)
-
-  await sql(`
-    create table if not exists admin_chat_participants (
-      conversation_id uuid not null references admin_chat_conversations(id) on delete cascade,
-      user_id uuid not null references admin_users(id) on delete cascade,
-      joined_at timestamptz not null default now(),
-      primary key (conversation_id, user_id)
-    )
-  `)
-
-  await sql('alter table admin_chat_conversations add column if not exists group_image_url text')
-}
+import { broadcastToUsers, ensureChatTablesOnce, getCachedParticipants, invalidateParticipantsCache } from '@/lib/server/adminChatSse'
 
 async function uploadImageToCloudinary(file: File, opts: { folder: string; filename: string }) {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
@@ -60,7 +35,7 @@ async function uploadImageToCloudinary(file: File, opts: { folder: string; filen
 
 export async function POST(req: NextRequest) {
   const admin = await requireAdmin()
-  await ensureChatTables()
+  await ensureChatTablesOnce()
 
   const formData = await req.formData()
   const rawParticipantIds = String(formData.get('participantIds') ?? '')
@@ -117,7 +92,7 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   const admin = await requireAdmin()
-  await ensureChatTables()
+  await ensureChatTablesOnce()
 
   const body = (await req.json()) as { conversationId?: string; name?: string }
   const conversationId = (body.conversationId || '').trim()
@@ -127,14 +102,8 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Conversation and name are required.' }, { status: 400 })
   }
 
-  const allowed = await sql<{ ok: number }>(
-    `select 1 as ok
-       from admin_chat_participants
-      where conversation_id = $1::uuid and user_id = $2::uuid
-      limit 1`,
-    [conversationId, admin.id]
-  )
-  if (!allowed.length) {
+  const participantIds = await getCachedParticipants(conversationId)
+  if (!participantIds.includes(admin.id)) {
     return NextResponse.json({ error: 'Conversation access denied.' }, { status: 403 })
   }
 
@@ -144,19 +113,14 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   const admin = await requireAdmin()
-  await ensureChatTables()
+  await ensureChatTablesOnce()
 
   const conversationId = req.nextUrl.searchParams.get('conversationId')?.trim() || ''
   if (!conversationId) {
     return NextResponse.json({ error: 'Conversation is required.' }, { status: 400 })
   }
 
-  const members = await sql<{ user_id: string }>(
-    `select user_id::text
-       from admin_chat_participants
-      where conversation_id = $1::uuid`,
-    [conversationId]
-  )
+  const members = await getCachedParticipants(conversationId)
 
   await sql(
     `delete from admin_chat_participants
@@ -176,8 +140,10 @@ export async function DELETE(req: NextRequest) {
     await sql('update admin_chat_conversations set updated_at = now() where id = $1::uuid', [conversationId])
   }
 
+  invalidateParticipantsCache(conversationId)
+
   broadcastToUsers(
-    members.map((item) => item.user_id).filter((id) => id !== admin.id),
+    members.filter((id) => id !== admin.id),
     'conversation',
     { type: 'participant-left', conversationId, userId: admin.id },
   )

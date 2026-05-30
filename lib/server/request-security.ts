@@ -6,6 +6,7 @@ type Bucket = {
 }
 
 const buckets = new Map<string, Bucket>()
+const BUCKET_MAX_SIZE = 10_000 // prevent unbounded growth under traffic spikes
 
 function splitHeaderValues(value: string | null): string[] {
   if (!value) return []
@@ -118,6 +119,10 @@ export function hitRateLimit(key: string, limit: number, windowMs: number): bool
   const current = buckets.get(key)
 
   if (!current || now - current.windowStart >= windowMs) {
+    // Evict oldest entry if map is full to keep memory bounded
+    if (!current && buckets.size >= BUCKET_MAX_SIZE) {
+      buckets.delete(buckets.keys().next().value!)
+    }
     buckets.set(key, { count: 1, windowStart: now })
     return false
   }

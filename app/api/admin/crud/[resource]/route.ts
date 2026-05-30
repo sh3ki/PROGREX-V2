@@ -1,8 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import type { AdminPermissionKey } from '@/lib/server/permissions'
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
+import { CACHE_TAGS } from '@/lib/server/public-data'
 import { assertSameOrigin } from '@/lib/server/request-security'
+
+// Which public cache tags to bust when a resource is mutated.
+// 'teams' also busts 'blogs' because blogs JOIN team_members for author info.
+const PUBLIC_CACHE_TAGS: Partial<Record<string, string[]>> = {
+  projects: [CACHE_TAGS.projects],
+  teams:    [CACHE_TAGS.team, CACHE_TAGS.blogs],
+  blogs:    [CACHE_TAGS.blogs],
+  systems:  [CACHE_TAGS.systems],
+}
+
+function bustPublicCache(resource: string) {
+  const tags = PUBLIC_CACHE_TAGS[resource]
+  if (tags) tags.forEach((t) => revalidateTag(t, { expire: 0 }))
+}
 
 type ResourceConfig = {
   table: string
@@ -117,6 +133,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ resour
       values
     )
 
+    bustPublicCache(resource)
     return NextResponse.json({ data: inserted[0] })
   } catch (error) {
     return mapApiError(error)
