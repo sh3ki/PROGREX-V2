@@ -1,8 +1,9 @@
-import { revalidatePath } from 'next/cache'
+﻿import { revalidatePath } from 'next/cache'
 import { createHash, randomBytes } from 'node:crypto'
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
 import AdminTeamsTemplateView from '@/components/admin/teams/AdminTeamsTemplateView'
+import { ensureAllTablesOnce } from '@/lib/server/dbInit'
 
 async function ensureTeamColumns() {
   await sql('alter table team_members add column if not exists avatar text')
@@ -68,7 +69,7 @@ async function resolveTeamAvatar(formData: FormData, name: string, fallback: str
 async function saveTeam(formData: FormData) {
   'use server'
   await requirePermission('teams', 'write')
-  await ensureTeamColumns()
+  await ensureAllTablesOnce()
 
   const id = String(formData.get('id') ?? '')
   const name = String(formData.get('name') ?? '').trim()
@@ -179,7 +180,7 @@ async function deleteTeam(formData: FormData) {
 
 export default async function AdminTeamsPage() {
   await requirePermission('teams', 'read')
-  await ensureTeamColumns()
+  await ensureAllTablesOnce()
 
   const team = await sql<{
     id: string

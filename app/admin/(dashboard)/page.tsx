@@ -5,18 +5,22 @@ import AdminApexDashboardView from '@/components/admin/AdminApexDashboardView'
 export default async function AdminDashboardPage() {
   await requirePermission('dashboard', 'read')
 
-  const [projects, blogs, systems, team, bookings, contacts, openBookings, openContacts, recentBookings, recentContacts] = await Promise.all([
-    sql<{ count: string }>('select count(*)::text as count from projects'),
-    sql<{ count: string }>('select count(*)::text as count from blogs'),
-    sql<{ count: string }>('select count(*)::text as count from ready_made_systems'),
-    sql<{ count: string }>('select count(*)::text as count from team_members where is_active = true'),
-    sql<{ count: string }>('select count(*)::text as count from bookings'),
-    sql<{ count: string }>('select count(*)::text as count from contact_submissions'),
-    sql<{ count: string }>("select count(*)::text as count from bookings where lower(coalesce(status, 'new')) in ('new','scheduled','rescheduled') and coalesce(is_archived, false) = false"),
-    sql<{ count: string }>("select count(*)::text as count from contact_submissions where lower(coalesce(status, 'new')) in ('new','in-progress') and coalesce(is_archived, false) = false"),
-    sql<{ count: string }>("select count(*)::text as count from bookings where created_at >= now() - interval '7 days'"),
-    sql<{ count: string }>("select count(*)::text as count from contact_submissions where created_at >= now() - interval '7 days'"),
-  ])
+  const [counts] = await sql<{
+    projects: number; blogs: number; systems: number; team: number
+    bookings: number; contacts: number; open_bookings: number; open_contacts: number
+    recent_bookings: number; recent_contacts: number
+  }>(`select
+    (select count(*) from projects)::int as projects,
+    (select count(*) from blogs)::int as blogs,
+    (select count(*) from ready_made_systems)::int as systems,
+    (select count(*) from team_members where is_active = true)::int as team,
+    (select count(*) from bookings)::int as bookings,
+    (select count(*) from contact_submissions)::int as contacts,
+    (select count(*) from bookings where lower(coalesce(status,'new')) in ('new','scheduled','rescheduled') and coalesce(is_archived,false) = false)::int as open_bookings,
+    (select count(*) from contact_submissions where lower(coalesce(status,'new')) in ('new','in-progress') and coalesce(is_archived,false) = false)::int as open_contacts,
+    (select count(*) from bookings where created_at >= now() - interval '7 days')::int as recent_bookings,
+    (select count(*) from contact_submissions where created_at >= now() - interval '7 days')::int as recent_contacts
+  `)
 
   const paymentsTable = await sql<{ table_name: string | null }>("select to_regclass('public.payments')::text as table_name")
 
@@ -53,16 +57,16 @@ export default async function AdminDashboardPage() {
   }
 
   const stats = {
-    projects: Number(projects[0]?.count ?? '0'),
-    blogs: Number(blogs[0]?.count ?? '0'),
-    systems: Number(systems[0]?.count ?? '0'),
-    users: Number(team[0]?.count ?? '0'),
-    bookings: Number(bookings[0]?.count ?? '0'),
-    contacts: Number(contacts[0]?.count ?? '0'),
-    openBookings: Number(openBookings[0]?.count ?? '0'),
-    openContacts: Number(openContacts[0]?.count ?? '0'),
-    recentBookings: Number(recentBookings[0]?.count ?? '0'),
-    recentContacts: Number(recentContacts[0]?.count ?? '0'),
+    projects: counts?.projects ?? 0,
+    blogs: counts?.blogs ?? 0,
+    systems: counts?.systems ?? 0,
+    users: counts?.team ?? 0,
+    bookings: counts?.bookings ?? 0,
+    contacts: counts?.contacts ?? 0,
+    openBookings: counts?.open_bookings ?? 0,
+    openContacts: counts?.open_contacts ?? 0,
+    recentBookings: counts?.recent_bookings ?? 0,
+    recentContacts: counts?.recent_contacts ?? 0,
     finance,
   }
 

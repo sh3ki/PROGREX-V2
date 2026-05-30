@@ -1,9 +1,10 @@
-import { revalidatePath } from 'next/cache'
+﻿import { revalidatePath } from 'next/cache'
 import { createHash, randomBytes } from 'node:crypto'
 import { hashPassword } from '@/lib/server/auth'
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
 import AdminUsersTemplateView from '@/components/admin/users/AdminUsersTemplateView'
+import { ensureAllTablesOnce } from '@/lib/server/dbInit'
 
 async function ensureUserProfileImageColumn() {
   await sql('alter table admin_users add column if not exists profile_image_url text')
@@ -65,7 +66,7 @@ async function resolveProfileImage(formData: FormData, fullName: string, fallbac
 async function createUser(formData: FormData) {
   'use server'
   await requirePermission('users', 'write')
-  await ensureUserProfileImageColumn()
+  await ensureAllTablesOnce()
 
   const email = String(formData.get('email') ?? '').trim().toLowerCase()
   const fullName = String(formData.get('fullName') ?? '').trim()
@@ -93,7 +94,7 @@ async function createUser(formData: FormData) {
 async function updateUser(formData: FormData) {
   'use server'
   await requirePermission('users', 'write')
-  await ensureUserProfileImageColumn()
+  await ensureAllTablesOnce()
 
   const id = String(formData.get('id') ?? '').trim()
   const email = String(formData.get('email') ?? '').trim().toLowerCase()
@@ -203,7 +204,7 @@ async function bulkSetInactive(formData: FormData) {
 
 export default async function AdminUsersPage() {
   await requirePermission('users', 'read')
-  await ensureUserProfileImageColumn()
+  await ensureAllTablesOnce()
 
   const [users, roles] = await Promise.all([
     sql<{ id: string; email: string; full_name: string; role_id: string; is_active: boolean; profile_image_url: string | null; updated_at: string | null }>(

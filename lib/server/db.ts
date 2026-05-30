@@ -1,9 +1,4 @@
-import { Pool } from 'pg'
-
-declare global {
-  // eslint-disable-next-line no-var
-  var __progrexPool: Pool | undefined
-}
+import { neon } from '@neondatabase/serverless'
 
 function getDatabaseUrl(): string {
   const url = process.env.DATABASE_URL
@@ -13,16 +8,11 @@ function getDatabaseUrl(): string {
   return url
 }
 
-export const db = global.__progrexPool ?? new Pool({
-  connectionString: getDatabaseUrl(),
-  ssl: { rejectUnauthorized: false },
-})
-
-if (process.env.NODE_ENV !== 'production') {
-  global.__progrexPool = db
-}
+// Uses HTTP fetch per query — no persistent TCP connection.
+// Neon compute can auto-suspend between requests, preventing quota exhaustion.
+const _sql = neon(getDatabaseUrl())
 
 export async function sql<T = unknown>(query: string, params: unknown[] = []): Promise<T[]> {
-  const result = await db.query(query, params)
-  return result.rows as T[]
+  const rows = await _sql.query(query, params)
+  return rows as T[]
 }

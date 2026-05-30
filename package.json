@@ -12,6 +12,7 @@
     "db:reset-admin": "tsx scripts/reset-db-admin-seed.ts"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "@types/nodemailer": "^7.0.11",
     "bcryptjs": "^3.0.3",
     "framer-motion": "^12.34.3",

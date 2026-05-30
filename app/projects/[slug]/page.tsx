@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import CaseStudyClient from './CaseStudyClient'
 import { getPublicProjects } from '@/lib/server/public-data'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600 // ISR: re-fetch DB data at most once per hour
 
 interface Props {
   params: Promise<{ slug: string }>
