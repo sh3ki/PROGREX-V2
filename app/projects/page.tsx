@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import ProjectsClient from './ProjectsClient'
 import { getPublicProjects } from '@/lib/server/public-data'
 
-export const revalidate = 3600 // ISR: re-fetch DB data at most once per hour
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Projects',

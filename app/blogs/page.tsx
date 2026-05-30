@@ -3,7 +3,7 @@ import BlogsClient from './BlogsClient'
 import { getPublicBlogs } from '@/lib/server/public-data'
 import type { BlogPost } from '@/lib/blogData'
 
-export const revalidate = 3600 // ISR: re-fetch DB data at most once per hour
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'PROGREX Blog — Software Development, Web Apps, Mobile Apps & Tech Insights',
