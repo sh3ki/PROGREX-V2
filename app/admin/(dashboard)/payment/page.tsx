@@ -3,15 +3,14 @@ import nodemailer from 'nodemailer'
 import { revalidatePath } from 'next/cache'
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
-import {
 import { ensureAllTablesOnce } from '@/lib/server/dbInit'
+import {
   generateInvoicePdf,
   getProjectInvoicePayload,
   getSinglePaymentInvoicePayload,
   type InvoicePayload,
 } from '@/lib/server/paymentInvoice'
 import AdminPaymentsTemplateView from '@/components/admin/payments/AdminPaymentsTemplateView'
-import { ensureAllTablesOnce } from '@/lib/server/dbInit'
 
 const PAYMENT_STATUSES = new Set(['pending', 'paid', 'refunded', 'failed'])
 const PAYMENT_METHODS = new Set(['Cash', 'Gcash', 'Bank Transfer', 'Credit Card', 'PayPal'])

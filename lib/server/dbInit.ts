@@ -16,7 +16,10 @@
  * Server restart → runs once again on the first call after the cold start
  */
 
+import fs from 'node:fs'
+import path from 'node:path'
 import { sql } from './db'
+import { seedIfEmpty } from './dbSeed'
 
 const g = globalThis as typeof globalThis & {
   __allTablesReady?: Promise<void>
@@ -35,6 +38,11 @@ export function ensureAllTablesOnce(): Promise<void> {
 
 // ─── All DDL consolidated ──────────────────────────────────────────────────────
 async function _runAllDDL() {
+  // ── base schema (idempotent — CREATE TABLE IF NOT EXISTS) ─────────────────────
+  const schemaPath = path.join(process.cwd(), 'lib', 'server', 'schema.sql')
+  const schemaSql = fs.readFileSync(schemaPath, 'utf8')
+  await sql(schemaSql)
+
   // ── admin_users ──────────────────────────────────────────────────────────────
   await sql('alter table admin_users add column if not exists profile_image_url text')
 
@@ -336,4 +344,7 @@ async function _runAllDDL() {
   await sql('alter table payments add column if not exists invoice_sent_at timestamptz')
   await sql('alter table payments add column if not exists invoice_pdf_url text')
   await sql('alter table payments add column if not exists invoice_pdf_public_id text')
+
+  // ── initial data seed (only when the DB is empty) ─────────────────────────────
+  await seedIfEmpty()
 }

@@ -1,4 +1,4 @@
-import { neon } from '@neondatabase/serverless'
+import { Pool, type QueryResultRow } from 'pg'
 
 function getDatabaseUrl(): string {
   const url = process.env.DATABASE_URL
@@ -8,11 +8,21 @@ function getDatabaseUrl(): string {
   return url
 }
 
-// Uses HTTP fetch per query — no persistent TCP connection.
-// Neon compute can auto-suspend between requests, preventing quota exhaustion.
-const _sql = neon(getDatabaseUrl())
+// Single pool shared across requests in the same Node.js process.
+// Uses Supabase direct connection (port 5432) — works on any cloud host with
+// IPv6 support (Render, Fly, etc.).
+// max:5 keeps us well under Supabase free-tier's 60-connection ceiling even
+// with 10 concurrent admins.  Visitors hit cached/static responses so they
+// never open a DB connection at all.
+const _pool = new Pool({
+  connectionString: getDatabaseUrl(),
+  ssl: { rejectUnauthorized: false },
+  max: 5,
+  idleTimeoutMillis: 30_000,
+  connectionTimeoutMillis: 5_000,
+})
 
-export async function sql<T = unknown>(query: string, params: unknown[] = []): Promise<T[]> {
-  const rows = await _sql.query(query, params)
-  return rows as T[]
+export async function sql<T extends QueryResultRow = QueryResultRow>(query: string, params: unknown[] = []): Promise<T[]> {
+  const { rows } = await _pool.query<T>(query, params)
+  return rows
 }
