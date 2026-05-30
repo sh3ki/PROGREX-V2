@@ -8,12 +8,6 @@ function getDatabaseUrl(): string {
   return url
 }
 
-// Single pool shared across requests in the same Node.js process.
-// Uses Supabase direct connection (port 5432) — works on any cloud host with
-// IPv6 support (Render, Fly, etc.).
-// max:5 keeps us well under Supabase free-tier's 60-connection ceiling even
-// with 10 concurrent admins.  Visitors hit cached/static responses so they
-// never open a DB connection at all.
 const _pool = new Pool({
   connectionString: getDatabaseUrl(),
   ssl: { rejectUnauthorized: false },
@@ -22,7 +16,26 @@ const _pool = new Pool({
   connectionTimeoutMillis: 5_000,
 })
 
+const NETWORK_ERROR_CODES = ['ENETUNREACH', 'ENOTFOUND', 'ECONNREFUSED', 'ETIMEDOUT', 'ECONNRESET']
+
 export async function sql<T extends QueryResultRow = QueryResultRow>(query: string, params: unknown[] = []): Promise<T[]> {
   const { rows } = await _pool.query<T>(query, params)
   return rows
+}
+
+/**
+ * Like sql() but returns [] instead of throwing on network/connection errors.
+ * Use in public read-only queries so pages degrade gracefully when DB is unreachable.
+ */
+export async function sqlPublic<T extends QueryResultRow = QueryResultRow>(query: string, params: unknown[] = []): Promise<T[]> {
+  try {
+    return await sql<T>(query, params)
+  } catch (e: unknown) {
+    const code = (e as NodeJS.ErrnoException)?.code
+    if (code && NETWORK_ERROR_CODES.includes(code)) {
+      console.error('[DB] Network error on public query, returning empty result:', (e as Error).message)
+      return []
+    }
+    throw e
+  }
 }

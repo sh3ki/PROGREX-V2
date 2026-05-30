@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache'
-import { sql } from './db'
+import { sqlPublic as sql } from './db'
 
 // ─── Cache tags ────────────────────────────────────────────────────────────────
 // Import CACHE_TAGS in admin mutation routes to call revalidateTag() and
