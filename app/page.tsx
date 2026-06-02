@@ -8,7 +8,9 @@ import {
   getPublicSystems,
 } from '@/lib/server/public-data'
 
-export const dynamic = 'force-dynamic'
+// ISR: re-render at most once per hour; all visitors get cached static HTML.
+// DB is only queried when unstable_cache TTL expires (also 1 h) — not per visitor.
+export const revalidate = 3600
 
 export const metadata: Metadata = {
   title: 'PROGREX — Technology Solutions That Drives Success',
