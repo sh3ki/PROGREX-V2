@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import BlogPostClient from './BlogPostClient'
 import { getPublicBlogs } from '@/lib/server/public-data'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600
 
 interface Props {
   params: Promise<{ slug: string }>
