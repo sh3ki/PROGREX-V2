@@ -8,9 +8,9 @@ import {
   getPublicSystems,
 } from '@/lib/server/public-data'
 
-// ISR: re-render at most once per hour; all visitors get cached static HTML.
-// DB is only queried when unstable_cache TTL expires (also 1 h) — not per visitor.
-export const revalidate = 3600
+// Static forever — only re-renders when an admin saves content (revalidateTag).
+// No timer: zero periodic Neon compute usage from public traffic.
+export const revalidate = false
 
 export const metadata: Metadata = {
   title: 'PROGREX — Technology Solutions That Drives Success',
