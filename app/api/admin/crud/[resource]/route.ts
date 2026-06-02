@@ -90,15 +90,24 @@ function mapApiError(error: unknown) {
   return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
 }
 
-export async function GET(_: NextRequest, context: { params: Promise<{ resource: string }> }) {
+export async function GET(req: NextRequest, context: { params: Promise<{ resource: string }> }) {
   try {
     const { resource } = await context.params
     const config = getConfig(resource)
     if (!config) return NextResponse.json({ error: 'Unknown resource' }, { status: 404 })
 
     await requirePermission(config.permission, 'read')
-    const rows = await sql(`select * from ${config.table} order by created_at desc`)
-    return NextResponse.json({ data: rows })
+
+    const url = new URL(req.url)
+    const page  = Math.max(1, parseInt(url.searchParams.get('page')  ?? '1', 10))
+    const limit = Math.min(200, Math.max(1, parseInt(url.searchParams.get('limit') ?? '200', 10)))
+    const offset = (page - 1) * limit
+
+    const rows = await sql(
+      `select * from ${config.table} order by created_at desc limit $1 offset $2`,
+      [limit, offset]
+    )
+    return NextResponse.json({ data: rows, page, limit })
   } catch (error) {
     return mapApiError(error)
   }
