@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import ServiceDetailClient from './ServiceDetailClient'
 import { getPublicServices } from '@/lib/server/public-data'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600
 
 interface Props {
   params: Promise<{ service: string }>
