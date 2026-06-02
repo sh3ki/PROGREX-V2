@@ -33,8 +33,9 @@ export async function POST(req: NextRequest) {
       password_hash: string
       role_id: string
       is_active: boolean
+      profile_image_url: string | null
     }>(
-      `select id, email, full_name, password_hash, role_id, is_active
+      `select id, email, full_name, password_hash, role_id, is_active, profile_image_url
        from admin_users
        where email = $1
        limit 1`,
@@ -56,6 +57,7 @@ export async function POST(req: NextRequest) {
       email: user.email,
       name: user.full_name,
       roleId: user.role_id,
+      avatarUrl: user.profile_image_url ?? null,
     })
 
     await setAdminCookie(token)
