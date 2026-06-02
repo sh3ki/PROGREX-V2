@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import BlogPostClient from './BlogPostClient'
 import { getPublicBlogs } from '@/lib/server/public-data'
 
-export const revalidate = 3600
+export const revalidate = false
 
 interface Props {
   params: Promise<{ slug: string }>
