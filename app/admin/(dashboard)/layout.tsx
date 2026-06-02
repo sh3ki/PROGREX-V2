@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { getCurrentAdmin } from '@/lib/server/auth'
+import { ensureAllTablesOnce } from '@/lib/server/dbInit'
 import AdminLayoutShell from '@/components/admin/AdminLayoutShell'
 
 type ColorPreset = 'blue' | 'emerald' | 'violet' | 'rose' | 'orange' | 'cyan' | 'indigo' | 'teal' | 'amber' | 'fuchsia'
@@ -11,6 +12,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!admin) {
     redirect('/admin/login')
   }
+
+  // Ensure all runtime DDL migrations have run before any admin page queries the DB
+  await ensureAllTablesOnce()
 
   const cookieStore = await cookies()
   const themeMode = cookieStore.get('apx-theme-mode')?.value
