@@ -4,6 +4,7 @@ import { sqlPublic as sql } from './db'
 // ─── Cache tags ────────────────────────────────────────────────────────────────
 // Import CACHE_TAGS in admin mutation routes to call revalidateTag() and
 // instantly bust the right cache when content is saved/updated/deleted.
+// No time-based TTL — caches live forever and are only invalidated by tag.
 export const CACHE_TAGS = {
   projects:     'public-projects',
   team:         'public-team',
@@ -13,9 +14,6 @@ export const CACHE_TAGS = {
   testimonials: 'public-testimonials',
   faqs:         'public-faqs',
 } as const
-
-// Safety-net TTL: if a mutation handler forgets to revalidate, cache auto-expires after 1 hour.
-const REVALIDATE_SECONDS = 3600
 
 type SystemPricingPlan = {
   plan: string
@@ -101,7 +99,7 @@ const _fetchPublicProjects = unstable_cache(
     }))
   },
   ['public-projects'],
-  { tags: [CACHE_TAGS.projects], revalidate: REVALIDATE_SECONDS }
+  { tags: [CACHE_TAGS.projects] }
 )
 
 export async function getPublicProjects(): Promise<PublicProject[]> {
@@ -148,7 +146,7 @@ const _fetchPublicTeam = unstable_cache(
     }))
   },
   ['public-team'],
-  { tags: [CACHE_TAGS.team], revalidate: REVALIDATE_SECONDS }
+  { tags: [CACHE_TAGS.team] }
 )
 
 export async function getPublicTeam() {
@@ -212,7 +210,7 @@ const _fetchPublicBlogs = unstable_cache(
     }))
   },
   ['public-blogs'],
-  { tags: [CACHE_TAGS.blogs], revalidate: REVALIDATE_SECONDS }
+  { tags: [CACHE_TAGS.blogs] }
 )
 
 export async function getPublicBlogs() {
@@ -261,7 +259,7 @@ const _fetchPublicSystems = unstable_cache(
     }))
   },
   ['public-systems'],
-  { tags: [CACHE_TAGS.systems], revalidate: REVALIDATE_SECONDS }
+  { tags: [CACHE_TAGS.systems] }
 )
 
 export async function getPublicSystems() {
@@ -373,7 +371,7 @@ const _fetchPublicServices = unstable_cache(
     })
   },
   ['public-services'],
-  { tags: [CACHE_TAGS.services], revalidate: REVALIDATE_SECONDS }
+  { tags: [CACHE_TAGS.services] }
 )
 
 export async function getPublicServices(): Promise<PublicService[]> {
@@ -404,7 +402,7 @@ const _fetchHomeTestimonials = unstable_cache(
     )
   },
   ['public-testimonials'],
-  { tags: [CACHE_TAGS.testimonials], revalidate: REVALIDATE_SECONDS }
+  { tags: [CACHE_TAGS.testimonials] }
 )
 
 export async function getHomeTestimonials() {
@@ -426,7 +424,7 @@ const _fetchHomeFaqs = unstable_cache(
     )
   },
   ['public-faqs'],
-  { tags: [CACHE_TAGS.faqs], revalidate: REVALIDATE_SECONDS }
+  { tags: [CACHE_TAGS.faqs] }
 )
 
 export async function getHomeFaqs() {
