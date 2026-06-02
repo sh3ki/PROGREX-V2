@@ -16,8 +16,6 @@
  * Server restart → runs once again on the first call after the cold start
  */
 
-import fs from 'node:fs'
-import path from 'node:path'
 import { sql } from './db'
 import { seedIfEmpty } from './dbSeed'
 
@@ -38,10 +36,9 @@ export function ensureAllTablesOnce(): Promise<void> {
 
 // ─── All DDL consolidated ──────────────────────────────────────────────────────
 async function _runAllDDL() {
-  // ── base schema (idempotent — CREATE TABLE IF NOT EXISTS) ─────────────────────
-  const schemaPath = path.join(process.cwd(), 'lib', 'server', 'schema.sql')
-  const schemaSql = fs.readFileSync(schemaPath, 'utf8')
-  await sql(schemaSql)
+  // NOTE: Base schema (projects, services, blogs, etc.) is created by `npm run db:setup`
+  // before deployment. This function only handles additive ALTER TABLE / CREATE TABLE IF NOT EXISTS
+  // migrations so each call is a single statement — compatible with Neon's prepared-statement path.
 
   // ── admin_users ──────────────────────────────────────────────────────────────
   await sql('alter table admin_users add column if not exists profile_image_url text')
