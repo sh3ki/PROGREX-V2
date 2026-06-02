@@ -34,6 +34,7 @@ create table if not exists admin_users (
   password_hash text not null,
   role_id uuid references roles(id) on delete set null,
   is_active boolean not null default true,
+  profile_image_url text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -76,10 +77,11 @@ create table if not exists team_members (
   role text not null,
   bio text,
   avatar text,
+  email text,
   linkedin text,
   github text,
   portfolio text,
-  sort_order int not null default 0,
+  sort_order int not null default 1,
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -90,6 +92,7 @@ create table if not exists blogs (
   slug text not null unique,
   title text not null,
   category text,
+  team_member_id uuid references team_members(id) on delete set null,
   author_name text,
   author_role text,
   author_avatar text,
