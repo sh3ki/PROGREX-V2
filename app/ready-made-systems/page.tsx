@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import ReadyMadeSystemsClient from './ReadyMadeSystemsClient'
 import { getPublicSystems } from '@/lib/server/public-data'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600
 
 export const metadata: Metadata = {
   title: 'Ready-Made Systems',
