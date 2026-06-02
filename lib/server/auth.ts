@@ -10,7 +10,14 @@ type AdminSession = {
   email: string
   roleId: string
   name: string
+  avatarUrl?: string | null
 }
+
+// ─── In-process admin active-status cache ────────────────────────────────────
+// Prevents a DB round-trip on every request for the same admin.
+// TTL: 60 s — stale-by-at-most-60-seconds is acceptable for is_active checks.
+const _adminCache = new Map<string, { isActive: boolean; expiry: number }>()
+const ADMIN_CACHE_TTL = 60_000
 
 function getSecret() {
   const secret = process.env.ADMIN_JWT_SECRET
@@ -70,20 +77,34 @@ export async function getCurrentAdmin() {
   const session = await getAdminSessionFromCookie()
   if (!session) return null
 
-  const rows = await sql<{ id: string; email: string; full_name: string; role_id: string; is_active: boolean; profile_image_url: string | null }>(
-    'select id, email, full_name, role_id, is_active, profile_image_url from admin_users where id = $1 limit 1',
+  // Fast path: check in-process cache to avoid a DB round-trip on every request.
+  const cached = _adminCache.get(session.sub)
+  if (cached && Date.now() < cached.expiry) {
+    if (!cached.isActive) return null
+    return {
+      id: session.sub,
+      email: session.email,
+      fullName: session.name,
+      roleId: session.roleId,
+      profileImageUrl: session.avatarUrl ?? null,
+    }
+  }
+
+  // Cache miss — query DB only for is_active (cheapest possible query).
+  const rows = await sql<{ is_active: boolean }>(
+    'select is_active from admin_users where id = $1 limit 1',
     [session.sub]
   )
+  const isActive = rows[0]?.is_active ?? false
+  _adminCache.set(session.sub, { isActive, expiry: Date.now() + ADMIN_CACHE_TTL })
 
-  const admin = rows[0]
-  if (!admin || !admin.is_active) return null
-
+  if (!isActive) return null
   return {
-    id: admin.id,
-    email: admin.email,
-    fullName: admin.full_name,
-    roleId: admin.role_id,
-    profileImageUrl: admin.profile_image_url,
+    id: session.sub,
+    email: session.email,
+    fullName: session.name,
+    roleId: session.roleId,
+    profileImageUrl: session.avatarUrl ?? null,
   }
 }
 
