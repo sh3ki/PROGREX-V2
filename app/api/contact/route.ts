@@ -4,7 +4,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import nodemailer from 'nodemailer'
 import { z } from 'zod'
 import { sql } from '@/lib/server/db'
-import { ensureAllTablesOnce } from '@/lib/server/dbInit'
 import { assertSameOrigin, getClientIp, hitRateLimit } from '@/lib/server/request-security'
 
 type ConfirmationPayload = {
@@ -176,7 +175,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Too many requests. Please try again shortly.' }, { status: 429 })
     }
 
-    await ensureAllTablesOnce()
 
     const body = await req.formData()
     const name = String(body.get('name') ?? '').trim()

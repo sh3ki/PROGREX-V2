@@ -1,8 +1,7 @@
-﻿import { revalidatePath } from 'next/cache'
+import { revalidatePath } from 'next/cache'
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
 import AdminKanbanTemplateView from '../../../../components/admin/kanban/AdminKanbanTemplateView'
-import { ensureAllTablesOnce } from '@/lib/server/dbInit'
 
 type TaskStatus = 'todo' | 'inprogress' | 'review' | 'done'
 type TaskPriority = 'low' | 'medium' | 'high' | 'critical'
@@ -59,7 +58,6 @@ async function ensureKanbanTable() {
 async function createTask(formData: FormData) {
   'use server'
   const admin = await requirePermission('dashboard', 'write')
-  await ensureAllTablesOnce()
 
   const projectId = String(formData.get('projectId') ?? '').trim()
   const title = String(formData.get('title') ?? '').trim()
@@ -87,7 +85,6 @@ async function createTask(formData: FormData) {
 async function updateTask(formData: FormData) {
   'use server'
   const admin = await requirePermission('dashboard', 'write')
-  await ensureAllTablesOnce()
 
   const id = String(formData.get('id') ?? '').trim()
   const projectId = String(formData.get('projectId') ?? '').trim()
@@ -125,7 +122,6 @@ async function updateTask(formData: FormData) {
 async function moveTask(formData: FormData) {
   'use server'
   const admin = await requirePermission('dashboard', 'write')
-  await ensureAllTablesOnce()
 
   const id = String(formData.get('id') ?? '').trim()
   const status = normalizeStatus(String(formData.get('status') ?? 'todo'))
@@ -148,7 +144,6 @@ async function moveTask(formData: FormData) {
 async function setTaskActive(formData: FormData) {
   'use server'
   const admin = await requirePermission('dashboard', 'write')
-  await ensureAllTablesOnce()
 
   const id = String(formData.get('id') ?? '').trim()
   const isActive = String(formData.get('isActive') ?? '1') === '1'
@@ -171,7 +166,6 @@ async function setTaskActive(formData: FormData) {
 async function deleteTask(formData: FormData) {
   'use server'
   await requirePermission('dashboard', 'delete')
-  await ensureAllTablesOnce()
 
   const id = String(formData.get('id') ?? '').trim()
   if (!id) return
@@ -183,7 +177,6 @@ async function deleteTask(formData: FormData) {
 async function bulkSetInactive(formData: FormData) {
   'use server'
   const admin = await requirePermission('dashboard', 'write')
-  await ensureAllTablesOnce()
 
   const ids = String(formData.get('ids') ?? '')
     .split(',')
@@ -208,7 +201,6 @@ async function bulkSetInactive(formData: FormData) {
 async function bulkDelete(formData: FormData) {
   'use server'
   await requirePermission('dashboard', 'delete')
-  await ensureAllTablesOnce()
 
   const ids = String(formData.get('ids') ?? '')
     .split(',')
@@ -223,7 +215,6 @@ async function bulkDelete(formData: FormData) {
 
 export default async function AdminKanbanPage() {
   await requirePermission('dashboard', 'read')
-  await ensureAllTablesOnce()
 
   const [projects, teamMembers, tasks] = await Promise.all([
     sql<{ id: string; project_name: string; client_name: string | null }>(

@@ -1,9 +1,8 @@
-﻿import { revalidatePath } from 'next/cache'
+import { revalidatePath } from 'next/cache'
 import { createHash, randomBytes } from 'node:crypto'
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
 import AdminProjectsTemplateView from '@/components/admin/projects/AdminProjectsTemplateView'
-import { ensureAllTablesOnce } from '@/lib/server/dbInit'
 
 async function ensureProjectsStatusColumn() {
   await sql('alter table projects add column if not exists is_published boolean not null default true')
@@ -215,7 +214,6 @@ async function resolveProjectImages(input: {
 async function saveProject(formData: FormData) {
   'use server'
   await requirePermission('projects', 'write')
-  await ensureAllTablesOnce()
 
   const id = String(formData.get('id') ?? '').trim()
   const title = String(formData.get('title') ?? '').trim()
@@ -417,7 +415,6 @@ async function deleteProject(formData: FormData) {
 async function toggleProjectActive(formData: FormData) {
   'use server'
   await requirePermission('projects', 'write')
-  await ensureAllTablesOnce()
 
   const id = String(formData.get('id') ?? '').trim()
   if (!id) return
@@ -431,7 +428,6 @@ async function toggleProjectActive(formData: FormData) {
 async function bulkDeleteProjects(formData: FormData) {
   'use server'
   await requirePermission('projects', 'delete')
-  await ensureAllTablesOnce()
 
   const raw = String(formData.get('ids') ?? '')
   const ids = raw
@@ -450,7 +446,6 @@ async function bulkDeleteProjects(formData: FormData) {
 async function bulkSetInactiveProjects(formData: FormData) {
   'use server'
   await requirePermission('projects', 'write')
-  await ensureAllTablesOnce()
 
   const raw = String(formData.get('ids') ?? '')
   const ids = raw
@@ -468,8 +463,6 @@ async function bulkSetInactiveProjects(formData: FormData) {
 
 export default async function AdminProjectsPage() {
   await requirePermission('projects', 'read')
-  await ensureAllTablesOnce()
-  await ensureAllTablesOnce()
 
   const projects = await sql<{
     id: string

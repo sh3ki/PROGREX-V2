@@ -1,8 +1,7 @@
-﻿import { revalidatePath } from 'next/cache'
+import { revalidatePath } from 'next/cache'
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
 import AdminSystemsTemplateView from '@/components/admin/systems/AdminSystemsTemplateView'
-import { ensureAllTablesOnce } from '@/lib/server/dbInit'
 
 async function ensureSystemsStatusColumn() {
   await sql('alter table ready_made_systems add column if not exists is_published boolean not null default true')
@@ -11,7 +10,6 @@ async function ensureSystemsStatusColumn() {
 async function saveSystem(formData: FormData) {
   'use server'
   await requirePermission('systems', 'write')
-  await ensureAllTablesOnce()
 
   const id = String(formData.get('id') ?? '')
   const slug = String(formData.get('slug') ?? '').trim()
@@ -57,7 +55,6 @@ async function saveSystem(formData: FormData) {
 async function toggleSystemActive(formData: FormData) {
   'use server'
   await requirePermission('systems', 'write')
-  await ensureAllTablesOnce()
 
   const id = String(formData.get('id') ?? '').trim()
   if (!id) return
@@ -70,7 +67,6 @@ async function toggleSystemActive(formData: FormData) {
 async function bulkDeleteSystems(formData: FormData) {
   'use server'
   await requirePermission('systems', 'delete')
-  await ensureAllTablesOnce()
 
   const raw = String(formData.get('ids') ?? '')
   const ids = raw
@@ -88,7 +84,6 @@ async function bulkDeleteSystems(formData: FormData) {
 async function bulkSetInactiveSystems(formData: FormData) {
   'use server'
   await requirePermission('systems', 'write')
-  await ensureAllTablesOnce()
 
   const raw = String(formData.get('ids') ?? '')
   const ids = raw
@@ -114,7 +109,6 @@ async function deleteSystem(formData: FormData) {
 
 export default async function AdminSystemsPage() {
   await requirePermission('systems', 'read')
-  await ensureAllTablesOnce()
 
   const systems = await sql<{
     id: string

@@ -1,9 +1,8 @@
-﻿import { revalidatePath } from 'next/cache'
+import { revalidatePath } from 'next/cache'
 import { createHash, randomBytes } from 'node:crypto'
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
 import AdminOngoingProjectsTemplateView from '../../../../components/admin/ongoing-projects/AdminOngoingProjectsTemplateView'
-import { ensureAllTablesOnce } from '@/lib/server/dbInit'
 
 async function uploadRawToCloudinary(file: File, opts: { folder: string; filename: string }) {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
@@ -153,7 +152,6 @@ async function generateInvoiceNumberByDate(startDate: string) {
 async function createOngoingProject(formData: FormData) {
   'use server'
   await requirePermission('projects', 'write')
-  await ensureAllTablesOnce()
 
   const projectName = String(formData.get('projectName') ?? '').trim()
   const projectDescription = String(formData.get('projectDescription') ?? '').trim()
@@ -246,7 +244,6 @@ async function createOngoingProject(formData: FormData) {
 async function updateOngoingProject(formData: FormData) {
   'use server'
   await requirePermission('projects', 'write')
-  await ensureAllTablesOnce()
 
   const id = String(formData.get('id') ?? '').trim()
   if (!id) return
@@ -387,7 +384,6 @@ async function toggleOngoingProjectActive(formData: FormData) {
 async function updateOngoingProjectFiles(formData: FormData) {
   'use server'
   await requirePermission('projects', 'write')
-  await ensureAllTablesOnce()
 
   const id = String(formData.get('id') ?? '').trim()
   const projectName = String(formData.get('projectName') ?? '').trim() || 'project'
@@ -570,7 +566,6 @@ async function bulkDeleteOngoingProjects(formData: FormData) {
 
 export default async function AdminOngoingProjectsPage() {
   await requirePermission('projects', 'read')
-  await ensureAllTablesOnce()
 
   const [projects, clients, teamMembers, categories, progressRows] = await Promise.all([
     sql<{

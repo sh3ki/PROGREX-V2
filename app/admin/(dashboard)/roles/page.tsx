@@ -1,9 +1,8 @@
-﻿import { revalidatePath } from 'next/cache'
+import { revalidatePath } from 'next/cache'
 import { ADMIN_PERMISSION_KEYS, ADMIN_PERMISSION_LABELS } from '@/lib/server/permissions'
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
 import AdminRolesTemplateView from '@/components/admin/roles/AdminRolesTemplateView'
-import { ensureAllTablesOnce } from '@/lib/server/dbInit'
 
 type PermissionPayload = {
   permissionKey: string
@@ -19,7 +18,6 @@ async function ensureRolesIsActiveColumn() {
 async function createRole(formData: FormData) {
   'use server'
   await requirePermission('roles', 'write')
-  await ensureAllTablesOnce()
 
   const name = String(formData.get('name') ?? '').trim()
   const description = String(formData.get('description') ?? '').trim()
@@ -68,7 +66,6 @@ async function createRole(formData: FormData) {
 async function updateRole(formData: FormData) {
   'use server'
   await requirePermission('roles', 'write')
-  await ensureAllTablesOnce()
 
   const id = String(formData.get('id') ?? '').trim()
   const name = String(formData.get('name') ?? '').trim()
@@ -120,7 +117,6 @@ async function updateRole(formData: FormData) {
 async function deleteRole(formData: FormData) {
   'use server'
   await requirePermission('roles', 'delete')
-  await ensureAllTablesOnce()
 
   const id = String(formData.get('id') ?? '').trim()
   if (!id) return
@@ -133,7 +129,6 @@ async function deleteRole(formData: FormData) {
 async function toggleRoleActive(formData: FormData) {
   'use server'
   await requirePermission('roles', 'write')
-  await ensureAllTablesOnce()
 
   const id = String(formData.get('id') ?? '').trim()
   if (!id) return
@@ -145,7 +140,6 @@ async function toggleRoleActive(formData: FormData) {
 async function bulkDeleteRoles(formData: FormData) {
   'use server'
   await requirePermission('roles', 'delete')
-  await ensureAllTablesOnce()
 
   const raw = String(formData.get('ids') ?? '')
   const ids = raw
@@ -162,7 +156,6 @@ async function bulkDeleteRoles(formData: FormData) {
 async function bulkSetInactiveRoles(formData: FormData) {
   'use server'
   await requirePermission('roles', 'write')
-  await ensureAllTablesOnce()
 
   const raw = String(formData.get('ids') ?? '')
   const ids = raw
@@ -178,7 +171,6 @@ async function bulkSetInactiveRoles(formData: FormData) {
 
 export default async function AdminRolesPage() {
   await requirePermission('roles', 'read')
-  await ensureAllTablesOnce()
 
   const [roles, perms] = await Promise.all([
     sql<{ id: string; name: string; description: string | null; is_system: boolean; is_active: boolean; updated_at: string | null }>(

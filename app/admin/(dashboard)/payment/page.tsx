@@ -1,9 +1,8 @@
-﻿import { randomBytes, randomUUID, createHash } from 'node:crypto'
+import { randomBytes, randomUUID, createHash } from 'node:crypto'
 import nodemailer from 'nodemailer'
 import { revalidatePath } from 'next/cache'
 import { requirePermission } from '@/lib/server/admin-permission'
 import { sql } from '@/lib/server/db'
-import { ensureAllTablesOnce } from '@/lib/server/dbInit'
 import {
   generateInvoicePdf,
   getProjectInvoicePayload,
@@ -22,11 +21,11 @@ type CurrencyOption = {
 }
 
 const CURRENCIES: CurrencyOption[] = [
-  { code: 'PHP', symbol: '₱', label: 'Philippine Peso' },
+  { code: 'PHP', symbol: '?', label: 'Philippine Peso' },
   { code: 'USD', symbol: '$', label: 'US Dollar' },
-  { code: 'EUR', symbol: '€', label: 'Euro' },
+  { code: 'EUR', symbol: '�', label: 'Euro' },
   { code: 'SGD', symbol: 'S$', label: 'Singapore Dollar' },
-  { code: 'JPY', symbol: '¥', label: 'Japanese Yen' },
+  { code: 'JPY', symbol: '�', label: 'Japanese Yen' },
   { code: 'AUD', symbol: 'A$', label: 'Australian Dollar' },
 ]
 
@@ -67,7 +66,7 @@ async function ensurePaymentsTable() {
       discount_amount numeric(12, 2) not null default 0,
       tax_amount numeric(12, 2) not null default 0,
       currency text not null default 'PHP',
-      currency_symbol text not null default '₱',
+      currency_symbol text not null default '?',
       currency_label text not null default 'Philippine Peso',
       payment_method text,
       payment_date date,
@@ -92,7 +91,7 @@ async function ensurePaymentsTable() {
   await sql('alter table payments add column if not exists discount_amount numeric(12, 2) not null default 0')
   await sql('alter table payments add column if not exists tax_amount numeric(12, 2) not null default 0')
   await sql('alter table payments add column if not exists payment_time time')
-  await sql("alter table payments add column if not exists currency_symbol text not null default '₱'")
+  await sql("alter table payments add column if not exists currency_symbol text not null default '?'")
   await sql("alter table payments add column if not exists currency_label text not null default 'Philippine Peso'")
   await sql('alter table payments add column if not exists or_number text')
   await sql('alter table payments add column if not exists invoice_number text')
@@ -200,7 +199,6 @@ async function uploadProofToCloudinary(file: File, opts: { folder: string; filen
 async function createPayment(formData: FormData) {
   'use server'
   await requirePermission('dashboard', 'write')
-  await ensureAllTablesOnce()
 
   const projectId = String(formData.get('projectId') ?? '').trim()
   const amount = parseAmount(String(formData.get('amount') ?? '0'))
@@ -293,7 +291,6 @@ async function createPayment(formData: FormData) {
 async function updatePayment(formData: FormData) {
   'use server'
   await requirePermission('dashboard', 'write')
-  await ensureAllTablesOnce()
 
   const id = String(formData.get('id') ?? '').trim()
   if (!id) throw new Error('Payment ID is required.')
@@ -390,7 +387,6 @@ async function updatePayment(formData: FormData) {
 async function deletePayment(formData: FormData) {
   'use server'
   await requirePermission('dashboard', 'delete')
-  await ensureAllTablesOnce()
 
   const id = String(formData.get('id') ?? '').trim()
   if (!id) return
@@ -527,7 +523,6 @@ async function sendTransactionInvoiceEmail(formData: FormData): Promise<InvoiceA
   'use server'
   try {
     await requirePermission('dashboard', 'write')
-    await ensureAllTablesOnce()
 
     const id = String(formData.get('id') ?? '').trim()
     if (!id) return { ok: false as const, message: 'Payment ID is missing.' }
@@ -582,7 +577,6 @@ async function generateTransactionInvoice(formData: FormData): Promise<InvoiceAc
   'use server'
   try {
     await requirePermission('dashboard', 'write')
-    await ensureAllTablesOnce()
 
     const id = String(formData.get('id') ?? '').trim()
     if (!id) return { ok: false as const, message: 'Payment ID is missing.' }
@@ -605,7 +599,6 @@ async function sendProjectInvoiceEmail(formData: FormData): Promise<InvoiceActio
   'use server'
   try {
     await requirePermission('dashboard', 'write')
-    await ensureAllTablesOnce()
 
     const projectId = String(formData.get('projectId') ?? '').trim()
     if (!projectId) return { ok: false as const, message: 'Project is required.' }
@@ -660,7 +653,6 @@ async function generateProjectInvoice(formData: FormData): Promise<InvoiceAction
   'use server'
   try {
     await requirePermission('dashboard', 'write')
-    await ensureAllTablesOnce()
 
     const projectId = String(formData.get('projectId') ?? '').trim()
     if (!projectId) return { ok: false as const, message: 'Project is required.' }
@@ -681,7 +673,6 @@ async function generateProjectInvoice(formData: FormData): Promise<InvoiceAction
 
 export default async function AdminPaymentPage() {
   await requirePermission('dashboard', 'read')
-  await ensureAllTablesOnce()
 
   const [rows, projects, totals] = await Promise.all([
     sql<{
@@ -809,7 +800,7 @@ export default async function AdminPaymentPage() {
         discountAmount: Number(row.discount_amount || '0'),
         taxAmount: Number(row.tax_amount || '0'),
         currency: row.currency || 'PHP',
-        currencySymbol: row.currency_symbol || '₱',
+        currencySymbol: row.currency_symbol || '?',
         currencyLabel: row.currency_label || 'Philippine Peso',
         paymentMethod: row.payment_method,
         paymentDate: row.payment_date,

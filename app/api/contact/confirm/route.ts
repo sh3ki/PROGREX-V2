@@ -3,7 +3,6 @@ import { createHash } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import nodemailer from 'nodemailer'
 import { sql } from '@/lib/server/db'
-import { ensureAllTablesOnce } from '@/lib/server/dbInit'
 
 type PendingPayload = {
   name: string
@@ -79,7 +78,6 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    await ensureAllTablesOnce()
 
     const tokenHash = createHash('sha256').update(token).digest('hex')
     const pending = await sql<{ id: string; payload: PendingPayload }>(
